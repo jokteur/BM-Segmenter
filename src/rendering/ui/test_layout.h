@@ -13,15 +13,15 @@ namespace Rendering {
         void FileMenu() {
             if (ImGui::BeginMenu("File"))
             {
-                if (ImGui::MenuItem("Open", ""))
+                if (ImGui::MenuItem("Open project", ""))
                 {
 
                 }
-                if (ImGui::MenuItem("Save", ""))
+                if (ImGui::MenuItem("Save project", ""))
                 {
 
                 }
-                if (ImGui::MenuItem("Close", ""))
+                if (ImGui::MenuItem("Close project", ""))
                 {
 
                 }

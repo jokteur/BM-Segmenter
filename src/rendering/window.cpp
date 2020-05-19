@@ -91,8 +91,6 @@ void Rendering::Window::draw() {
         std::cout << xscale_ << " " << highDPIscale_ << std::endl;
         highDPIscale_ = xscale_;
 
-
-        //io.FontGlobalScale = highDPIscale_;
         // Hack for now, font manager is coming later
         io.Fonts->Clear();
         ImFont* font = io.Fonts->AddFontFromFileTTF("assets/verdana.ttf", 18.0f * highDPIscale_, NULL, NULL);
@@ -119,7 +117,7 @@ void Rendering::Window::draw() {
     int display_w, display_h;
     glfwGetFramebufferSize(window, &display_w, &display_h);
     glViewport(0, 0, display_w, display_h);
-    glClearColor(0, 0, 0, 0);
+    glClearColor(0.5, 0.5, 0.5, 0);
     glClear(GL_COLOR_BUFFER_BIT);
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 

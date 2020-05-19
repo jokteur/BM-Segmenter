@@ -3,6 +3,7 @@
 #include "rendering/application.h"
 
 #include "rendering/ui/test_layout.h"
+#include "rendering/ui/test_window.h"
 
 int main(int, char**)
 {
@@ -10,8 +11,10 @@ int main(int, char**)
     Rendering::Application app("TestApp", 1280, 720);
 
     Rendering::MyLayout layout;
+    Rendering::MyWindow window;
 
     app.getMainWindow().addDrawable(&layout);
+    app.getMainWindow().addDrawable(&window);
 
     app.loop();
     return 0;
