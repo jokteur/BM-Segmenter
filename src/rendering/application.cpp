@@ -59,7 +59,7 @@ class GetMainWindowError: public std::exception
  * Implementations of Application
  */
 
-Rendering::Application::Application(std::string main_window_title, uint16_t main_window_width, uint16_t main_window_height) {
+Rendering::Application::Application(std::string main_window_title, uint16_t main_window_width, uint16_t main_window_height) : scheduler_(JobScheduler::getInstance()) {
     init_glfw();
     if(!app_state_.error) {
         // Create window with graphics context
@@ -165,7 +165,11 @@ bool Rendering::Application::loop() {
             window.draw();
         }
 
-    } while (!glfwWindowShouldClose(main_window));
+        if (glfwWindowShouldClose(main_window)) {
+            scheduler_.cancelAllPendingJobs();
+        }
+
+    } while (!glfwWindowShouldClose(main_window) || scheduler_.isBusy());
 
     return !app_state_.error;
 }

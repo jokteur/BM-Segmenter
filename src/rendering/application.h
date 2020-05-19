@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "../jobscheduler.h"
 #include "window.h"
 
 //compatibility with older versions of Visual Studio
@@ -25,6 +26,7 @@ namespace Rendering {
     private:
         std::vector<Window> windows_;
         Window* main_window_;
+        JobScheduler &scheduler_;
 
         struct state {
             bool error = false;
