@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "window.h"
+#include "glfw_utils.h"
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
@@ -23,7 +24,7 @@ class FailedToInitializeWindow: public std::exception
 /*
  * Implementations of Window
  */
-GUI::Window::Window(const int width, const int height, const std::string &title) {
+Rendering::Window::Window(const int width, const int height, const std::string &title) {
     // Create window with graphics context
     GLFWwindow* window_ptr = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
     window_ = std::make_shared<GLFWwindow*>(window_ptr);
@@ -36,17 +37,17 @@ GUI::Window::Window(const int width, const int height, const std::string &title)
     glfwSwapInterval(1); // Enable vsync
 }
 
-GUI::Window::Window(GUI::Window &&other) noexcept {
+Rendering::Window::Window(Rendering::Window &&other) noexcept {
     window_ = other.window_;
     other.window_ = nullptr;
 }
 
-void GUI::Window::setTitle(const std::string &title) {
+void Rendering::Window::setTitle(const std::string &title) {
     if (!error_ && window_ != nullptr)
         glfwSetWindowTitle(*window_.get(), title.c_str());
 }
 
-Dimension GUI::Window::getDimensions() {
+Dimension Rendering::Window::getDimensions() {
     Dimension window_size = {-1, -1};
     if (!error_ && window_ != nullptr) {
         glfwGetWindowSize(*window_.get(), &window_size.width,&window_size.height);
@@ -54,27 +55,27 @@ Dimension GUI::Window::getDimensions() {
     return window_size;
 }
 
-GUI::Window::~Window() {
+Rendering::Window::~Window() {
     if (!error_ && window_ != nullptr)
         glfwDestroyWindow(*window_.get());
 }
 
-void GUI::Window::addDrawable(GUI::AbstractDrawable* drawable) {
+void Rendering::Window::addDrawable(Rendering::AbstractDrawable* drawable) {
     if(std::find(drawables_.begin(), drawables_.end(), drawable) == drawables_.end())
         drawables_.push_back(drawable);
 }
 
-bool GUI::Window::popDrawable() {
+bool Rendering::Window::popDrawable() {
     if (!drawables_.empty())
         drawables_.pop_back();
     return !drawables_.empty();
 }
 
-void GUI::Window::removeDrawable(GUI::AbstractDrawable* drawable) {
+void Rendering::Window::removeDrawable(Rendering::AbstractDrawable* drawable) {
 
 }
 
-void GUI::Window::draw() {
+void Rendering::Window::draw() {
     // Start the Dear ImGui frame
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();

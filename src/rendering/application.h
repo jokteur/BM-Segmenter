@@ -15,7 +15,7 @@
 #pragma comment(lib, "legacy_stdio_definitions")
 #endif
 
-namespace GUI {
+namespace Rendering {
     /**
      * Class for building and launching the whole app
      *

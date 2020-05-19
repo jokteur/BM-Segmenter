@@ -9,7 +9,7 @@
 #include "drawables.h"
 #include "dimensions.h"
 
-namespace GUI {
+namespace Rendering {
     typedef std::weak_ptr<AbstractDrawable> drawable_weak_ptr;
 
     class Window {

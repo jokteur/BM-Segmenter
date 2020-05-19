@@ -9,7 +9,7 @@
 
 #include "dimensions.h"
 
-namespace GUI {
+namespace Rendering {
     /**
      * @brief Abstract class for GUI drawables
      */

@@ -59,11 +59,11 @@ class GetMainWindowError: public std::exception
  * Implementations of Application
  */
 
-GUI::Application::Application(std::string main_window_title, uint16_t main_window_width, uint16_t main_window_height) {
+Rendering::Application::Application(std::string main_window_title, uint16_t main_window_width, uint16_t main_window_height) {
     init_glfw();
     if(!app_state_.error) {
         // Create window with graphics context
-        GUI::Window main_window = GUI::Window(main_window_width, main_window_height, main_window_title);
+        Rendering::Window main_window = Rendering::Window(main_window_width, main_window_height, main_window_title);
         windows_.push_back(std::move(main_window));
         main_window_ = &windows_[0];
 
@@ -71,7 +71,7 @@ GUI::Application::Application(std::string main_window_title, uint16_t main_windo
     }
 }
 
-void GUI::Application::init_glfw() {
+void Rendering::Application::init_glfw() {
     // Setup window
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit()) {
@@ -99,11 +99,11 @@ void GUI::Application::init_glfw() {
     const char* glsl_version = app_state_.glsl_version;
     glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE);
 }
-void GUI::Application::init() {
+void Rendering::Application::init() {
     GLFWwindow* window = *main_window_->getGLFWwindow_ptr().lock().get();
     // Init imGUI
     glfwMakeContextCurrent(window);
-    glfwSwapInterval(1); // Enable vsync
+    //glfwSwapInterval(1); // Enable vsync
 
     // Initialize OpenGL loader
     bool err = gl3wInit() != 0;
@@ -128,7 +128,6 @@ void GUI::Application::init() {
     GLFWmonitor *monitor = glfwGetPrimaryMonitor();
     float xscale, yscale;
     glfwGetMonitorContentScale(monitor, &xscale, &yscale);
-    std::cout << "[INFO] Monitor scale: " << xscale << "x" << yscale << std::endl;
     if (xscale > 1 || yscale > 1)
     {
         highDPIscaleFactor = xscale;
@@ -146,11 +145,13 @@ void GUI::Application::init() {
     // Setup Dear ImGui style
     ImGui::StyleColorsClassic();
 
+    io.Fonts->AddFontFromFileTTF("assets/verdana.ttf", 18.0f * highDPIscaleFactor, NULL, NULL);
+
     ImGuiStyle &style = ImGui::GetStyle();
     style.ScaleAllSizes(highDPIscaleFactor);
 }
 
-bool GUI::Application::loop() {
+bool Rendering::Application::loop() {
     if (app_state_.error)
         throw CannotStartLoopError();
 
@@ -158,7 +159,7 @@ bool GUI::Application::loop() {
     do {
         main_window = *main_window_->getGLFWwindow_ptr().lock().get();
 
-        glfwPollEvents();
+        glfwWaitEvents();
 
         for(auto &window : windows_) {
             window.draw();
@@ -170,20 +171,20 @@ bool GUI::Application::loop() {
 }
 
 
-void GUI::Application::shutdown() {
+void Rendering::Application::shutdown() {
     // Cleanup
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
 }
 
-GUI::Application::~Application() {
+Rendering::Application::~Application() {
     if(!app_state_.error) {
         shutdown();
     }
 }
 
-GUI::Window &GUI::Application::getMainWindow() {
+Rendering::Window &Rendering::Application::getMainWindow() {
     if (!app_state_.error)
         return *main_window_;
     else

@@ -1,15 +1,15 @@
 #include <iostream>
 
-#include "gui/application.h"
+#include "rendering/application.h"
 
-#include "gui/layout/test_layout.h"
+#include "rendering/ui/test_layout.h"
 
 int main(int, char**)
 {
     // Test a simple initialization with an empty window
-    GUI::Application app("TestApp", 1280, 720);
+    Rendering::Application app("TestApp", 1280, 720);
 
-    GUI::MyLayout layout;
+    Rendering::MyLayout layout;
 
     app.getMainWindow().addDrawable(&layout);
 
