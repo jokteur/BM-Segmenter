@@ -145,10 +145,10 @@ void Rendering::Application::init() {
     // Setup Dear ImGui style
     ImGui::StyleColorsClassic();
 
-    io.Fonts->AddFontFromFileTTF("assets/verdana.ttf", 18.0f * highDPIscaleFactor, NULL, NULL);
+    io.Fonts->AddFontFromFileTTF("assets/verdana.ttf", 18.0f, NULL, NULL);
 
-    ImGuiStyle &style = ImGui::GetStyle();
-    style.ScaleAllSizes(highDPIscaleFactor);
+//    ImGuiStyle &style = ImGui::GetStyle();
+//    style.ScaleAllSizes(highDPIscaleFactor);
 }
 
 bool Rendering::Application::loop() {
@@ -169,7 +169,6 @@ bool Rendering::Application::loop() {
 
     return !app_state_.error;
 }
-
 
 void Rendering::Application::shutdown() {
     // Cleanup

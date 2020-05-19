@@ -8,7 +8,7 @@
 namespace Rendering {
     class MyLayout : public AbstractLayout {
     private:
-        bool visibile_ = false;
+        bool visible_ = false;
 
         void FileMenu() {
             if (ImGui::BeginMenu("File"))
@@ -52,7 +52,7 @@ namespace Rendering {
 
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
 
-            ImGui::Begin("Menu", &visibile_, window_flags);
+            ImGui::Begin("Menu", &visible_, window_flags);
             ImGui::PopStyleVar();
             ImGui::PopStyleVar(2);
 

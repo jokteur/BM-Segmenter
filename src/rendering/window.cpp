@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <exception>
 #include <memory>
+#include <iostream>
 
 #include "window.h"
 #include "glfw_utils.h"
@@ -76,22 +77,51 @@ void Rendering::Window::removeDrawable(Rendering::AbstractDrawable* drawable) {
 }
 
 void Rendering::Window::draw() {
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+    // Take possession of the GLFWwindow pointer
+    GLFWwindow* window = *window_.get();
+
+    //Make the window DPI aware of the current monitor
+    GLFWmonitor* monitor = Rendering::getCurrentMonitor(window);
+    glfwGetMonitorContentScale(monitor, &xscale_, &yscale_);
+
+
+    if (xscale_ != highDPIscale_) {
+        std::cout << xscale_ << " " << highDPIscale_ << std::endl;
+        highDPIscale_ = xscale_;
+
+
+        //io.FontGlobalScale = highDPIscale_;
+        // Hack for now, font manager is coming later
+        io.Fonts->Clear();
+        ImFont* font = io.Fonts->AddFontFromFileTTF("assets/verdana.ttf", 18.0f * highDPIscale_, NULL, NULL);
+        io.Fonts->Build();
+
+        ImGui_ImplOpenGL3_DestroyFontsTexture();
+        ImGui_ImplOpenGL3_CreateFontsTexture();
+
+
+        ImGuiStyle &style = ImGui::GetStyle();
+        style.ScaleAllSizes(highDPIscale_ / xscale_);
+    }
+
     // Start the Dear ImGui frame
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
     for(auto &drawable : drawables_)
-        drawable->draw(*window_.get());
+        drawable->draw(window);
 
     // Rendering
     ImGui::Render();
     int display_w, display_h;
-    glfwGetFramebufferSize(*window_.get(), &display_w, &display_h);
+    glfwGetFramebufferSize(window, &display_w, &display_h);
     glViewport(0, 0, display_w, display_h);
     glClearColor(0, 0, 0, 0);
     glClear(GL_COLOR_BUFFER_BIT);
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-    glfwSwapBuffers(*window_.get());
+    glfwSwapBuffers(window);
 }

@@ -18,7 +18,11 @@ namespace Rendering {
         int width_;
         int height_;
         std::string title_;
+
+        // DPI related
         float highDPIscale_ = 1.;
+        float xscale_;
+        float yscale_;
 
         std::vector<AbstractDrawable*> drawables_;
 
