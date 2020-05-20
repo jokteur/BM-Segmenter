@@ -142,7 +142,7 @@ void Rendering::Application::init() {
 #endif
 
     ImGuiIO& io = ImGui::GetIO(); (void)io;
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_DockingEnable;     // Enable Keyboard Controls
 
     // Setup Dear ImGui style
     ImGui::StyleColorsClassic();

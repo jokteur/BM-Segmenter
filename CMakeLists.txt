@@ -43,13 +43,33 @@ set(imgui_binding
         ${imgui_DIR}/imgui_impl_opengl3.cpp)
 include_directories(thirdparty/imgui-binding)
 
-# Main source
+# --- nativefiledialog ---
+if (WIN32)
+    set(native_DIR "thirdparty/nativefiledialog/src")
+    set(native_src
+            ${native_DIR}/common.h
+            ${native_DIR}/include/nfd.h
+            ${native_DIR}/nfd_common.h
+            ${native_DIR}/nfd_common.c
+            ${native_DIR}/nfd_win.cpp
+            ${native_DIR}/common.h)
+
+    add_library(nfd ${native_src})
+
+    target_link_libraries(nfd comctl32.lib)
+endif()
+# TODO implement for other OS
+message(${native_src})
+
+include_directories(thirdparty/nativefiledialog/src/include)
+
+# --- Main source ---
 file (GLOB _project_src RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         src/*.cpp src/*.h
         src/rendering/*.cpp src/rendering/*.h
         src/rendering/ui/*.cpp src/rendering/ui/*.h)
 
-# All sources if for the tests
+# --- All sources if for the tests ---
 set(all_sources ${_project_src} ${GLAD_GL} ${imgui_src} ${imgui_binding} ${gl3w_src})
 list(REMOVE_ITEM all_sources "src/main.cpp")
 
@@ -58,11 +78,13 @@ add_executable(${PROJECT_NAME} ${_project_src} ${GLAD_GL} ${imgui_src} ${imgui_b
 
 target_link_libraries(${PROJECT_NAME} glfw ${GLFW_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} ${OPENGL_gl_LIBRARY})
+target_link_libraries(${PROJECT_NAME} nfd)
 
 target_link_libraries(${PROJECT_NAME}_lib glfw ${GLFW_LIBRARIES})
 target_link_libraries(${PROJECT_NAME}_lib ${OPENGL_gl_LIBRARY})
+target_link_libraries(${PROJECT_NAME}_lib nfd)
 
-# Add all assets
+# --- Add all assets ---
 file(COPY assets DESTINATION ${CMAKE_BINARY_DIR})
 
 ###############################################################

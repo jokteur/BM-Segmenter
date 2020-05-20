@@ -1,7 +1,6 @@
 #include <exception>
-#include <complex>
 
-#include "rendering/application.h"
+#include "application.h"
 #include <gtest/gtest.h>
 
 using namespace Rendering;
