@@ -8,8 +8,8 @@
 #include <string>
 #include <vector>
 
-#include "../jobscheduler.h"
-#include "window.h"
+#include "jobscheduler.h"
+#include "rendering/window.h"
 
 //compatibility with older versions of Visual Studio
 #if defined(_MSC_VER) && (_MSC_VER >= 1900) && !defined(IMGUI_DISABLE_WIN32_FUNCTIONS)
