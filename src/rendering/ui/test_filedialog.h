@@ -1,0 +1,8 @@
+//
+// Created by jokte on 20.05.2020.
+//
+
+#ifndef BM_SEGMENTER_TEST_FILEDIALOG_H
+#define BM_SEGMENTER_TEST_FILEDIALOG_H
+
+#endif //BM_SEGMENTER_TEST_FILEDIALOG_H
