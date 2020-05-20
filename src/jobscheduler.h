@@ -10,6 +10,8 @@
 #include <functional>
 #include <condition_variable>
 
+#include "events.h"
+
 /**
  * Semaphore for waking the worker up when a new job is available
  */
@@ -135,7 +137,11 @@ private:
     Semaphore semaphore_;
     std::list<Worker> workers_;
 
-    JobScheduler() {
+    EventQueue& event_queue_;
+
+    void post_event(const Job & job);
+
+    JobScheduler() : event_queue_(EventQueue::getInstance()) {
         setWorkerPoolSize(1);
     }
 
@@ -167,6 +173,11 @@ public:
      * Adds a new job to the scheduler
      * The job starts whenever a thread is available and search for a new job
      * Job fairness is not guaranteed
+     *
+     * Once a job is launched, whenever a job stops (FINISHED, ABORTED, CANCELED, ERROR),
+     * the JobScheduler will send two events : `jobs/names/[name]` and `jobs/ids/[job_id]`
+     * The user can subscribe to either of these events
+     *
      * @param name name of the job
      * @param function lambda function to be executed by the job. The function should be in this format :
      * std::function<bool (float &progress, bool &abort)>, progress should be between 0 and 1 and indicate

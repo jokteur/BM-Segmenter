@@ -10,6 +10,7 @@
 
 #include "jobscheduler.h"
 #include "rendering/window.h"
+#include "events.h"
 
 //compatibility with older versions of Visual Studio
 #if defined(_MSC_VER) && (_MSC_VER >= 1900) && !defined(IMGUI_DISABLE_WIN32_FUNCTIONS)
@@ -27,6 +28,8 @@ namespace Rendering {
         std::vector<Window> windows_;
         Window* main_window_;
         JobScheduler &scheduler_;
+        EventQueue &event_queue_;
+
 
         struct state {
             bool error = false;

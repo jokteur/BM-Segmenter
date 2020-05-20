@@ -3,6 +3,7 @@
 #include <exception>
 #include <mutex>
 #include <condition_variable>
+#include <chrono>
 
 /*
  * Exceptions related to the JobScheduler class
@@ -76,6 +77,7 @@ void JobScheduler::worker_fct(JobScheduler::Worker &worker) {
                 if (job.state == Job::JOB_STATE_PENDING) {
                     if(job.abort) {
                         job.state = Job::JOB_STATE_CANCELED;
+                        post_event(*current_job);
                     }
                     else {
                         current_job = &job;
@@ -115,6 +117,7 @@ void JobScheduler::worker_fct(JobScheduler::Worker &worker) {
                     current_job->state = Job::JOB_STATE_FINISHED;
                     current_job->success = success;
                 }
+                post_event(*current_job);
             }
         }
 
@@ -180,5 +183,17 @@ void JobScheduler::cancelAllPendingJobs() {
             job.state = Job::JOB_STATE_CANCELED;
         }
     }
+}
+
+void JobScheduler::post_event(const Job &job) {
+    std::string event_name = std::string("jobs/ids/") + std::to_string(job.id);
+    event_queue_.post(Event{
+            .name = event_name,
+            .time = std::chrono::system_clock::now()});
+    event_name = std::string("jobs/name/") + job.name;
+
+    event_queue_.post(Event{
+            .name = event_name,
+            .time = std::chrono::system_clock::now()});
 }
 

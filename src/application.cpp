@@ -59,7 +59,9 @@ class GetMainWindowError: public std::exception
  * Implementations of Application
  */
 
-Rendering::Application::Application(std::string main_window_title, uint16_t main_window_width, uint16_t main_window_height) : scheduler_(JobScheduler::getInstance()) {
+Rendering::Application::Application(std::string main_window_title, uint16_t main_window_width, uint16_t main_window_height)
+    : scheduler_(JobScheduler::getInstance()), event_queue_(EventQueue::getInstance())
+{
     init_glfw();
     if(!app_state_.error) {
         // Create window with graphics context
@@ -146,9 +148,6 @@ void Rendering::Application::init() {
     ImGui::StyleColorsClassic();
 
     io.Fonts->AddFontFromFileTTF("assets/verdana.ttf", 18.0f, NULL, NULL);
-
-//    ImGuiStyle &style = ImGui::GetStyle();
-//    style.ScaleAllSizes(highDPIscaleFactor);
 }
 
 bool Rendering::Application::loop() {
@@ -160,6 +159,7 @@ bool Rendering::Application::loop() {
         main_window = *main_window_->getGLFWwindow_ptr().lock().get();
 
         glfwWaitEvents();
+        event_queue_.pollEvents();
 
         for(auto &window : windows_) {
             window.draw();
