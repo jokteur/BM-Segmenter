@@ -35,8 +35,8 @@ public:
 };
 
 typedef std::function<bool (float &, bool &)> jobFct;
-typedef int jobId;
-typedef int workerId;
+typedef uint64_t jobId;
+typedef uint64_t workerId;
 
 /*
  * Job description
@@ -65,11 +65,52 @@ struct Job {
  * The class allows for a syntax that permits to read the progress of a job, or send
  * a command to abort a job. \n
  *
- * Here is a sample code with some sample jobs and a sample UI :
+ * Here is a sample code using the scheduler :
  * @code{.cpp}
  *
+ * namespace Rendering {
+ *     class MyWindow : public AbstractLayout {
+ *     private:
+ *         JobScheduler &scheduler_;
+ *         int counter_ = 0;
+ *         jobId job_id_;
+ *         std::vector<jobId> jobs_;
+ *     public:
+ *         MyWindow() : scheduler_(JobScheduler::getInstance()) {
+ *             scheduler_.setWorkerPoolSize(3);
+ *         }
+ *
+ *         void draw(GLFWwindow* window) override {
+ *             ImGui::Begin("My Window");
+ *             jobFct job;
+ *             if(ImGui::Button("Launch job")) {
+ *                 std::string name = "myJob";
+ *                 int counter = counter_;
+ *
+ *                 // Dummy job
+ *                 jobFct job = [counter] (float &progress, bool &abort) -> bool {
+ *                     // Simulate a progression of some kind, update every 0.5 second
+ *                     for(int i = 0;i < 20;i++) {
+ *                         usleep(0.5*1e6);
+ *                         glfwPostEmptyEvent();
+ *                         if (abort)
+ *                             return false;
+ *                         progress = float(i+1)/20.;
+ *                     }
+ *                     return true ;
+ *                 };
+ *                 jobs_.push_back(scheduler_.addJob(name, job));
+ *                 counter_++;
+ *             }
+ *             ImGui::End();
+ *         }
+ *     }
+ * }
  * @endcode
  *
+ * @note if you are changing the Worker pool size often, it is important to regularly call the method clean()
+ * of the JobScheduler, because once a thread has been killed, its respective pointer is not automatically
+ * freed by the class.
  */
 class JobScheduler {
 private:
@@ -178,8 +219,10 @@ public:
      */
     void clean();
 
-    ~JobScheduler() {}
+    ~JobScheduler() {
+        cancelAllPendingJobs();
+        clean();
+    }
 };
-
 
 #endif //BM_SEGMENTER_JOBSCHEDULER_H

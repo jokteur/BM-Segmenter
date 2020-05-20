@@ -1,13 +1,10 @@
-//
-// Created by jokte on 16.05.2020.
-//
 #include <exception>
 #include <complex>
 
-#include "gui/application.h"
+#include "rendering/application.h"
 #include <gtest/gtest.h>
 
-using namespace GUI;
+using namespace Rendering;
 TEST(Application, initWindow) {
 
     // Test a simple initialization with an empty window
