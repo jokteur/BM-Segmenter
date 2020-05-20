@@ -37,6 +37,8 @@ private:
     std::vector<Listener*> listeners_;
     std::mutex listeners_mutex_;
 
+    bool is_listener(const std::string &filter, const std::string &event_name);
+
     EventQueue() {}
 public:
     EventQueue(EventQueue const &) = delete;
@@ -49,6 +51,8 @@ public:
 
     void subscribe(Listener* listener);
     void unsubscribe(Listener* listener);
+
+    int getNumSubscribers(std::vector<std::string> event_names);
 
     void post(const Event &event);
 

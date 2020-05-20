@@ -185,15 +185,20 @@ void JobScheduler::cancelAllPendingJobs() {
     }
 }
 
-void JobScheduler::post_event(const Job &job) {
+void JobScheduler::post_event(Job &job) {
     std::string event_name = std::string("jobs/ids/") + std::to_string(job.id);
-    event_queue_.post(Event{
-            .name = event_name,
-            .time = std::chrono::system_clock::now()});
-    event_name = std::string("jobs/name/") + job.name;
+    std::string event_name2 = std::string("jobs/name/") + job.name;
+
+    int num_listeners = event_queue_.getNumSubscribers({event_name, event_name2});
+
+    job.to_be_acknowledged = num_listeners;
 
     event_queue_.post(Event{
             .name = event_name,
+            .time = std::chrono::system_clock::now()});
+
+    event_queue_.post(Event{
+            .name = event_name2,
             .time = std::chrono::system_clock::now()});
 }
 

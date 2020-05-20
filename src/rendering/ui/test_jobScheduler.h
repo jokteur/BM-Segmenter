@@ -18,6 +18,7 @@ namespace Rendering {
         int counter_ = 0;
         jobId job_id_;
         std::vector<jobId> jobs_;
+        bool open_;
     public:
         MyWindow() : scheduler_(JobScheduler::getInstance()) {
             scheduler_.setWorkerPoolSize(3);
@@ -96,6 +97,7 @@ namespace Rendering {
                 }
             }
             ImGui::End();
+
         }
     };
 }

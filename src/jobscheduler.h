@@ -47,6 +47,7 @@ struct Job {
     enum jobState {JOB_STATE_PENDING, JOB_STATE_RUNNING, JOB_STATE_FINISHED, JOB_STATE_ERROR, JOB_STATE_CANCELED, JOB_STATE_ABORTED};
     std::string name;
     jobId id;
+    int to_be_acknowledged = 0;
 
     jobFct fct;
     jobState state = JOB_STATE_PENDING;
@@ -139,7 +140,7 @@ private:
 
     EventQueue& event_queue_;
 
-    void post_event(const Job & job);
+    void post_event(Job & job);
 
     JobScheduler() : event_queue_(EventQueue::getInstance()) {
         setWorkerPoolSize(1);

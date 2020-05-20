@@ -1,6 +1,8 @@
 #include "events.h"
 
+#include <iostream>
 #include <GLFW/glfw3.h>
+#include <set>
 
 void EventQueue::subscribe(Listener *listener) {
     std::lock_guard<std::mutex> guard(listeners_mutex_);
@@ -30,26 +32,7 @@ void EventQueue::pollEvents() {
 
         std::lock_guard<std::mutex> listener_guard(listeners_mutex_);
         for(const auto &listener : listeners_) {
-            bool filter_ok = true;
-
-            int i = 0;
-            for(;i < listener->filter.size() && i < event.name.size();i++) {
-                if(listener->filter[i] == '*') {
-                    break;
-                }
-                else if(event.name[i] != listener->filter[i]){
-                    filter_ok = false;
-                    break;
-                }
-            }
-            if(i + 1 == listener->filter.size()) {
-                if(*(listener->filter.end() - 1) != '*') {
-                    filter_ok = false;
-                }
-            }
-            else if(i + 1 < listener->filter.size()) {
-                filter_ok = false;
-            }
+            bool filter_ok = is_listener(listener->filter, event.name);
 
             if(filter_ok) {
                 listener->callback(event);
@@ -57,5 +40,42 @@ void EventQueue::pollEvents() {
         }
         event_queue_.pop();
     }
+}
+
+int EventQueue::getNumSubscribers(std::vector<std::string> event_names) {
+    std::set<Listener*> listener_set;
+    std::lock_guard<std::mutex> listener_guard(listeners_mutex_);
+    for(const auto &event_name : event_names) {
+        for(const auto listener : listeners_) {
+            if (is_listener(listener->filter, event_name)) {
+                listener_set.insert(listener);
+            }
+        }
+    }
+    return listener_set.size();
+}
+
+bool EventQueue::is_listener(const std::string &filter, const std::string &event_name) {
+    bool filter_ok = true;
+
+    int i = 0;
+    for(;i < filter.size() && i < event_name.size();i++) {
+        if(filter[i] == '*') {
+            break;
+        }
+        else if(event_name[i] != filter[i]){
+            filter_ok = false;
+            break;
+        }
+    }
+    if(i + 1 == filter.size()) {
+        if(*(filter.end() - 1) != '*') {
+            filter_ok = false;
+        }
+    }
+    else if(i + 1 < filter.size()) {
+        filter_ok = false;
+    }
+    return filter_ok;
 }
 
