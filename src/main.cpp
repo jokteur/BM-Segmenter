@@ -1,9 +1,9 @@
 #include <iostream>
 
-#include "rendering/application.h"
+#include "application.h"
 
 #include "rendering/ui/test_layout.h"
-#include "rendering/ui/test_window.h"
+#include "rendering/ui/test_jobScheduler.h"
 
 int main(int, char**)
 {
