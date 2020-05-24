@@ -1,44 +1,104 @@
 #include "events.h"
 
 #include <iostream>
+#include <exception>
 #include <GLFW/glfw3.h>
 #include <set>
 
+/*
+ * Exceptions related to the EventQueue class
+ */
+
+class EventQueueException: public std::exception
+{
+private:
+    const char* what_;
+public:
+    explicit EventQueueException(const char* what) : what_(what) {}
+    virtual const char* what() const noexcept
+    {
+        return what_;
+    }
+};
+
+/*
+ * Implementations of EventQueue
+ */
 void EventQueue::subscribe(Listener *listener) {
     std::lock_guard<std::mutex> guard(listeners_mutex_);
-    listeners_.push_back(listener);
+    listeners_.insert(listener);
 }
 
 void EventQueue::unsubscribe(Listener *listener) {
-    std::lock_guard<std::mutex> guard(listeners_mutex_);
-    for (auto it = listeners_.begin(); it != listeners_.end(); it++) {
-        if (*it == listener) {
-            listeners_.erase(it);
-            break;
+    bool has_found = false;
+    {
+        std::lock_guard<std::mutex> guard(listeners_mutex_);
+        for (auto it = listeners_.begin(); it != listeners_.end(); it++) {
+            if (*it == listener) {
+                has_found = true;
+                break;
+            }
+        }
+    }
+
+    if (has_found) {
+        std::lock_guard<std::mutex> guard(pending_mutex_);
+        bool unsubscribe_later = false;
+        for(auto &name : pending_acknowledged_events_) {
+            if(isListener(listener->filter, name)) {
+                unsubscribe_later = true;
+                break;
+            }
+        }
+        if (unsubscribe_later) {
+            to_remove_.insert(listener);
+        }
+        else {
+            listeners_.erase(listener);
         }
     }
 }
 
-void EventQueue::post(const Event &event) {
-    std::lock_guard<std::mutex> guard(event_mutex_);
-    event_queue_.push(event);
+void EventQueue::post(Event_ptr event) {
+    {
+        std::lock_guard<std::mutex> guard(event_mutex_);
+        event_queue_.push(event);
+    }
+    if (event.get()->isAcknowledgable()) {
+        std::lock_guard<std::mutex> guard(pending_mutex_);
+        pending_acknowledged_events_.push_back(event.get()->getName());
+    }
     glfwPostEmptyEvent();
 }
 
 void EventQueue::pollEvents() {
-    std::lock_guard<std::mutex> event_guard(event_mutex_);
-    while(!event_queue_.empty()) {
-        Event& event = event_queue_.front();
+    {
+        std::lock_guard<std::mutex> event_guard(event_mutex_);
+        while (!event_queue_.empty()) {
+            std::shared_ptr<Event> event = event_queue_.front();
 
-        std::lock_guard<std::mutex> listener_guard(listeners_mutex_);
-        for(const auto &listener : listeners_) {
-            bool filter_ok = is_listener(listener->filter, event.name);
+            std::lock_guard<std::mutex> listener_guard(listeners_mutex_);
+            for (const auto &listener : listeners_) {
+                bool filter_ok = isListener(listener->filter, event.get()->getName());
 
-            if(filter_ok) {
-                listener->callback(event);
+                if (filter_ok) {
+                    listener->callback(event);
+                }
             }
+            event_queue_.pop();
         }
-        event_queue_.pop();
+    }
+    {
+        std::lock_guard<std::mutex> guard(listeners_mutex_);
+        // Check if there are listeners that need to be unsubscribed after a poll
+        for(auto listener : to_remove_) {
+            listeners_.erase((listener));
+        }
+    }
+    {
+        std::lock_guard<std::mutex> guard(pending_mutex_);
+        pending_acknowledged_events_.clear();
+        to_remove_.clear();
     }
 }
 
@@ -47,7 +107,7 @@ int EventQueue::getNumSubscribers(std::vector<std::string> event_names) {
     std::lock_guard<std::mutex> listener_guard(listeners_mutex_);
     for(const auto &event_name : event_names) {
         for(const auto listener : listeners_) {
-            if (is_listener(listener->filter, event_name)) {
+            if (isListener(listener->filter, event_name)) {
                 listener_set.insert(listener);
             }
         }
@@ -55,7 +115,7 @@ int EventQueue::getNumSubscribers(std::vector<std::string> event_names) {
     return listener_set.size();
 }
 
-bool EventQueue::is_listener(const std::string &filter, const std::string &event_name) {
+bool EventQueue::isListener(const std::string &filter, const std::string &event_name) {
     bool filter_ok = true;
 
     int i = 0;
