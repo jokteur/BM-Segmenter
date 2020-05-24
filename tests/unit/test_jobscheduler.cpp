@@ -53,6 +53,7 @@ TEST(JobScheduler, ExecuteJobsSingleWorker) {
     auto asyncFuture = std::async(
         std::launch::async, [this] {
             JobScheduler& jobScheduler = JobScheduler::getInstance();
+            jobScheduler.setWorkerPoolSize(1);
 
             // Define a fake job that could be aborted, and that shows its progression
             int counter = 0;
@@ -66,14 +67,15 @@ TEST(JobScheduler, ExecuteJobsSingleWorker) {
                 return true ;
             };
 
-            std::string name("100ms job");
-            jobId job_id_1 = jobScheduler.addJob(name, job_fct);
-            jobId job_id_2 = jobScheduler.addJob(name, job_fct);
-            jobId job_id_3 = jobScheduler.addJob(name, job_fct);
+
+            JobReference jobRef_1 = jobScheduler.addJob("job1", job_fct);
+            JobReference jobRef_2 = jobScheduler.addJob("job2", job_fct);
+            JobReference jobRef_3 = jobScheduler.addJob("job3", job_fct);
 
             // After 60ms, see if progress of the first job is more than 0.5
             usleep(6*1e4);
-            Job job1 = jobScheduler.getJobInfo(job_id_1);
+
+            Job job1 = jobRef_1.getJob();
 
             EXPECT_GE(job1.progress, 0.5)
                 << "Reported progress of the job is not correct";
@@ -81,9 +83,10 @@ TEST(JobScheduler, ExecuteJobsSingleWorker) {
             // Sleep 350ms to wait for all jobs to finish
             usleep(3.5e5);
 
-            job1 = jobScheduler.getJobInfo(job_id_1);
-            Job job2 = jobScheduler.getJobInfo(job_id_2);
-            Job job3 = jobScheduler.getJobInfo(job_id_3);
+
+            job1 = jobRef_1.getJob();
+            Job job2 = jobRef_2.getJob();
+            Job job3 = jobRef_3.getJob();
 
             EXPECT_EQ(job1.state, Job::JOB_STATE_FINISHED)
                 << "Job 1 did not finish correctly or in time";
@@ -97,6 +100,10 @@ TEST(JobScheduler, ExecuteJobsSingleWorker) {
 
 
             jobScheduler.clean();
+            jobScheduler.abortAll();
+            jobScheduler.removeJob(jobRef_1);
+            jobScheduler.removeJob(jobRef_2);
+            jobScheduler.removeJob(jobRef_3);
         }
     );
 
@@ -125,18 +132,18 @@ TEST(JobScheduler, StopJobSingleWorker) {
             };
 
             std::string name("100ms job");
-            jobId job_id_1 = jobScheduler.addJob(name, job_fct);
-            jobId job_id_2 = jobScheduler.addJob(name, job_fct);
-            jobId job_id_3 = jobScheduler.addJob(name, job_fct);
+            JobReference jobRef_1 = jobScheduler.addJob(name, job_fct);
+            JobReference jobRef_2 = jobScheduler.addJob(name, job_fct);
+            JobReference jobRef_3 = jobScheduler.addJob(name, job_fct);
 
             // After 50ms, stop the job1 (should be active) and job3 (should be pending)
             usleep(5e4);
-            jobScheduler.stopJob(job_id_1);
-            jobScheduler.stopJob(job_id_3);
+            jobScheduler.stopJob(jobRef_1);
+            jobScheduler.stopJob(jobRef_3);
 
             // As the abort is read every 10 ms, give it at least 20ms to stop the job1
             usleep(2e4);
-            Job job1 = jobScheduler.getJobInfo(job_id_1);
+            Job job1 = jobRef_1.getJob();
 
             EXPECT_EQ(job1.state, Job::JOB_STATE_ABORTED)
                 << "Job 1 has not been aborted in time";
@@ -144,8 +151,8 @@ TEST(JobScheduler, StopJobSingleWorker) {
             // Sleep 150ms to wait for job 2 to finish
             usleep(1.5e5);
 
-            Job job2 = jobScheduler.getJobInfo(job_id_2);
-            Job job3 = jobScheduler.getJobInfo(job_id_3); //Pending jobs that have been canceled often get removed at a later time
+            Job job2 = jobRef_2.getJob();
+            Job job3 = jobRef_3.getJob(); //Pending jobs that have been canceled often get removed at a later time
 
             EXPECT_EQ(job2.state, Job::JOB_STATE_FINISHED)
                 << "Job 2 did not finish correctly or in time";
@@ -153,6 +160,10 @@ TEST(JobScheduler, StopJobSingleWorker) {
                 << "Job 3 has not been canceled correctly";
 
             jobScheduler.clean();
+            jobScheduler.abortAll();
+            jobScheduler.removeJob(jobRef_1);
+            jobScheduler.removeJob(jobRef_2);
+            jobScheduler.removeJob(jobRef_3);
         }
     );
 
@@ -181,18 +192,18 @@ TEST(JobScheduler, AddJobMultipleWorkers) {
             };
 
             std::string name("100ms job");
-            jobId job_id_1 = jobScheduler.addJob(name, job_fct);
-            jobId job_id_2 = jobScheduler.addJob(name, job_fct);
-            jobId job_id_3 = jobScheduler.addJob(name, job_fct);
-            jobId job_id_4 = jobScheduler.addJob(name, job_fct);
+            JobReference jobRef_1 = jobScheduler.addJob(name, job_fct);
+            JobReference jobRef_2 = jobScheduler.addJob(name, job_fct);
+            JobReference jobRef_3 = jobScheduler.addJob(name, job_fct);
+            JobReference jobRef_4 = jobScheduler.addJob(name, job_fct);
 
             // After 100ms, all the jobs should have executed. For the margin, let us give 120ms
             usleep(1.2e5);
 
-            Job job1 = jobScheduler.getJobInfo(job_id_1);
-            Job job2 = jobScheduler.getJobInfo(job_id_2);
-            Job job3 = jobScheduler.getJobInfo(job_id_3);
-            Job job4 = jobScheduler.getJobInfo(job_id_4);
+            Job job1 = jobRef_1.getJob();
+            Job job2 = jobRef_2.getJob();
+            Job job3 = jobRef_3.getJob();
+            Job job4 = jobRef_4.getJob();
 
             EXPECT_EQ(job1.state, Job::JOB_STATE_FINISHED)
                 << "Job 1 has not finished in time";
@@ -204,7 +215,11 @@ TEST(JobScheduler, AddJobMultipleWorkers) {
                 << "Job 4 has not finished in time";
 
             jobScheduler.clean();
-            }
+            jobScheduler.abortAll();
+            jobScheduler.removeJob(jobRef_1);
+            jobScheduler.removeJob(jobRef_2);
+            jobScheduler.removeJob(jobRef_3);
+        }
     );
 
     ASSERT_TRUE(asyncFuture.wait_for(std::chrono::milliseconds(130)) != std::future_status::timeout)
@@ -232,40 +247,39 @@ TEST(JobScheduler, DynamicWorkerPool) {
             };
 
             std::string name("100ms job");
-            std::vector<jobId> job_ids;
+            std::vector<JobReference> jobs;
 
             // Add 16 jobs with a worker pool size of 4
             // In this state, with each job taking 100ms, it should take 400 ms for all jobs to complete
             for(int i = 0;i < 16;++i) {
-                jobId job_id = jobScheduler.addJob(name, job_fct);
-                job_ids.push_back(job_id);
+                jobs.push_back(jobScheduler.addJob(name, job_fct));
             }
 
-            usleep(1e4); // Give a chance to the workers to take the jobs
+            usleep(2e4); // Give a chance to the workers to take the jobs
 
             // Immediately cancel all pending jobs (only 4 active jobs should remain -> 100ms until completion)
             jobScheduler.cancelAllPendingJobs();
 
             // Push 4 new jobs
             // In this state, it should take approximately 200 ms for all jobs to complete
-            for(int i = 0;i < 16;++i) {
-                jobId job_id = jobScheduler.addJob(name, job_fct);
-                job_ids.push_back(job_id);
+            for(int i = 0;i < 4;++i) {
+                jobs.push_back(jobScheduler.addJob(name, job_fct));
             }
 
             // Diminsh the worker pool size to 2
             // The first 4 jobs should terminate with the 4 Workers, but then the next jobs should only be
             // executed by 2 Workers, which means for all jobs to terminate, it should take 100ms + 200ms = 300ms
             jobScheduler.setWorkerPoolSize(2);
-            usleep(3.3e5); // Let us give 320 ms for all jobs to complete
+            usleep(3.2e5); // Let us give 320 ms for all jobs to complete
 
             // Now, the situation is the following :
             // - the first 4 jobs should have been completed by 4 Workers
             // - the next 12 jobs have been cancelled
             // - the last 4 jobs should have been completed by 2 Workers
 
-            for(int i = 0;i < 20;++i) {
-                Job job = jobScheduler.getJobInfo(job_ids[i]);
+            int i = 0;
+            for(auto &jobref : jobs) {
+                Job job = *jobref.it;
                 if (i >= 4 && i < 16) {
                     std::string expect_msg = std::string("Job ") + std::to_string(i) +
                             std::string(" has not been canceled as expected");
@@ -276,13 +290,18 @@ TEST(JobScheduler, DynamicWorkerPool) {
                             std::string(" has not finished in time");
                     EXPECT_EQ(job.state, Job::JOB_STATE_FINISHED) << expect_msg;
                 }
+                i++;
             }
 
             jobScheduler.clean();
+            jobScheduler.abortAll();
+            for(auto &jobref : jobs) {
+                jobScheduler.removeJob(jobref);
+            }
         }
     );
 
-    ASSERT_TRUE(asyncFuture.wait_for(std::chrono::milliseconds(360)) != std::future_status::timeout)
+    ASSERT_TRUE(asyncFuture.wait_for(std::chrono::milliseconds(400)) != std::future_status::timeout)
         << "Test did not terminate within the expect time.";
 }
 
@@ -311,12 +330,12 @@ TEST(JobScheduler, StressTest) {
                 };
 
                 std::string name("1ms job");
-                std::vector<jobId> job_ids;
+                std::vector<JobReference> jobs;
 
                 // Add 8000 jobs, with 8 Workers, it should theorically terminate in 1 second
                 for(int i = 0;i < num_jobs;++i) {
-                    jobId job_id = jobScheduler.addJob(name, job_fct);
-                    job_ids.push_back(job_id);
+                    JobReference job_id = jobScheduler.addJob(name, job_fct); // Hack : set acknowledge to true to keep them in the queue
+                    jobs.push_back(job_id);
                 }
 
                 float overhead = 1.1;
@@ -325,17 +344,21 @@ TEST(JobScheduler, StressTest) {
                 EXPECT_FALSE(jobScheduler.isBusy()) << "Not all jobs have finished";
 
 
-                for(int i = 0;i < num_jobs;++i) {
-                    Job job = jobScheduler.getJobInfo(job_ids[i]);
-                    std::string expect_msg = std::string("Job ") + std::to_string(i) +
+                for(auto &jobref : jobs) {
+                    Job job = *jobref.it;
+                    std::string expect_msg = std::string("Job ") + std::to_string(job.id) +
                                                  std::string(" has not finished in time");
                     EXPECT_EQ(job.state, Job::JOB_STATE_FINISHED) << expect_msg;
                 }
 
                 jobScheduler.clean();
+                jobScheduler.abortAll();
+                for(auto &jobref : jobs) {
+                    jobScheduler.removeJob(jobref);
+                }
             }
     );
 
-    ASSERT_TRUE(asyncFuture.wait_for(std::chrono::milliseconds(1300)) != std::future_status::timeout)
+    ASSERT_TRUE(asyncFuture.wait_for(std::chrono::milliseconds(2000)) != std::future_status::timeout)
         << "Test did not terminate within the expect time.";
 }

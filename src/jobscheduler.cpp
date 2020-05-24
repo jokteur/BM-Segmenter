@@ -31,39 +31,37 @@ void JobScheduler::setWorkerPoolSize(int size) {
     }
 
     // Add thread(s)
+    std::lock_guard<std::mutex> guard(kill_mutex_);
     if (size > num_active_workers_) {
         for(int i = 0;i < size - num_active_workers_;i++) {
             workers_.push_back(Worker {});
-            Worker &worker = *workers_.end();
-            std::thread *thread = new std::thread(&JobScheduler::worker_fct, this, std::ref(worker));
+            Worker &worker = *(--workers_.end());
             worker.id = worker_counter_++;
+            std::thread *thread = new std::thread(&JobScheduler::worker_fct, this, std::ref(worker));
             worker.thread = thread; //Is freed when killed (with the garbage collector)
         }
     }
         // Remove thread(s)
     else if (size < num_active_workers_) {
-        std::lock_guard<std::mutex> guard(kill_mutex_);
         kill_x_workers_ += num_active_workers_ - size;
         // Notify the first thread to kill itself
-        semaphore_.post();
+        for (int i = 0;i < num_active_workers_ - size;i++)
+            semaphore_.post();
     }
 
     num_active_workers_ = size;
 }
 
 void JobScheduler::worker_fct(JobScheduler::Worker &worker) {
-    semaphore_.wait();
     while(true) {
-        // If any thread must be killed, this thread will suicide itself
+        worker.state = WORKER_STATE_IDLE;
+        semaphore_.wait();
+        // If any thread must be killed, this thread will commit suicide
         {
             std::lock_guard<std::mutex> guard(kill_mutex_);
             if (kill_x_workers_ > 0) {
                 worker.state = WORKER_STATE_KILLED;
                 --kill_x_workers_;
-
-                //This thread notify other potential thread to kill themselves
-                if (kill_x_workers_ > 0)
-                    semaphore_.post();
                 break;
             }
         }
@@ -73,20 +71,18 @@ void JobScheduler::worker_fct(JobScheduler::Worker &worker) {
         // Search for a pending job
         {
             std::lock_guard<std::mutex> guard(jobs_mutex_);
-            for (auto &job : jobs_) {
-                if (job.state == Job::JOB_STATE_PENDING) {
-                    if(job.abort) {
-                        job.state = Job::JOB_STATE_CANCELED;
-                        post_event(*current_job);
-                    }
-                    else {
-                        current_job = &job;
-                        current_job->state = Job::JOB_STATE_RUNNING;
-                        execute_job = true;
-                    }
-                    break;
-                }
+            // Get the most urgent job from the priority queue
+            Job &job = *priority_queue_.top().it;
+            if(job.abort) {
+                job.state = Job::JOB_STATE_CANCELED;
+                post_event(job);
             }
+            else {
+                current_job = &job;
+                current_job->state = Job::JOB_STATE_RUNNING;
+                execute_job = true;
+            }
+            priority_queue_.pop();
         }
 
 
@@ -105,7 +101,6 @@ void JobScheduler::worker_fct(JobScheduler::Worker &worker) {
             }
             // Process result of job
             {
-
                 std::lock_guard<std::mutex> guard(jobs_mutex_);
                 if (error) {
                     current_job->state = Job::JOB_STATE_ERROR;
@@ -120,31 +115,31 @@ void JobScheduler::worker_fct(JobScheduler::Worker &worker) {
                 post_event(*current_job);
             }
         }
-
-        worker.state = WORKER_STATE_IDLE;
-        semaphore_.wait();
     }
 }
 
-jobId JobScheduler::addJob(std::string &name, jobFct &function) {
+JobReference JobScheduler::addJob(std::string name, jobFct &function, Job::jobPriority priority) {
     Job job{
-            .name = name,
-            .id = job_counter_++,
-            .fct = function,
+        .name = name,
+        .id = job_counter_++,
+        .fct = function,
+        .priority = priority,
     };
     std::lock_guard<std::mutex> guard(jobs_mutex_);
-    jobs_.push_back(job);
+    jobs_list_.push_back(job);
+
+    JobReference jobReference {
+        .it = --(jobs_list_.end())
+    };
+
+    priority_queue_.push(jobReference);
     semaphore_.post();
-    return job.id;
+    return jobReference;
 }
 
-void JobScheduler::stopJob(jobId id) {
+void JobScheduler::stopJob(JobReference& jobReference) {
     std::lock_guard<std::mutex> guard(jobs_mutex_);
-    for (auto &job : jobs_) {
-        if (job.id == id) {
-            job.abort = true;
-        }
-    }
+    jobReference.it->abort = true;
 }
 
 void JobScheduler::clean() {
@@ -156,19 +151,25 @@ void JobScheduler::clean() {
     }
 }
 
+
 const Job JobScheduler::getJobInfo(jobId id) {
     std::lock_guard<std::mutex> guard(jobs_mutex_);
-    for (auto &job : jobs_) {
+    for (auto &job : jobs_list_) {
         if(job.id == id) {
             return job;
         }
     }
-    throw JobSchedulerException("The provided jobId does not correspond to any present or past job");
+    // Did not found any job
+    Job job{
+        .name = "",
+        .state = Job::JOB_STATE_NOTEXISTING,
+    };
+    return job;
 }
 
 bool JobScheduler::isBusy() {
     std::lock_guard<std::mutex> guard(jobs_mutex_);
-    for (auto &job : jobs_) {
+    for (auto &job : jobs_list_) {
         if(job.state == Job::JOB_STATE_PENDING || job.state == Job::JOB_STATE_RUNNING)
 
             return true;
@@ -178,27 +179,39 @@ bool JobScheduler::isBusy() {
 
 void JobScheduler::cancelAllPendingJobs() {
     std::lock_guard<std::mutex> guard(jobs_mutex_);
-    for (auto &job : jobs_) {
+    for (auto &job : jobs_list_) {
         if(job.state == Job::JOB_STATE_PENDING) {
-            job.state = Job::JOB_STATE_CANCELED;
+            job.abort = true;
         }
     }
 }
 
+void JobScheduler::abortAll() {
+    std::lock_guard<std::mutex> guard(jobs_mutex_);
+    for (auto &job : jobs_list_) {
+        job.abort = true;
+    }
+}
+
+
 void JobScheduler::post_event(Job &job) {
     std::string event_name = std::string("jobs/ids/") + std::to_string(job.id);
-    std::string event_name2 = std::string("jobs/name/") + job.name;
+    std::string event_name2 = std::string("jobs/names/") + job.name;
 
-    int num_listeners = event_queue_.getNumSubscribers({event_name, event_name2});
+    event_queue_.post(Event_ptr(new JobEvent(event_name, job)));
+    event_queue_.post(Event_ptr(new JobEvent(event_name2, job)));
+}
 
-    job.to_be_acknowledged = num_listeners;
+void JobScheduler::remove_job_from_list(JobReference &jobReference) {
+    jobs_list_.erase(jobReference.it);
+}
 
-    event_queue_.post(Event{
-            .name = event_name,
-            .time = std::chrono::system_clock::now()});
+void JobScheduler::removeJob(JobReference &jobReference) {
+    std::lock_guard<std::mutex> guard(jobs_mutex_);
+    Job &job = *jobReference.it;
+    if (job.state == Job::JOB_STATE_PENDING || job.state == Job::JOB_STATE_RUNNING)
+        throw JobSchedulerException("Tried to call removeJob() on a Job before it terminated");
 
-    event_queue_.post(Event{
-            .name = event_name2,
-            .time = std::chrono::system_clock::now()});
+    remove_job_from_list(jobReference);
 }
 

@@ -165,6 +165,7 @@ bool Rendering::Application::loop() {
             window.draw();
         }
 
+
         if (glfwWindowShouldClose(main_window)) {
             scheduler_.cancelAllPendingJobs();
         }

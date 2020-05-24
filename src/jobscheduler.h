@@ -6,6 +6,7 @@
 #include <mutex>
 #include <list>
 #include <map>
+#include <queue>
 #include <iostream>
 #include <functional>
 #include <condition_variable>
@@ -44,13 +45,16 @@ typedef uint64_t workerId;
  * Job description
  */
 struct Job {
-    enum jobState {JOB_STATE_PENDING, JOB_STATE_RUNNING, JOB_STATE_FINISHED, JOB_STATE_ERROR, JOB_STATE_CANCELED, JOB_STATE_ABORTED};
+    enum jobState {JOB_STATE_PENDING, JOB_STATE_RUNNING, JOB_STATE_FINISHED,
+            JOB_STATE_ERROR, JOB_STATE_CANCELED, JOB_STATE_ABORTED, JOB_STATE_NOTEXISTING};
+    enum jobPriority {JOB_PRIORITY_LOWEST, JOB_PRIORITY_LOW, JOB_PRIORITY_NORMAL, JOB_PRIORITY_HIGH, JOB_PRIORITY_HIGHEST};
+
     std::string name;
     jobId id;
-    int to_be_acknowledged = 0;
 
     jobFct fct;
     jobState state = JOB_STATE_PENDING;
+    jobPriority priority = JOB_PRIORITY_NORMAL;
     float progress = 0.f;
 
     std::exception exception;
@@ -58,6 +62,34 @@ struct Job {
     bool success = false;
 };
 
+class JobEvent : public Event {
+private:
+    Job &job_;
+public:
+    JobEvent(std::string &name, Job &job) : Event(name), job_(job) {}
+    Job getJob() { return job_; }
+};
+#define JOBEVENT_PTRCAST(job) (reinterpret_cast<JobEvent*>((job)))
+
+/**
+ * Custom Job reference to give ability to compare priorities between
+ * operators
+ */
+
+struct JobReference {
+    std::list<Job>::iterator it;
+
+    const Job& getJob() {
+        return *it;
+    }
+
+    bool operator()(const JobReference& lhs, const JobReference& rhs) {
+        if (lhs.it->priority == rhs.it->priority)
+            return lhs.it->id > rhs.it->id;
+        else
+            return lhs.it->priority < rhs.it->priority;
+    }
+};
 
 /**
  * @brief The JobScheduler class is there to allow multi-threading in the app\n
@@ -133,14 +165,26 @@ private:
     int kill_x_workers_ = 0;
     std::mutex kill_mutex_;
 
-    std::list<Job> jobs_;
+    std::list<Job> jobs_list_;
     std::mutex jobs_mutex_;
+    std::priority_queue<JobReference, std::vector<JobReference>, JobReference> priority_queue_;
     Semaphore semaphore_;
     std::list<Worker> workers_;
 
     EventQueue& event_queue_;
 
+    /**
+     * Post an JobEvent to the event queue
+     * If nobody was listening to the event corresponding of this job, the function returns false
+     */
     void post_event(Job & job);
+
+    /**
+     * Removes the job from the list
+     * Should only be called when jobs_mutex_ is already hold
+     * @param job
+     */
+    inline void remove_job_from_list(JobReference &jobReference);
 
     JobScheduler() : event_queue_(EventQueue::getInstance()) {
         setWorkerPoolSize(1);
@@ -184,18 +228,35 @@ public:
      * std::function<bool (float &progress, bool &abort)>, progress should be between 0 and 1 and indicate
      * to outsiders the progress of the job, and abort can be read to see if an abort command has been
      * carried on. It is recommended to implement these two arguments for efficient execution
+     * @param expect_acknowledge if it is set to true, then the job will retire under the condition
+     * that all listeners have acknowledged the JobEvent. If there are no listeners, then the job
+     * retires automatically
      * @return id of the given job
      */
-    jobId addJob(std::string &name, jobFct &function);
+    JobReference addJob(std::string name, jobFct &function, Job::jobPriority priority = Job::JOB_PRIORITY_NORMAL);
 
     /**
-     * Stops the job with the given id (if the jobs has implemented bool &abort of the lambda function)
+     * Stops the job with the given JobReference (if the jobs has implemented bool &abort of the lambda function)
      * @param id id of the job
      */
-    void stopJob(jobId id);
+    void stopJob(JobReference &jobReference);
+
+    /**
+     * Removes the job from the history of the JobScheduler
+     * After that, the job can never be accessed again with getJobInfo() or JobReference
+     *
+     * This function can only be called if the job terminated (by any mean), otherwise it will throw
+     * an JobSchedulerException(). It is recommended to do this via a listener that listens to the
+     * posted Event of the JobScheduler
+     * @param jobReference
+     */
+    void removeJob(JobReference &jobReference);
 
     /**
      * Get the information about a certain job at a given time (copy of the job)
+     *
+     * If there is no job in the queue with the given id, the function will return a job with
+     * a state of JOB_STATE_NOTEXISTING
      * @param id id of the job
      * @return a copy of the Job structure which should contain informations about the job's state, success, ...
      */
@@ -223,16 +284,18 @@ public:
      */
     void worker_fct(Worker &worker);
 
+    void abortAll();
+
     /**
      * Garbage collector of the workers
-     * Once threads have been killed, they JobScheduler does not automatically frees the pointer on the thread
+     * Once threads have been killed, the JobScheduler does not automatically frees the pointer on the thread
      * This function should be called regularly to clean the dandling pointers of the killed threads
      * TODO : avoid garbage collecting
      */
     void clean();
 
     ~JobScheduler() {
-        cancelAllPendingJobs();
+        abortAll();
         clean();
     }
 };
