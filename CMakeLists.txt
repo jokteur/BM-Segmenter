@@ -34,14 +34,16 @@ set(imgui_src
         ${imgui_DIR}/imgui_draw.cpp
         ${imgui_DIR}/imgui_widgets.cpp)
 include_directories(thirdparty/imgui)
-include_directories(thirdparty/imgui_bindings)
 
 # --- Imgui bindings ---
 set(imgui_DIR "thirdparty/imgui/examples")
 set(imgui_binding
         ${imgui_DIR}/imgui_impl_glfw.cpp
-        ${imgui_DIR}/imgui_impl_opengl3.cpp)
-include_directories(thirdparty/imgui-binding)
+        ${imgui_DIR}/imgui_impl_opengl3.h
+        ${imgui_DIR}/imgui_impl_glfw.h
+        ${imgui_DIR}/imgui_impl_opengl3.cpp
+        ${imgui_DIR}/imgui_impl_opengl3.h)
+include_directories(thirdparty/imgui/examples)
 
 # --- nativefiledialog ---
 if (WIN32)

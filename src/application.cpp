@@ -43,7 +43,7 @@ class CannotStartLoopError: public std::exception
 {
     virtual const char* what() const throw()
     {
-        return "Failed to start the loop of the application because the main window failed to initialize";
+        return "Failed to start the loop of the application because the app is not initialized";
     }
 };
 
@@ -68,8 +68,6 @@ Rendering::Application::Application(std::string main_window_title, uint16_t main
         Rendering::Window main_window = Rendering::Window(main_window_width, main_window_height, main_window_title);
         windows_.push_back(std::move(main_window));
         main_window_ = &windows_[0];
-
-        init();
     }
 }
 
@@ -103,9 +101,9 @@ void Rendering::Application::init_glfw() {
 }
 void Rendering::Application::init() {
     GLFWwindow* window = *main_window_->getGLFWwindow_ptr().lock().get();
+
     // Init imGUI
     glfwMakeContextCurrent(window);
-    //glfwSwapInterval(1); // Enable vsync
 
     // Initialize OpenGL loader
     bool err = gl3wInit() != 0;
@@ -117,54 +115,73 @@ void Rendering::Application::init() {
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    //ImGui::StyleColorsClassic();
+
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.ConfigFlags |= configFlags_;
 
     // Setup Platform/Renderer bindings
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init(app_state_.glsl_version);
 
-    float highDPIscaleFactor = 1.0;
-
-#ifdef _WIN32
-    // if it's a HighDPI monitor, try to scale everything
-    GLFWmonitor *monitor = glfwGetPrimaryMonitor();
-    float xscale, yscale;
-    glfwGetMonitorContentScale(monitor, &xscale, &yscale);
-    if (xscale > 1 || yscale > 1)
-    {
-        highDPIscaleFactor = xscale;
-        glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE);
-    }
-#elif __APPLE__
-    // to prevent 1200x800 from becoming 2400x1600
-    // and some other weird resizings
-    glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GLFW_FALSE);
-#endif
-
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_DockingEnable;     // Enable Keyboard Controls
-
     // Setup Dear ImGui style
     ImGui::StyleColorsClassic();
 
     io.Fonts->AddFontFromFileTTF("assets/verdana.ttf", 18.0f, NULL, NULL);
+
+    ImGuiStyle& style = ImGui::GetStyle();
+
+    // Hack to make the ImGui windows look like normal windows
+    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    {
+        style.WindowRounding = 0.0f;
+        style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+    }
+    app_state_.imgui_init = true;
 }
 
 bool Rendering::Application::loop() {
-    if (app_state_.error)
+    if (!app_state_.imgui_init)
         throw CannotStartLoopError();
 
     GLFWwindow* main_window;
     do {
+        ImGuiIO& io = ImGui::GetIO(); (void)io;
         main_window = *main_window_->getGLFWwindow_ptr().lock().get();
 
         glfwWaitEvents();
         event_queue_.pollEvents();
 
         for(auto &window : windows_) {
-            window.draw();
+            window.preDraw();
         }
 
+        // Start the Dear ImGui frame
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        for(auto &window : windows_) {
+            window.draw();
+        }
+        // Rendering
+        ImGui::Render();
+
+        int display_w, display_h;
+        glfwGetFramebufferSize(main_window, &display_w, &display_h);
+        glViewport(0, 0, display_w, display_h);
+        glClearColor(0.5, 0.5, 0.5, 0);
+        glClear(GL_COLOR_BUFFER_BIT);
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        {
+            GLFWwindow* backup_current_context = glfwGetCurrentContext();
+            ImGui::UpdatePlatformWindows();
+            ImGui::RenderPlatformWindowsDefault();
+            glfwMakeContextCurrent(backup_current_context);
+        }
+
+        glfwSwapBuffers(main_window);
 
         if (glfwWindowShouldClose(main_window)) {
             scheduler_.cancelAllPendingJobs();
@@ -193,5 +210,9 @@ Rendering::Window &Rendering::Application::getMainWindow() {
         return *main_window_;
     else
         throw GetMainWindowError();
+}
+
+void Rendering::Application::addImGuiFlags(int configFlags) {
+    configFlags_ = configFlags;
 }
 

@@ -53,6 +53,11 @@ namespace Rendering {
         Window(Window&) = delete;
 
         /**
+         * Function to call before ImGui::NewFrame();
+         */
+        void preDraw();
+
+        /**
          * Draws the window
          */
         void draw();

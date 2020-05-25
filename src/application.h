@@ -11,6 +11,7 @@
 #include "jobscheduler.h"
 #include "rendering/window.h"
 #include "events.h"
+#include "imgui.h"
 
 //compatibility with older versions of Visual Studio
 #if defined(_MSC_VER) && (_MSC_VER >= 1900) && !defined(IMGUI_DISABLE_WIN32_FUNCTIONS)
@@ -29,10 +30,11 @@ namespace Rendering {
         Window* main_window_;
         JobScheduler &scheduler_;
         EventQueue &event_queue_;
-
+        int configFlags_ = 0;
 
         struct state {
             bool error = false;
+            bool imgui_init = false;
             const char* glsl_version;
         };
         state app_state_;
@@ -41,11 +43,6 @@ namespace Rendering {
          * Inits GLFW and throw an exception if failed
          */
         void init_glfw();
-
-        /**
-         * Inits ImGUI and throw an exception if failed
-         */
-        void init();
 
         /**
          * Safely shuts down ImGUI
@@ -60,6 +57,17 @@ namespace Rendering {
          * @param main_window_height height of the main window
          */
         Application(std::string main_window_title, uint16_t main_window_width, uint16_t main_window_height);
+
+        /**
+         * Inits Dear ImGui and GLFW
+         */
+        void init();
+
+        /**
+         * Set configuration flags for Dear ImGui
+         * @param configFlags
+         */
+        void addImGuiFlags(int configFlags);
 
         ~Application();
 

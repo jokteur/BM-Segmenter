@@ -77,6 +77,14 @@ void Rendering::Window::removeDrawable(Rendering::AbstractDrawable* drawable) {
 }
 
 void Rendering::Window::draw() {
+    // Take possession of the GLFWwindow pointer
+    GLFWwindow* window = *window_.get();
+
+    for(auto &drawable : drawables_)
+        drawable->draw(window);
+}
+
+void Rendering::Window::preDraw() {
     ImGuiIO& io = ImGui::GetIO(); (void)io;
 
     // Take possession of the GLFWwindow pointer
@@ -104,22 +112,4 @@ void Rendering::Window::draw() {
         style.ScaleAllSizes(highDPIscale_ / xscale_);
     }
 
-    // Start the Dear ImGui frame
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
-
-    for(auto &drawable : drawables_)
-        drawable->draw(window);
-
-    // Rendering
-    ImGui::Render();
-    int display_w, display_h;
-    glfwGetFramebufferSize(window, &display_w, &display_h);
-    glViewport(0, 0, display_w, display_h);
-    glClearColor(0.5, 0.5, 0.5, 0);
-    glClear(GL_COLOR_BUFFER_BIT);
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-    glfwSwapBuffers(window);
 }

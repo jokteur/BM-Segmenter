@@ -33,16 +33,17 @@ namespace Rendering {
 
     class AbstractLayout : public AbstractDrawable {
     protected:
-        //
+        Rectangle dimension;
     public:
         AbstractLayout() {};
 
         virtual ~AbstractLayout() = default;
+
         /**
          * Draws to the window
          * @return
          */
-        virtual void draw(GLFWwindow* window) = 0;
+        virtual void draw(GLFWwindow* window, Rectangle& parent_dimension) = 0;
     };
 }
 
