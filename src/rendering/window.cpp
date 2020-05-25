@@ -81,10 +81,10 @@ void Rendering::Window::draw() {
     GLFWwindow* window = *window_.get();
 
     for(auto &drawable : drawables_)
-        drawable->draw(window);
+        drawable->ImGuiDraw(window, dimensions);
 }
 
-void Rendering::Window::preDraw() {
+void Rendering::Window::update() {
     ImGuiIO& io = ImGui::GetIO(); (void)io;
 
     // Take possession of the GLFWwindow pointer
@@ -93,6 +93,11 @@ void Rendering::Window::preDraw() {
     //Make the window DPI aware of the current monitor
     GLFWmonitor* monitor = Rendering::getCurrentMonitor(window);
     glfwGetMonitorContentScale(monitor, &xscale_, &yscale_);
+
+    int width, height;
+    glfwGetWindowSize(window, &width, &height);
+    dimensions.width = (float)width;
+    dimensions.height = (float)height;
 
 
     if (xscale_ != highDPIscale_) {
@@ -111,5 +116,8 @@ void Rendering::Window::preDraw() {
         ImGuiStyle &style = ImGui::GetStyle();
         style.ScaleAllSizes(highDPIscale_ / xscale_);
     }
+
+    for(auto &drawable : drawables_)
+        drawable->update(window, dimensions);
 
 }

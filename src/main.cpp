@@ -17,11 +17,11 @@ int main(int, char**)
 
     app.init();
 
-    Rendering::MyLayout layout;
+    //Rendering::MyLayout layout;
     Rendering::MyWindow window;
     Rendering::MyFile file;
 
-    app.getMainWindow().addDrawable(&layout);
+    //app.getMainWindow().addDrawable(&layout);
     app.getMainWindow().addDrawable(&window);
     app.getMainWindow().addDrawable(&file);
 

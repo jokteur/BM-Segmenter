@@ -7,13 +7,30 @@
 
 #include <GLFW/glfw3.h>
 
-#include "dimensions.h"
+struct Dimension {
+    int width = 0;
+    int height = 0;
+};
+
+struct Position {
+    float x;
+    float y;
+};
+
+struct Rect {
+    float pos_x = 0;
+    float pos_y = 0;
+    float width = 0;
+    float height = 0;
+};
 
 namespace Rendering {
     /**
      * @brief Abstract class for GUI drawables
      */
     class AbstractDrawable {
+    protected:
+        Rect dimensions;
     public:
         /**
          * Default constructor, does nothing
@@ -23,27 +40,35 @@ namespace Rendering {
 
         virtual ~AbstractDrawable() = default;
 
+        Rect& getDimensions() { return dimensions; }
+
         /**
-         * Draws to the window
+         * Updates the class, before any ImGui::NewFrame() is called
+         * @param window
+         * @param parent_dimension
+         */
+        void update(GLFWwindow *window, Rect &parent_dimension) {}
+
+        /**
+         * Draws ImGui elements to the window (between ImGui::NewFrame() and ImGui::Render())
          * @return
          */
-        virtual void draw(GLFWwindow* window) = 0;
+        virtual void ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) = 0;
 
     };
 
     class AbstractLayout : public AbstractDrawable {
     protected:
-        Rectangle dimension;
     public:
-        AbstractLayout() {};
+        AbstractLayout() = default;
 
         virtual ~AbstractLayout() = default;
 
         /**
-         * Draws to the window
+         * Draws ImGui elements to the window (between ImGui::NewFrame() and ImGui::Render())
          * @return
          */
-        virtual void draw(GLFWwindow* window, Rectangle& parent_dimension) = 0;
+        virtual void ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) = 0;
     };
 }
 

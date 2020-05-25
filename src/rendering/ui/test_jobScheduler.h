@@ -25,7 +25,7 @@ std::string to_state(Job::jobState state) {
             return "CANCELED";
         case Job::JOB_STATE_ABORTED:
             return "ABORTED";
-        case Job::JOB_STATE_NOTEXISTING:
+        default:
             return "NOTEXISTING";
     }
 }
@@ -53,7 +53,7 @@ namespace Rendering {
             event_queue_.subscribe(&listener);
         }
 
-        void draw(GLFWwindow* window) override {
+        void ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) override {
             ImGui::Begin("My Window");
             int counter = counter_;
             jobFct job = [counter] (float &progress, bool &abort) -> bool {

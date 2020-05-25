@@ -32,7 +32,7 @@ namespace Rendering {
         MyLayout() {
         }
 
-        void draw(GLFWwindow* window) override {
+        void ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) override {
             static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
 
             ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;

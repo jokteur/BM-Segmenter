@@ -20,10 +20,11 @@ namespace Rendering {
         std::string title_;
 
         // DPI related
-        float highDPIscale_ = 1.;
+        float highDPIscale_ = 1.f;
         float xscale_;
         float yscale_;
 
+        Rect dimensions;
         std::vector<AbstractDrawable*> drawables_;
 
         bool error_ = false;
@@ -55,7 +56,7 @@ namespace Rendering {
         /**
          * Function to call before ImGui::NewFrame();
          */
-        void preDraw();
+        void update();
 
         /**
          * Draws the window

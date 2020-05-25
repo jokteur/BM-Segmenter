@@ -18,7 +18,7 @@ namespace Rendering {
         MyFile() {
         }
 
-        void draw(GLFWwindow* window) override {
+        void ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) override {
             ImGui::Begin("File window");
             if(ImGui::Button("Open file")) {
                 nfdresult_t result = NFD_OpenDialog( "png,jpg;pdf", NULL, &outPath );

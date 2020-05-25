@@ -152,7 +152,7 @@ bool Rendering::Application::loop() {
         event_queue_.pollEvents();
 
         for(auto &window : windows_) {
-            window.preDraw();
+            window.update();
         }
 
         // Start the Dear ImGui frame
