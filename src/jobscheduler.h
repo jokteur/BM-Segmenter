@@ -13,6 +13,7 @@
 
 #include "events.h"
 
+
 /**
  * Semaphore for waking the worker up when a new job is available
  */

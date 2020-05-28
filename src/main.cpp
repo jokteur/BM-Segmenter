@@ -3,11 +3,14 @@
 #include "application.h"
 
 #include "rendering/ui/test_layout.h"
+#include "GLFWwindow_handler.h"
 #include "rendering/ui/test_filedialog.h"
 #include "rendering/ui/test_jobScheduler.h"
 
 int main(int, char**)
 {
+    GLFWwindowHandler::focus_all = true;
+
     // Test a simple initialization with an empty window
     Rendering::Application app("TestApp", 1280, 720);
 

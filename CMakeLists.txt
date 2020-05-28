@@ -16,6 +16,7 @@ set(GLFW_BUILD_TESTS OFF CACHE BOOL  "GLFW lib only" )
 set(GLFW_BUILD_DOCS OFF CACHE BOOL  "GLFW lib only" )
 set(GLFW_BUILD_INSTALL OFF CACHE BOOL  "GLFW lib only" )
 
+
 add_subdirectory(thirdparty/glfw)
 include_directories(thirdparty/glfw/include)
 
@@ -35,15 +36,18 @@ set(imgui_src
         ${imgui_DIR}/imgui_widgets.cpp)
 include_directories(thirdparty/imgui)
 
+# For GLFWwindowHandler
+include_directories(src/rendering)
+set(window_handler src/rendering/GLFWwindow_handler.h)
+
 # --- Imgui bindings ---
-set(imgui_DIR "thirdparty/imgui/examples")
+set(imgui__bindings_DIR "thirdparty/imgui_bindings")
 set(imgui_binding
-        ${imgui_DIR}/imgui_impl_glfw.cpp
-        ${imgui_DIR}/imgui_impl_opengl3.h
-        ${imgui_DIR}/imgui_impl_glfw.h
-        ${imgui_DIR}/imgui_impl_opengl3.cpp
-        ${imgui_DIR}/imgui_impl_opengl3.h)
-include_directories(thirdparty/imgui/examples)
+        ${imgui__bindings_DIR}/imgui_impl_glfw.cpp
+        ${imgui__bindings_DIR}/imgui_impl_glfw.h
+        ${imgui__bindings_DIR}/imgui_impl_opengl3.cpp
+        ${imgui__bindings_DIR}/imgui_impl_opengl3.h)
+include_directories(thirdparty/imgui_bindings)
 
 # --- nativefiledialog ---
 if (WIN32)
@@ -61,8 +65,6 @@ if (WIN32)
     target_link_libraries(nfd comctl32.lib)
 endif()
 # TODO implement for other OS
-message(${native_src})
-
 include_directories(thirdparty/nativefiledialog/src/include)
 
 # --- Main source ---
@@ -71,12 +73,12 @@ file (GLOB _project_src RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         src/rendering/*.cpp src/rendering/*.h
         src/rendering/ui/*.cpp src/rendering/ui/*.h)
 
-# --- All sources if for the tests ---
-set(all_sources ${_project_src} ${GLAD_GL} ${imgui_src} ${imgui_binding} ${gl3w_src})
-list(REMOVE_ITEM all_sources "src/main.cpp")
 
+# --- All sources for the tests ---
+set(all_sources ${_project_src} ${GLAD_GL} ${imgui_src} ${imgui_binding} ${gl3w_src})
+add_executable(${PROJECT_NAME} ${all_sources})
+list(REMOVE_ITEM all_sources "src/main.cpp")
 add_library(${PROJECT_NAME}_lib STATIC ${all_sources})
-add_executable(${PROJECT_NAME} ${_project_src} ${GLAD_GL} ${imgui_src} ${imgui_binding} ${gl3w_src})
 
 target_link_libraries(${PROJECT_NAME} glfw ${GLFW_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} ${OPENGL_gl_LIBRARY})

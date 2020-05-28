@@ -28,6 +28,7 @@ namespace Rendering {
         std::vector<AbstractDrawable*> drawables_;
 
         bool error_ = false;
+
     public:
         /**
          * Empty constructor, initializes no window
@@ -39,8 +40,9 @@ namespace Rendering {
          * @param width width of the window (DPI aware)
          * @param height height of the window (DPI aware)
          * @param title title of the window
+         * @param z_index of the window (lower will ge on background)
          */
-        Window(const int width, const int height, const std::string &title);
+        Window(const int width, const int height, const std::string &title, int z_index=0);
 
         /**
          * Move constructor which hands the pointer of the GLFW window to the other Window object

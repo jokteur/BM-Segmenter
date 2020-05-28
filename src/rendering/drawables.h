@@ -18,8 +18,8 @@ struct Position {
 };
 
 struct Rect {
-    float pos_x = 0;
-    float pos_y = 0;
+    float xpos = 0;
+    float ypos = 0;
     float width = 0;
     float height = 0;
 };

@@ -1,10 +1,12 @@
 #include <algorithm>
 #include <exception>
 #include <memory>
+#include <functional>
 #include <iostream>
 
 #include "window.h"
 #include "glfw_utils.h"
+#include "GLFWwindow_handler.h"
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
@@ -25,7 +27,7 @@ class FailedToInitializeWindow: public std::exception
 /*
  * Implementations of Window
  */
-Rendering::Window::Window(const int width, const int height, const std::string &title) {
+Rendering::Window::Window(const int width, const int height, const std::string &title, int z_index) {
     // Create window with graphics context
     GLFWwindow* window_ptr = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
     window_ = std::make_shared<GLFWwindow*>(window_ptr);
@@ -33,6 +35,8 @@ Rendering::Window::Window(const int width, const int height, const std::string &
 
     if (error_)
         throw FailedToInitializeWindow();
+
+    GLFWwindowHandler::addWindow(window_ptr, z_index);
 
     glfwMakeContextCurrent(*window_.get());
     glfwSwapInterval(1); // Enable vsync
@@ -57,8 +61,10 @@ Dimension Rendering::Window::getDimensions() {
 }
 
 Rendering::Window::~Window() {
-    if (!error_ && window_ != nullptr)
+    if (!error_ && window_ != nullptr) {
         glfwDestroyWindow(*window_.get());
+        GLFWwindowHandler::removeWindow(*window_.get());
+    }
 }
 
 void Rendering::Window::addDrawable(Rendering::AbstractDrawable* drawable) {
@@ -72,6 +78,7 @@ bool Rendering::Window::popDrawable() {
     return !drawables_.empty();
 }
 
+// TODO
 void Rendering::Window::removeDrawable(Rendering::AbstractDrawable* drawable) {
 
 }
@@ -94,11 +101,6 @@ void Rendering::Window::update() {
     GLFWmonitor* monitor = Rendering::getCurrentMonitor(window);
     glfwGetMonitorContentScale(monitor, &xscale_, &yscale_);
 
-    int width, height;
-    glfwGetWindowSize(window, &width, &height);
-    dimensions.width = (float)width;
-    dimensions.height = (float)height;
-
 
     if (xscale_ != highDPIscale_) {
         std::cout << xscale_ << " " << highDPIscale_ << std::endl;
@@ -116,6 +118,17 @@ void Rendering::Window::update() {
         ImGuiStyle &style = ImGui::GetStyle();
         style.ScaleAllSizes(highDPIscale_ / xscale_);
     }
+
+    int width, height, xpos, ypos;
+    glfwGetWindowPos(window, &xpos, &ypos);
+    glfwGetWindowSize(window, &width, &height);
+    // Adapt for DPI
+    dimensions = {
+            .xpos = (float)xpos / xscale_,
+            .ypos = (float)ypos / xscale_,
+            .width = (float)width / xscale_,
+            .height = (float)height / xscale_,
+    };
 
     for(auto &drawable : drawables_)
         drawable->update(window, dimensions);

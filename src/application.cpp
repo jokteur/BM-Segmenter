@@ -65,7 +65,7 @@ Rendering::Application::Application(std::string main_window_title, uint16_t main
     init_glfw();
     if(!app_state_.error) {
         // Create window with graphics context
-        Rendering::Window main_window = Rendering::Window(main_window_width, main_window_height, main_window_title);
+        Rendering::Window main_window = Rendering::Window(main_window_width, main_window_height, main_window_title, -1);
         windows_.push_back(std::move(main_window));
         main_window_ = &windows_[0];
     }
