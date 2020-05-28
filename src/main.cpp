@@ -1,11 +1,8 @@
 #include <iostream>
 
 #include "application.h"
-
-#include "rendering/ui/test_layout.h"
+#include "rendering/gui.h"
 #include "GLFWwindow_handler.h"
-#include "rendering/ui/test_filedialog.h"
-#include "rendering/ui/test_jobScheduler.h"
 
 int main(int, char**)
 {
@@ -20,13 +17,7 @@ int main(int, char**)
 
     app.init();
 
-    //Rendering::MyLayout layout;
-    Rendering::MyWindow window;
-    Rendering::MyFile file;
-
-    //app.getMainWindow().addDrawable(&layout);
-    app.getMainWindow().addDrawable(&window);
-    app.getMainWindow().addDrawable(&file);
+    Rendering::GUI gui(app);
 
     app.loop();
     return 0;

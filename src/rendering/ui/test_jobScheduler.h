@@ -11,25 +11,6 @@
 
 #include "../../jobscheduler.h"
 
-std::string to_state(Job::jobState state) {
-    switch (state) {
-        case Job::JOB_STATE_PENDING:
-            return "PENDING";
-        case Job::JOB_STATE_RUNNING:
-            return "RUNNING";
-        case Job::JOB_STATE_FINISHED:
-            return "FINISHED";
-        case Job::JOB_STATE_ERROR:
-            return "ERROR";
-        case Job::JOB_STATE_CANCELED:
-            return "CANCELED";
-        case Job::JOB_STATE_ABORTED:
-            return "ABORTED";
-        default:
-            return "NOTEXISTING";
-    }
-}
-
 namespace Rendering {
     class MyWindow : public AbstractLayout {
     private:
@@ -39,6 +20,25 @@ namespace Rendering {
         jobId job_id_;
         std::vector<JobReference> jobs_;
         bool open_ = true;
+
+        std::string to_state(Job::jobState state) {
+            switch (state) {
+                case Job::JOB_STATE_PENDING:
+                    return "PENDING";
+                case Job::JOB_STATE_RUNNING:
+                    return "RUNNING";
+                case Job::JOB_STATE_FINISHED:
+                    return "FINISHED";
+                case Job::JOB_STATE_ERROR:
+                    return "ERROR";
+                case Job::JOB_STATE_CANCELED:
+                    return "CANCELED";
+                case Job::JOB_STATE_ABORTED:
+                    return "ABORTED";
+                default:
+                    return "NOTEXISTING";
+            }
+        }
 
         Listener listener{.filter="jobs/names/*",
                           .callback = [this] (Event_ptr &event) {

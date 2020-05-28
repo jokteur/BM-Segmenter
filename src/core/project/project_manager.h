@@ -1,0 +1,10 @@
+#ifndef BM_SEGMENTER_PROJECT_MANAGER_H
+#define BM_SEGMENTER_PROJECT_MANAGER_H
+
+
+class ProjectManager {
+
+};
+
+
+#endif //BM_SEGMENTER_PROJECT_MANAGER_H
