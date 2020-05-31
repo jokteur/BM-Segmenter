@@ -68,15 +68,16 @@ endif()
 include_directories(thirdparty/nativefiledialog/src/include)
 
 # --- Main source ---
+include_directories(src)
 file (GLOB _project_src RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         src/*.cpp src/*.h
         src/rendering/*.cpp src/rendering/*.h
         src/rendering/ui/*.cpp src/rendering/ui/*.h
+        src/rendering/ui/modales/*.h
         src/core/project/*.cpp src/core/project/*.h
         src/core/ml/*.cpp src/core/ml/*.h
         src/core/dataset/*.cpp src/core/dataset/*.h
         src/core/editor/*.cpp src/core/editor/*.h)
-
 
 # --- All sources for the tests ---
 set(all_sources ${_project_src} ${GLAD_GL} ${imgui_src} ${imgui_binding} ${gl3w_src})
@@ -99,4 +100,4 @@ file(COPY assets DESTINATION ${CMAKE_BINARY_DIR})
 # Google test
 ################################################################
 
-add_subdirectory(tests)
+#add_subdirectory(tests)

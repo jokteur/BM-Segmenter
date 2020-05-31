@@ -1,7 +1,3 @@
-//
-// Created by jokte on 17.05.2020.
-//
-
 #ifndef BM_SEGMENTER_LAYOUT_H
 #define BM_SEGMENTER_LAYOUT_H
 

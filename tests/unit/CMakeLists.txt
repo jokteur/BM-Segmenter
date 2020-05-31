@@ -21,11 +21,16 @@ if (GTEST_FOUND)
     target_link_libraries(unit_tests_jobscheduler ${PROJECT_NAME}_lib gtest_main pthread)
     gtest_discover_tests(unit_tests_jobscheduler)
 
-
     # Event testing
     add_executable(unit_tests_events test_events.cpp ${all_sources})
     target_include_directories(unit_tests_events PRIVATE "../../src")
     target_link_libraries(unit_tests_events ${PROJECT_NAME}_lib gtest_main pthread)
     gtest_discover_tests(unit_tests_events)
+
+    # core testing
+    add_executable(unit_tests_projects core/test_project.cpp ${all_sources})
+    target_include_directories(unit_tests_projects PRIVATE "../../src/core/project")
+    target_link_libraries(unit_tests_projects ${PROJECT_NAME}_lib gtest_main pthread)
+    gtest_discover_tests(unit_tests_projects)
 
 endif()

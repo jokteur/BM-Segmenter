@@ -53,6 +53,7 @@ namespace Rendering {
             }
 
             menu_bar_.ImGuiDraw(window, parent_dimension);
+            ImGui::End();
         }
     };
 }

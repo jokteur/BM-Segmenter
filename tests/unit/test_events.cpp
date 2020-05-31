@@ -1,6 +1,3 @@
-#ifndef BM_SEGMENTER_TEST_WINDOW_H
-#define BM_SEGMENTER_TEST_WINDOW_H
-
 #include <exception>
 #include <thread>
 
@@ -125,5 +122,3 @@ TEST(Events, AcknowledgableEvents) {
 
     EXPECT_EQ(num_acknowledges, 0) << "Not all events have been acknowledged by the listeners";
 }
-
-#endif
