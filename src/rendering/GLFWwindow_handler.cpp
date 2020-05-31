@@ -1,4 +1,6 @@
 #include "GLFWwindow_handler.h"
+#include "rendering/keyboard_shortcuts.h"
+
 #include <iostream>
 
 std::multimap<int, GLFWwindow*> GLFWwindowHandler::windows_;
@@ -33,6 +35,8 @@ void GLFWwindowHandler::focusAll() {
 void GLFWwindowHandler::addWindow(GLFWwindow *window, int z_index) {
     windows_.insert(std::pair<int, GLFWwindow*>(z_index, window));
     glfwSetWindowFocusCallback(window, &GLFWwindowHandler::focus_callback);
+    glfwSetKeyCallback(window, &KeyboardShortCut::key_callback);
+    //glfwSetCharCallback(window, &KeyboardShortCut::character_callback);
 }
 
 void GLFWwindowHandler::removeWindow(GLFWwindow *window) {

@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "jobscheduler.h"
+#include "rendering/keyboard_shortcuts.h"
 #include "rendering/window.h"
 #include "events.h"
 #include "imgui.h"
@@ -28,8 +29,12 @@ namespace Rendering {
     private:
         std::vector<Window> windows_;
         Window* main_window_;
+
+        // All singletons
         JobScheduler &scheduler_;
         EventQueue &event_queue_;
+
+        // ImGui configs flags
         int configFlags_ = 0;
 
         struct state {

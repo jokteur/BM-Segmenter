@@ -64,6 +64,7 @@
 #define GLFW_HAS_NEW_CURSORS          (0)
 #endif
 
+#include "rendering/keyboard_shortcuts.h"
 #include "GLFWwindow_handler.h"
 
 // Data
@@ -190,12 +191,12 @@ static bool ImGui_ImplGlfw_Init(GLFWwindow* window, bool install_callbacks, Glfw
     io.KeyMap[ImGuiKey_Enter] = GLFW_KEY_ENTER;
     io.KeyMap[ImGuiKey_Escape] = GLFW_KEY_ESCAPE;
     io.KeyMap[ImGuiKey_KeyPadEnter] = GLFW_KEY_KP_ENTER;
-    io.KeyMap[ImGuiKey_A] = GLFW_KEY_A;
-    io.KeyMap[ImGuiKey_C] = GLFW_KEY_C;
-    io.KeyMap[ImGuiKey_V] = GLFW_KEY_V;
-    io.KeyMap[ImGuiKey_X] = GLFW_KEY_X;
-    io.KeyMap[ImGuiKey_Y] = GLFW_KEY_Y;
-    io.KeyMap[ImGuiKey_Z] = GLFW_KEY_Z;
+    io.KeyMap[ImGuiKey_A] = KeyboardShortCut::translate_keycode(GLFW_KEY_A);
+    io.KeyMap[ImGuiKey_C] = KeyboardShortCut::translate_keycode(GLFW_KEY_C);
+    io.KeyMap[ImGuiKey_V] = KeyboardShortCut::translate_keycode(GLFW_KEY_V);
+    io.KeyMap[ImGuiKey_X] = KeyboardShortCut::translate_keycode(GLFW_KEY_X);
+    io.KeyMap[ImGuiKey_Y] = KeyboardShortCut::translate_keycode(GLFW_KEY_Y);
+    io.KeyMap[ImGuiKey_Z] = KeyboardShortCut::translate_keycode(GLFW_KEY_Z);
 
     io.SetClipboardTextFn = ImGui_ImplGlfw_SetClipboardText;
     io.GetClipboardTextFn = ImGui_ImplGlfw_GetClipboardText;

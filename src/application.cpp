@@ -124,9 +124,9 @@ void Rendering::Application::init() {
     ImGui_ImplOpenGL3_Init(app_state_.glsl_version);
 
     // Setup Dear ImGui style
-    ImGui::StyleColorsClassic();
+    ImGui::StyleColorsLight();
 
-    io.Fonts->AddFontFromFileTTF("assets/verdana.ttf", 18.0f, NULL, NULL);
+    io.Fonts->AddFontFromFileTTF("assets/verdana.ttf", 16.0f, NULL, NULL);
 
     ImGuiStyle& style = ImGui::GetStyle();
 
@@ -150,6 +150,7 @@ bool Rendering::Application::loop() {
 
         glfwWaitEvents();
         event_queue_.pollEvents();
+        KeyboardShortCut::dispatchShortcuts();
 
         for(auto &window : windows_) {
             window.update();
