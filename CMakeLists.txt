@@ -28,12 +28,15 @@ set(gl3w_src thirdparty/gl3w/src/gl3w.c)
 include_directories(thirdparty/stb_image)
 
 # --- Imgui ---
+include_directories(thirdparty/imgui/misc/cpp)
 set(imgui_DIR "thirdparty/imgui")
 set(imgui_src
         ${imgui_DIR}/imgui.cpp
         ${imgui_DIR}/imgui_demo.cpp
         ${imgui_DIR}/imgui_draw.cpp
-        ${imgui_DIR}/imgui_widgets.cpp)
+        ${imgui_DIR}/imgui_widgets.cpp
+        ${imgui_DIR}/misc/cpp/imgui_stdlib.cpp
+        ${imgui_DIR}/misc/cpp/imgui_stdlib.h)
 include_directories(thirdparty/imgui)
 
 # For GLFWwindowHandler
@@ -74,6 +77,7 @@ file (GLOB _project_src RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         src/rendering/*.cpp src/rendering/*.h
         src/rendering/ui/*.cpp src/rendering/ui/*.h
         src/rendering/ui/modales/*.h
+        src/rendering/ui/widgets/*.h
         src/core/project/*.cpp src/core/project/*.h
         src/core/ml/*.cpp src/core/ml/*.h
         src/core/dataset/*.cpp src/core/dataset/*.h

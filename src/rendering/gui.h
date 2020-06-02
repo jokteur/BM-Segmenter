@@ -4,6 +4,7 @@
 #include "../application.h"
 #include "ui/test_jobScheduler.h"
 #include "ui/test_filedialog.h"
+#include "ui/modales/modals.h"
 #include "ui/dockspace.h"
 
 namespace Rendering {
@@ -12,6 +13,7 @@ namespace Rendering {
         MyWindow window_;
         MyFile file_;
         Dockspace dockspace_;
+        ModalsDrawable modals_;
     public:
         GUI(Application &app);
     };

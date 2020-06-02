@@ -4,9 +4,12 @@
 #include "nfd.h"
 #include "rendering/drawables.h"
 #include <GLFW/glfw3.h>
+#include "events.h"
 #include "imgui.h"
 
 #include "core/project/project_manager.h"
+#include "settings.h"
+#include "rendering/ui/modales/new_project.h"
 
 namespace Rendering {
     class MainMenuBar : public AbstractLayout {
@@ -14,82 +17,38 @@ namespace Rendering {
         int counter_ = 0;
         nfdchar_t *outPath = NULL;
         ProjectManager& project_manager_;
+        EventQueue& event_queue_;
+        Settings& settings_;
+        std::vector<Listener*> listeners_;
 
+        NewProjectModal new_project_modal_;
 
-        void file_menu() {
-            if (ImGui::MenuItem("New project", "Ctrl+Shift+N")) {
-                ImGui::OpenPopup("Stacked 1");
-                if (ImGui::BeginPopupModal("Stacked 1", NULL, ImGuiWindowFlags_MenuBar)) {
-                    if (ImGui::Button("Close"))
-                        ImGui::CloseCurrentPopup();
-                    ImGui::EndPopup();
-                    project_manager_.newProject("Test", "b");
-                }
-            }
-            if (ImGui::MenuItem("Open project", "Ctrl+O")) {
-                open_file();
-            }
-            if (ImGui::BeginMenu("Open Recent"))
-            {
-                ImGui::MenuItem("prj1.c");
-                ImGui::MenuItem("prj2.inl");
-                ImGui::MenuItem("prj3.h");
-                ImGui::EndMenu();
-            }
-            if (ImGui::MenuItem("Save", "Ctrl+S")) {}
-            if (ImGui::MenuItem("Save As..", "Ctrl+Shift+S")) {}
+        void init_listeners();
+        void destroy_listeners();
 
+        void save_project();
 
-        }
-        static void edit_menu() {
-            if (ImGui::MenuItem("Undo", "CTRL+Z")) {}
-            if (ImGui::MenuItem("Redo", "CTRL+Y", false, false)) {}
-        }
+        void undo();
+        void redo();
 
-        void projects_menu() {
-            if (project_manager_.getNumProjects() > 0) {
-                for(auto &prj : project_manager_) {
-                    bool is_active = project_manager_.getCurrentProject() == prj;
-                    if (ImGui::MenuItem(prj->getName().c_str(), "", is_active)) {}
-                }
-            }
-            else
-                ImGui::MenuItem("No opened project", "", false, false);
-        }
+        void file_menu();
+        //void edit_menu();
+        void projects_menu();
+        void settings_menu();
 
-        void open_file() {
-            nfdresult_t result = NFD_OpenDialog( "ml_prj", NULL, &outPath );
-            if (result == NFD_OKAY) {
-                // Do something
-            }
-        }
+        void open_file();
     public:
-        MainMenuBar() : project_manager_(ProjectManager::getInstance()) {
-
+        MainMenuBar()
+        : project_manager_(ProjectManager::getInstance()),
+            event_queue_(EventQueue::getInstance()),
+            settings_(Settings::getInstance()) {
+            init_listeners();
         }
 
 
-        void ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) override {
-            if (ImGui::BeginMainMenuBar())
-            {
-                if (ImGui::BeginMenu("File"))
-                {
-                    file_menu();
-                    ImGui::EndMenu();
-                }
-                if (ImGui::BeginMenu("Edit"))
-                {
-                    edit_menu();
-                    ImGui::EndMenu();
-                }
-                if (ImGui::BeginMenu("Projects"))
-                {
-                    projects_menu();
-                    ImGui::EndMenu();
-                }
-                ImGui::EndMainMenuBar();
-            }
-        }
+        void ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) override;
+
+        ~MainMenuBar() { destroy_listeners(); }
     };
 }
 

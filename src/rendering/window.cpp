@@ -4,9 +4,10 @@
 #include <functional>
 #include <iostream>
 
-#include "window.h"
-#include "glfw_utils.h"
-#include "GLFWwindow_handler.h"
+#include "rendering/window.h"
+#include "rendering/glfw_utils.h"
+#include "rendering/GLFWwindow_handler.h"
+#include "settings.h"
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
@@ -102,9 +103,9 @@ void Rendering::Window::update() {
     glfwGetMonitorContentScale(monitor, &xscale_, &yscale_);
 
 
-    if (xscale_ != highDPIscale_) {
-        std::cout << xscale_ << " " << highDPIscale_ << std::endl;
+    if (xscale_ != highDPIscale_ || ui_size != Settings::getInstance().getUIsize()) {
         highDPIscale_ = xscale_;
+        ui_size = Settings::getInstance().getUIsize();
 
         // Hack for now, font manager is coming later
         io.Fonts->Clear();
