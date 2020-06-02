@@ -13,11 +13,17 @@
 
 namespace Rendering {
     using modal_fct = std::function<void (bool&)>;
+
+    /**
+     * Struct to help draw a Modal
+     */
     struct Modal {
         std::string title;
         modal_fct draw_fct;
         int flags = 0;
         bool show = false;
+
+        // Modals can be stacked inside other modals
         Modal* modal = NULL;
 
         void ImGuiDraw(GLFWwindow *window) {
@@ -34,6 +40,11 @@ namespace Rendering {
         }
     };
 
+    /**
+     * This class helps to manage modal (also modals inside modals)
+     * This is a Singleton, to be called from anywhere
+     * The class that draws the modal is called ModalsDrawable
+     */
     class Modals {
     private:
         Modal modal_;
@@ -63,6 +74,12 @@ namespace Rendering {
             return instance;
         }
 
+        /**
+         * Sets the current modal to be displayed
+         * @param title title of the modal
+         * @param draw_fct function to be drawn in the modal
+         * @param flags ImGui flags for the modal
+         */
         void setModal(std::string title, modal_fct draw_fct, int flags = 0) {
             modal_.title = title;
             modal_.draw_fct = draw_fct;
@@ -72,6 +89,12 @@ namespace Rendering {
             free_memory();
         }
 
+        /**
+         * Stacks a modal inside the currently displayed modal
+         * @param title title of the modal
+         * @param draw_fct function to be drawn in the modal
+         * @param flags ImGui flags for the modal
+         */
         void stackModal(std::string title, modal_fct draw_fct, int flags = 0) {
             Modal* tmp_modal = modal_.modal;
             while (tmp_modal != NULL)
