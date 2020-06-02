@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <queue>
+#include <functional>
 #include <initializer_list>
 #include <GLFW/glfw3.h>
 #include <map>
@@ -14,7 +15,7 @@
 #include "imgui.h"
 
 #ifndef KEYBOARD_SHORTCUT_QUEUE_LENGTH
-#define KEYBOARD_SHORTCUT_QUEUE_LENGTH 5
+#define KEYBOARD_SHORTCUT_QUEUE_LENGTH 6
 #endif
 
 using keyboard_event = int;
@@ -23,7 +24,8 @@ using timepoint = std::chrono::system_clock::time_point;
 enum {KEY_CTRL = 1 << 10,
         KEY_ALT = (1 << 10) + 1,
         KEY_SHIFT = (1 << 10) + 2,
-        KEY_SUPER = (1 << 10) + 3};
+        KEY_SUPER = (1 << 10) + 3,
+        KEY_ENTER = (1 << 10) + 4};
 
 #define STRING2(X) #X
 #define STRING(X) STRING2(X)
@@ -39,6 +41,7 @@ struct Shortcut {
     std::multiset<keyboard_event> keys;
     std::string name;
     const char* description;
+    std::function<void ()> callback = NULL;
 
     // If delay == 0, then the shortcut can only be accomplished if
     // all key in a GLFW_PRESSED state

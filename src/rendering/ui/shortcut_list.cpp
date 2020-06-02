@@ -1,6 +1,5 @@
 #include "shortcuts_list.h"
 
-
 namespace Shortcuts {
     Shortcut new_project_shortcut ({.keys = {CMD_KEY, KEY_SHIFT, GLFW_KEY_N},
                                     .name = "new project",

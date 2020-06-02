@@ -77,6 +77,7 @@ file (GLOB _project_src RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         src/rendering/*.cpp src/rendering/*.h
         src/rendering/ui/*.cpp src/rendering/ui/*.h
         src/rendering/ui/modales/*.h
+        src/rendering/ui/modales/*.cpp
         src/rendering/ui/widgets/*.h
         src/core/project/*.cpp src/core/project/*.h
         src/core/ml/*.cpp src/core/ml/*.h

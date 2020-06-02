@@ -75,6 +75,14 @@ namespace Rendering {
         }
 
         /**
+         * Returns true if any modal is already active
+         * @return
+         */
+        bool isActive() {
+            return modal_.show;
+        }
+
+        /**
          * Sets the current modal to be displayed
          * @param title title of the modal
          * @param draw_fct function to be drawn in the modal

@@ -147,6 +147,8 @@ void KeyboardShortCut::dispatchShortcuts() {
         if (is_valid) {
             std::string event_name = std::string("shortcuts/local/") + shortcut.name;
             eventQueue_.post(Event_ptr(new Event(event_name)));
+            if(shortcut.callback != NULL)
+                shortcut.callback();
         }
 
     }
@@ -163,6 +165,8 @@ void KeyboardShortCut::dispatchShortcuts() {
         if (is_valid) {
             std::string event_name = std::string("shortcuts/global/") + shortcut.name;
             eventQueue_.post(Event_ptr(new Event(event_name)));
+            if(shortcut.callback != NULL)
+                shortcut.callback();
         }
     }
 }
@@ -176,6 +180,8 @@ std::multiset<keyboard_event>::iterator KeyboardShortCut::find_key(Shortcut& sho
         else if(*it == KEY_ALT && (key == GLFW_KEY_LEFT_ALT || key == GLFW_KEY_RIGHT_ALT))
             return it;
         else if(*it == KEY_SHIFT && (key == GLFW_KEY_LEFT_SHIFT || key == GLFW_KEY_RIGHT_SHIFT))
+            return it;
+        else if(*it == KEY_ENTER && (key == GLFW_KEY_ENTER || key == GLFW_KEY_KP_ENTER))
             return it;
         else if(*it == KEY_SUPER && (key == GLFW_KEY_LEFT_SUPER || key == GLFW_KEY_RIGHT_SUPER))
             return it;

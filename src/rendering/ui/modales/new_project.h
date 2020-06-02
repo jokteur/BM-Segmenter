@@ -9,6 +9,8 @@
 #include "imgui.h"
 #include "imgui_stdlib.h"
 
+#include "rendering/keyboard_shortcuts.h"
+
 namespace Rendering {
     class NewProjectModal {
     private:
@@ -17,6 +19,16 @@ namespace Rendering {
         std::string description_;
 
         modal_fct error_fct = [] (bool &show) {
+            Shortcut shortcut{
+                    .keys = {KEY_ENTER},
+                    .name = "confirm",
+                    .callback = [&show] {
+                        show = false;
+                    }
+            };
+            KeyboardShortCut::addTempShortcut(shortcut);
+            KeyboardShortCut::ignoreNormalShortcuts();
+
             ImGui::Text("Cannot create project with an empty name");
             if(ImGui::Button("Ok"))
                 show = false;
