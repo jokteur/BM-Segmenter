@@ -3,30 +3,14 @@
 
 #include "rendering/keyboard_shortcuts.h"
 
-void init_global_shortcuts() {
-    Shortcut new_project({.keys = {KEY_CTRL, KEY_SHIFT, GLFW_KEY_N},
-                          .description = "new project"});
-    KeyboardShortCut::addShortcut(new_project);
+namespace Shortcuts {
+    extern Shortcut new_project_shortcut;
+    extern Shortcut save_project_shortcut;
+    extern Shortcut save_project_under_shortcut;
+    extern Shortcut open_project_shortcut;
 
-    Shortcut save_project({.keys = {KEY_CTRL, GLFW_KEY_S},
-                                 .description = "save project"});
-    KeyboardShortCut::addShortcut(save_project);
-
-    Shortcut save_project_under({.keys = {KEY_CTRL, KEY_SHIFT, GLFW_KEY_S},
-                                  .description = "save project under"});
-    KeyboardShortCut::addShortcut(save_project_under);
-
-    Shortcut open_project({.keys = {KEY_CTRL, GLFW_KEY_O},
-                                  .description = "open project"});
-    KeyboardShortCut::addShortcut(open_project);
-
-    Shortcut undo({.keys = {KEY_CTRL, GLFW_KEY_Z},
-                                  .description = "undo"});
-    KeyboardShortCut::addShortcut(undo);
-
-    Shortcut redo({.keys = {KEY_CTRL, GLFW_KEY_Y},
-                                  .description = "redo"});
-    KeyboardShortCut::addShortcut(open_project);
+    void init_global_shortcuts();
 }
+
 
 #endif //BM_SEGMENTER_SHORTCUTS_LIST_H

@@ -25,9 +25,20 @@ enum {KEY_CTRL = 1 << 10,
         KEY_SHIFT = (1 << 10) + 2,
         KEY_SUPER = (1 << 10) + 3};
 
+#define STRING2(X) #X
+#define STRING(X) STRING2(X)
+#ifdef __APPLE__
+#define CMD_KEY KEY_SUPER
+#define CMD_DESCR Cmd
+#else
+#define CMD_KEY KEY_CTRL
+#define CMD_DESCR Ctrl
+#endif
+
 struct Shortcut {
     std::multiset<keyboard_event> keys;
-    std::string description;
+    std::string name;
+    const char* description;
 
     // If delay == 0, then the shortcut can only be accomplished if
     // all key in a GLFW_PRESSED state

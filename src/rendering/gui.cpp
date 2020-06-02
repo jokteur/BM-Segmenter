@@ -5,7 +5,7 @@
 Rendering::GUI::GUI(Rendering::Application &app) {
     //app.getMainWindow().addDrawable(&menu_bar_);
 
-    init_global_shortcuts();
+    Shortcuts::init_global_shortcuts();
 
     app.getMainWindow().addDrawable(&dockspace_);
     app.getMainWindow().addDrawable(&window_);

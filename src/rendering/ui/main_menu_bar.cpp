@@ -1,6 +1,7 @@
 #include "main_menu_bar.h"
 
 #include "rendering/ui/modales/modals.h"
+#include "rendering/ui/shortcuts_list.h"
 
 void Rendering::MainMenuBar::ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) {
     if (ImGui::BeginMainMenuBar()) {
@@ -28,10 +29,10 @@ void Rendering::MainMenuBar::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
 }
 
 void Rendering::MainMenuBar::file_menu()  {
-    if (ImGui::MenuItem("New project", "Ctrl+Shift+N")) {
+    if (ImGui::MenuItem("New project", Shortcuts::new_project_shortcut.description)) {
         new_project_modal_.showModal();
     }
-    if (ImGui::MenuItem("Open project", "Ctrl+O")) {
+    if (ImGui::MenuItem("Open project", Shortcuts::open_project_shortcut.description)) {
         open_file();
     }
     if (ImGui::BeginMenu("Open Recent"))
@@ -41,10 +42,10 @@ void Rendering::MainMenuBar::file_menu()  {
         ImGui::MenuItem("prj3.h");
         ImGui::EndMenu();
     }
-    if (ImGui::MenuItem("Save", "Ctrl+S")) {
+    if (ImGui::MenuItem("Save", Shortcuts::save_project_shortcut.description)) {
         save_project();
     }
-    if (ImGui::MenuItem("Save As..", "Ctrl+Shift+S")) {
+    if (ImGui::MenuItem("Save As..", Shortcuts::save_project_under_shortcut.description)) {
         save_project();
     }
 }

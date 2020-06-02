@@ -145,7 +145,7 @@ void KeyboardShortCut::dispatchShortcuts() {
         shortcut.tmp_keys = shortcut.keys;
         bool is_valid = is_shortcut_valid(shortcut);
         if (is_valid) {
-            std::string event_name = std::string("shortcuts/local/") + shortcut.description;
+            std::string event_name = std::string("shortcuts/local/") + shortcut.name;
             eventQueue_.post(Event_ptr(new Event(event_name)));
         }
 
@@ -161,7 +161,7 @@ void KeyboardShortCut::dispatchShortcuts() {
         shortcut.tmp_keys = shortcut.keys;
         bool is_valid = is_shortcut_valid(shortcut);
         if (is_valid) {
-            std::string event_name = std::string("shortcuts/global/") + shortcut.description;
+            std::string event_name = std::string("shortcuts/global/") + shortcut.name;
             eventQueue_.post(Event_ptr(new Event(event_name)));
         }
     }
