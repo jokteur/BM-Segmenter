@@ -13,6 +13,7 @@
 #include <GLFW/glfw3.h>
 
 #include "application.h"
+#include "settings.h"
 
 
 static void glfw_error_callback(int error, const char* description) {
@@ -136,6 +137,9 @@ void Rendering::Application::init() {
         style.WindowRounding = 0.0f;
         style.Colors[ImGuiCol_WindowBg].w = 1.0f;
     }
+
+    Settings::getInstance().setTheme(Settings::SETTINGS_LIGHT_THEME);
+
     app_state_.imgui_init = true;
 }
 
