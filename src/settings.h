@@ -9,7 +9,6 @@ private:
     int last_theme = SETTINGS_LIGHT_THEME;
 
     float ui_size = 1.;
-    float last_ui_size = 1.;
 
     Settings() {}
 public:
@@ -31,7 +30,7 @@ public:
         return instance;
     }
 
-    float getUIsize() {return ui_size; }
+    float &getUIsize() { return ui_size; }
     int getCurrentTheme() { return current_theme; }
 };
 

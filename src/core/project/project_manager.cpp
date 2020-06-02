@@ -29,3 +29,26 @@ ProjectManager::~ProjectManager() {
         delete project_ptr;
     }
 }
+
+bool ProjectManager::saveProjectToFile(Project *project, const std::string &filename) {
+    return false;
+}
+
+Project* ProjectManager::openProjectFromFile(const std::string &filename) {
+    return current_project;
+}
+
+Project* ProjectManager::duplicateCurrentProject() {
+    if (current_project != NULL) {
+        Project *project = new Project(current_project->getName(), current_project->getDescription());
+        current_project = project;
+        projects_.push_back(project);
+
+        Project *project_ptr = *(--projects_.end());
+        if (projects_.size() == 1)
+            current_project = project_ptr;
+
+        return project_ptr;
+    }
+    return NULL;
+}

@@ -56,15 +56,20 @@ public:
      */
     Project* newProject(std::string name, std::string description);
 
+    /**
+     * Duplicates the current project (useful for making a copy of a project)
+     */
+    Project* duplicateCurrentProject();
+
     void removeProject(Project* project);
 
     /**
      * Creates a project object by opening a file
-     * (should be in .ml_proj)
+     * (should be in .ml_proj format)
      * @param file
      * @return
      */
-    Project& openProjectFromFile(const std::string& filename);
+    Project* openProjectFromFile(const std::string& filename);
 
     /**
      * Saves a project to disk
@@ -72,7 +77,7 @@ public:
      * @param filename
      * @return true if successful, false if not
      */
-    bool saveProjectToFile(Project& project, const std::string& filename);
+    bool saveProjectToFile(Project* project, const std::string& filename);
 
     /**
      * Iterator function for C++14 usage of for(auto p: ProjectManager)

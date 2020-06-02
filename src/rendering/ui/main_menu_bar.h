@@ -21,15 +21,31 @@ namespace Rendering {
         Settings& settings_;
         std::vector<Listener*> listeners_;
 
+        std::string error_msg;
+
+        modal_fct error_fct = [this] (bool &show) {
+            Shortcut shortcut{
+                    .keys = {KEY_ENTER},
+                    .name = "confirm",
+                    .callback = [&show] {
+                        show = false;
+                    }
+            };
+            KeyboardShortCut::addTempShortcut(shortcut);
+            KeyboardShortCut::ignoreNormalShortcuts();
+
+            ImGui::Text(error_msg.c_str());
+            if(ImGui::Button("Ok"))
+                show = false;
+        };
+
         NewProjectModal new_project_modal_;
 
         void init_listeners();
         void destroy_listeners();
 
         void save_project();
-
-        void undo();
-        void redo();
+        void save_project_under();
 
         void file_menu();
         //void edit_menu();

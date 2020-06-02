@@ -24,11 +24,26 @@ void Rendering::MainMenuBar::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
             settings_menu();
             ImGui::EndMenu();
         }
+
+        Project* project = project_manager_.getCurrentProject();
+        if (project != NULL) {
+            // Try to align a Text element to the right
+            const float item_spacing = ImGui::GetStyle().ItemSpacing.x;
+            static float text_width = 200.0f;
+            float pos = text_width + item_spacing + 20.f;
+            ImGui::SameLine(ImGui::GetWindowWidth() - pos);
+
+            ImGui::Text((std::string("Current project: ") + project->getName()).c_str());
+            text_width = ImGui::GetItemRectSize().x;
+
+        }
         ImGui::EndMainMenuBar();
     }
 }
 
 void Rendering::MainMenuBar::file_menu()  {
+    bool is_project_active = project_manager_.getCurrentProject() != NULL;
+
     if (ImGui::MenuItem("New project", Shortcuts::new_project_shortcut.description)) {
         new_project_modal_.showModal();
     }
@@ -42,11 +57,11 @@ void Rendering::MainMenuBar::file_menu()  {
         ImGui::MenuItem("prj3.h");
         ImGui::EndMenu();
     }
-    if (ImGui::MenuItem("Save", Shortcuts::save_project_shortcut.description)) {
+    if (ImGui::MenuItem("Save", Shortcuts::save_project_shortcut.description, false, is_project_active)) {
         save_project();
     }
-    if (ImGui::MenuItem("Save As..", Shortcuts::save_project_under_shortcut.description)) {
-        save_project();
+    if (ImGui::MenuItem("Save As..", Shortcuts::save_project_under_shortcut.description, false, is_project_active)) {
+        save_project_under();
     }
 }
 
@@ -54,7 +69,9 @@ void Rendering::MainMenuBar::projects_menu() {
     if (project_manager_.getNumProjects() > 0) {
         for(auto &prj : project_manager_) {
             bool is_active = project_manager_.getCurrentProject() == prj;
-            if (ImGui::MenuItem(prj->getName().c_str(), "", is_active)) {}
+            if (ImGui::MenuItem(prj->getName().c_str(), prj->getSaveFile().c_str(), is_active)) {
+                project_manager_.setCurrentProject(prj);
+            }
         }
     }
     else
@@ -80,9 +97,10 @@ void Rendering::MainMenuBar::settings_menu(){
     }
     if (ImGui::MenuItem("Set UI size")) {
         Modals::getInstance().setModal("Set UI size", [] (bool &show) {
-                if(ImGui::Button("TEST")) {
-                    show = false;
-                }
+            ImGui::SliderFloat("Size", &Settings::getInstance().getUIsize(), 0.5f, 2.0f);
+            if(ImGui::Button("Ok")) {
+                show = false;
+            }
             }
             , ImGuiWindowFlags_AlwaysAutoResize);
     }
@@ -108,16 +126,10 @@ void Rendering::MainMenuBar::init_listeners() {
                 open_file();
             }
             else if (name == "shortcuts/global/save project under") {
-                save_project();
+                save_project_under();
             }
             else if (name == "shortcuts/global/save project") {
                 save_project();
-            }
-            else if (name == "shortcuts/global/undo") {
-                //undo();
-            }
-            else if (name == "shortcuts/global/redo") {
-                //redo();
             }
         }
     };
@@ -133,5 +145,39 @@ void Rendering::MainMenuBar::destroy_listeners() {
 }
 
 void Rendering::MainMenuBar::save_project() {
+    auto project = project_manager_.getCurrentProject();
+    if (project != NULL) {
+        std::string out_path;
+        bool save = false;
+        if (project->getSaveFile().empty()) {
+            nfdresult_t result = NFD_SaveDialog("ml_prj", NULL, &outPath);
+            if (result == NFD_OKAY) {
+                out_path = outPath;
+                save = true;
+            }
+        }
+        else {
+            save = true;
+            out_path = project->getSaveFile();
+        }
 
+        if (save) {
+            bool result = project_manager_.saveProjectToFile(project, out_path);
+            if (!result) {
+                error_msg = "Error when saving '" + project->getName() + "', please try again";
+                Modals::getInstance().setModal("Error",  error_fct, ImGuiWindowFlags_AlwaysAutoResize);
+            }
+        }
+    }
+}
+void Rendering::MainMenuBar::save_project_under() {
+    auto project = project_manager_.duplicateCurrentProject();
+    if (project != NULL) {
+        nfdresult_t result = NFD_SaveDialog("ml_prj", NULL, &outPath);
+        if (result == NFD_OKAY) {
+            project_manager_.saveProjectToFile(project, outPath);
+            error_msg = "Error when saving '" + project->getName() + "', please try again";
+            Modals::getInstance().setModal("Error",  error_fct, ImGuiWindowFlags_AlwaysAutoResize);
+        }
+    }
 }

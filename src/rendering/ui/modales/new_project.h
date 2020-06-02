@@ -18,6 +18,8 @@ namespace Rendering {
         std::string name_;
         std::string description_;
 
+        bool confirm = false;
+
         modal_fct error_fct = [] (bool &show) {
             Shortcut shortcut{
                     .keys = {KEY_ENTER},
@@ -35,6 +37,15 @@ namespace Rendering {
         };
 
         modal_fct draw_fct = [this] (bool &show) {
+            Shortcut shortcut{
+                    .keys = {KEY_ENTER, CMD_KEY},
+                    .name = "confirm",
+                    .callback = [this] {
+                        confirm = true;
+                    }
+            };
+            KeyboardShortCut::addTempShortcut(shortcut);
+            KeyboardShortCut::ignoreNormalShortcuts();
 
             ImGui::Text("Project name:");
             ImGui::SameLine();
@@ -43,7 +54,7 @@ namespace Rendering {
             ImGui::Text("Project description:");
             ImGui::InputTextMultiline("##new_project_description", &description_, ImVec2(-FLT_MIN, ImGui::GetTextLineHeight() * 16), ImGuiInputTextFlags_AllowTabInput);
 
-            if (ImGui::Button("Create project")) {
+            if (ImGui::Button("Create project") || confirm) {
                 if (name_.empty()) {
                     Modals::getInstance().stackModal("Error", error_fct, ImGuiWindowFlags_AlwaysAutoResize);
                 }
@@ -54,6 +65,7 @@ namespace Rendering {
                     description_ = "";
                     show = false;
                 }
+                confirm = false;
             }
             ImGui::SameLine();
             if (ImGui::Button("Cancel")) {

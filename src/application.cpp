@@ -152,7 +152,7 @@ bool Rendering::Application::loop() {
         ImGuiIO& io = ImGui::GetIO(); (void)io;
         main_window = *main_window_->getGLFWwindow_ptr().lock().get();
 
-        glfwWaitEvents();
+        glfwPollEvents();
         event_queue_.pollEvents();
         KeyboardShortCut::dispatchShortcuts();
 
