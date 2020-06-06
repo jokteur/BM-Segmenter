@@ -103,21 +103,23 @@ void Rendering::Window::update() {
     glfwGetMonitorContentScale(monitor, &xscale_, &yscale_);
 
 
-    if (xscale_ != highDPIscale_ || ui_size != Settings::getInstance().getUIsize()) {
+    if ((xscale_ != highDPIscale_ || ui_size != Settings::getInstance().getUIsize()) &&
+            Settings::getInstance().getUIsize() > 50) {
         highDPIscale_ = xscale_;
         ui_size = Settings::getInstance().getUIsize();
 
+        float new_scale = highDPIscale_ * (float)ui_size/100.f;
+
+        Settings::getInstance().setScale(new_scale);
+
         // Hack for now, font manager is coming later
         io.Fonts->Clear();
-        ImFont* font = io.Fonts->AddFontFromFileTTF("assets/verdana.ttf", 16.0f * highDPIscale_ * ui_size, NULL, NULL);
+        ImFont* font = io.Fonts->AddFontFromFileTTF("assets/verdana.ttf", 16.0f *  new_scale, NULL, NULL);
         io.Fonts->Build();
 
         ImGui_ImplOpenGL3_DestroyFontsTexture();
         ImGui_ImplOpenGL3_CreateFontsTexture();
 
-
-        ImGuiStyle &style = ImGui::GetStyle();
-        style.ScaleAllSizes(highDPIscale_ / xscale_);
     }
 
     int width, height, xpos, ypos;

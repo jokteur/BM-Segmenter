@@ -34,7 +34,16 @@ void Rendering::MainMenuBar::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
             ImGui::SameLine(ImGui::GetWindowWidth() - pos);
 
             ImGui::Text((std::string("Current project: ") + project->getName()).c_str());
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::BeginTooltip();
+                //ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
+                ImGui::TextUnformatted(project->getDescription().c_str());
+                //ImGui::PopTextWrapPos();
+                ImGui::EndTooltip();
+            }
             text_width = ImGui::GetItemRectSize().x;
+
 
         }
         ImGui::EndMainMenuBar();
@@ -88,16 +97,20 @@ void Rendering::MainMenuBar::settings_menu(){
     if (ImGui::BeginMenu("Theme")) {
         bool is_dark_theme = settings_.getCurrentTheme() == Settings::SETTINGS_DARK_THEME;
         if (ImGui::MenuItem("Dark", "", is_dark_theme)) {
-            settings_.setTheme(Settings::SETTINGS_DARK_THEME);
+            settings_.setStyle(Settings::SETTINGS_DARK_THEME);
         }
         if (ImGui::MenuItem("Light", "", !is_dark_theme)) {
-            settings_.setTheme(Settings::SETTINGS_LIGHT_THEME);
+            settings_.setStyle(Settings::SETTINGS_LIGHT_THEME);
         }
         ImGui::EndMenu();
     }
     if (ImGui::MenuItem("Set UI size")) {
         Modals::getInstance().setModal("Set UI size", [] (bool &show) {
-            ImGui::SliderFloat("Size", &Settings::getInstance().getUIsize(), 0.5f, 2.0f);
+            ImGui::DragInt("Size", &Settings::getInstance().getUIsize(), 1, 50, 200, "%d%%");
+            if(ImGui::Button("Reset")) {
+                Settings::getInstance().setUIsize(100);
+            }
+            ImGui::SameLine();
             if(ImGui::Button("Ok")) {
                 show = false;
             }

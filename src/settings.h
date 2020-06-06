@@ -4,23 +4,37 @@
 #include "imgui.h"
 
 class Settings {
-private:
-    int current_theme = SETTINGS_LIGHT_THEME;
-    int last_theme = SETTINGS_LIGHT_THEME;
-
-    float ui_size = 1.;
-
-    Settings() {}
 public:
     enum Theme {SETTINGS_LIGHT_THEME, SETTINGS_DARK_THEME};
+private:
+    Theme current_theme_ = SETTINGS_LIGHT_THEME;
+
+    ImGuiStyle light_;
+    ImGuiStyle dark_;
+
+    // In percentage
+    int ui_size_ = 100;
+
+    float current_scale_ = 1.f;
+
+    void defineLightStyle();
+    void defineDarkStyle();
+
+    Settings() {
+        defineLightStyle();
+        defineDarkStyle();
+    }
+public:
     /**
      * Copy constructors stay empty, because of the Singleton
      */
     Settings(Settings const &) = delete;
     void operator=(Settings const &) = delete;
 
-    void setTheme(Theme theme);
-    void setUIsize(float size);
+    void setStyle(Theme theme);
+    void setUIsize(int size);
+
+    void setScale(float scale);
 
     /**
      * @return instance of the Singleton of the Job Scheduler
@@ -30,8 +44,8 @@ public:
         return instance;
     }
 
-    float &getUIsize() { return ui_size; }
-    int getCurrentTheme() { return current_theme; }
+    int &getUIsize() { return ui_size_; }
+    int getCurrentTheme() { return current_theme_; }
 };
 
 

@@ -9,6 +9,7 @@
 #include <GLFW/glfw3.h>
 #include "imgui.h"
 
+#include "keyboard_shortcuts.h"
 #include "rendering/drawables.h"
 
 namespace Rendering {
@@ -26,11 +27,22 @@ namespace Rendering {
         // Modals can be stacked inside other modals
         Modal* modal = NULL;
 
+        Shortcut shortcut{
+                .keys = {GLFW_KEY_ESCAPE},
+                .name = "escape",
+                .callback = [this] {
+                    show = false;
+                }
+        };
+
         void ImGuiDraw(GLFWwindow *window) {
             if(show) {
                 ImGui::OpenPopup(title.c_str());
             }
             if (ImGui::BeginPopupModal(title.c_str(), &show, flags)) {
+                // Want that all parent shortcuts are ignored -> flush them
+                KeyboardShortCut::flushTempShortcuts();
+                KeyboardShortCut::addTempShortcut(shortcut);
                 draw_fct(show);
                 if(modal != NULL) {
                     modal->ImGuiDraw(window);

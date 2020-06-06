@@ -313,3 +313,7 @@ void KeyboardShortCut::addTempShortcut(Shortcut &shortcut) {
     local_shortcuts_.push_back(shortcut);
 }
 
+void KeyboardShortCut::flushTempShortcuts() {
+    local_shortcuts_.clear();
+}
+

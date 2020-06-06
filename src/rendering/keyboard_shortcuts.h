@@ -101,6 +101,11 @@ public:
     static void addTempShortcut(Shortcut& shortcut);
 
     /**
+     * Removes all currently temporary keyboard shortcuts in the list
+     */
+    static void flushTempShortcuts();
+
+    /**
      * Adds a shortcut to the global list of shortcuts (always listening to these shortcut)
      * @param shortcut
      */

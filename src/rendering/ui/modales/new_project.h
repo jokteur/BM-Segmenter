@@ -44,6 +44,7 @@ namespace Rendering {
                         confirm = true;
                     }
             };
+
             KeyboardShortCut::addTempShortcut(shortcut);
             KeyboardShortCut::ignoreNormalShortcuts();
 

@@ -23,7 +23,7 @@ namespace Rendering {
         float highDPIscale_ = 1.f;
         float xscale_;
         float yscale_;
-        float ui_size = 1.;
+        int ui_size = 100;
 
         Rect dimensions;
         std::vector<AbstractDrawable*> drawables_;
