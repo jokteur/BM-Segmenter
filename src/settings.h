@@ -2,6 +2,8 @@
 #define BM_SEGMENTER_SETTINGS_H
 
 #include "imgui.h"
+#include <string>
+#include <vector>
 
 class Settings {
 public:
@@ -14,6 +16,11 @@ private:
 
     // In percentage
     int ui_size_ = 100;
+
+    // For saving the settings to the disk
+    std::string filesave;
+
+    std::vector<std::string> recent_projects_;
 
     float current_scale_ = 1.f;
 
@@ -35,6 +42,18 @@ public:
     void setUIsize(int size);
 
     void setScale(float scale);
+
+    void setFileSave(std::string filename) {
+        filesave = filename;
+    }
+
+    void saveSettings();
+    /**
+     * Loads the setting from a file (in toml format)
+     * If an error occurs, the toml library launches an exception
+     * @param filename
+     */
+    void loadSettings(std::string filename);
 
     /**
      * @return instance of the Singleton of the Job Scheduler

@@ -3,6 +3,7 @@
 
 #include "rendering/drawables.h"
 #include "rendering/ui/modales/modals.h"
+#include "rendering/ui/modales/error_message.h"
 
 #include "core/project/project_manager.h"
 #include <GLFW/glfw3.h>
@@ -19,12 +20,6 @@ namespace Rendering {
         std::string description_;
 
         bool confirm = false;
-
-        modal_fct error_fct = [] (bool &show, bool &enter, bool &escape) {
-            ImGui::Text("Cannot create project with an empty name");
-            if(ImGui::Button("Ok") || enter || escape)
-                show = false;
-        };
 
         modal_fct draw_fct = [this] (bool &show, bool &enter, bool &escape) {
             Shortcut shortcut{
@@ -47,7 +42,7 @@ namespace Rendering {
 
             if (ImGui::Button("Create project") || confirm) {
                 if (name_.empty()) {
-                    Modals::getInstance().stackModal("Error", error_fct, ImGuiWindowFlags_AlwaysAutoResize);
+                    show_error_modal("New project error", "Cannot create project with an empty name", "", 400, 200);
                 }
                 else {
                     auto project = project_manager_.newProject(name_, description_);

@@ -129,17 +129,27 @@ namespace Rendering {
          * @param flags ImGui flags for the modal
          */
         void stackModal(std::string title, modal_fct draw_fct, int flags = 0) {
-            Modal* tmp_modal = modal_.modal;
-            while (tmp_modal != NULL)
-                tmp_modal = tmp_modal->modal;
-            auto modal = new Modal{
-                .title = title,
-                .draw_fct = draw_fct,
-                .flags = flags,
-                .show = true
-            };
-            modal_.modal = modal;
-            stacked_modals_.push_back(modal);
+            // Means that no modal is currently showing
+            if (!modal_.show) {
+                modal_.show = true;
+                modal_.flags = flags;
+                modal_.title = title;
+                modal_.draw_fct = draw_fct;
+                modal_.modal = NULL;
+            }
+            else {
+                Modal *tmp_modal = modal_.modal;
+                while (tmp_modal != NULL)
+                    tmp_modal = tmp_modal->modal;
+                auto modal = new Modal{
+                        .title = title,
+                        .draw_fct = draw_fct,
+                        .flags = flags,
+                        .show = true
+                };
+                modal_.modal = modal;
+                stacked_modals_.push_back(modal);
+            }
         }
 
         void ImGuiDraw(GLFWwindow *window) {

@@ -1,11 +1,23 @@
 #include "gui.h"
 
 #include "rendering/ui/shortcuts_list.h"
+#include "rendering/ui/modales/error_message.h"
+#include "settings.h"
 
 Rendering::GUI::GUI(Rendering::Application &app) {
     //app.getMainWindow().addDrawable(&menu_bar_);
 
     Shortcuts::init_global_shortcuts();
+
+    try {
+        Settings::getInstance().loadSettings("settings.toml");
+    }
+    catch (std::exception &e) {
+        show_error_modal("Load setting error",
+                         "An error occured when loading settings file (settings.toml)\n"
+                         "Default settings have been applied",
+                         e.what(), 750, 205);
+    }
 
     app.getMainWindow().addDrawable(&dockspace_);
     app.getMainWindow().addDrawable(&window_);

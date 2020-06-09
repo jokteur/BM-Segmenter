@@ -70,6 +70,9 @@ endif()
 # TODO implement for other OS
 include_directories(thirdparty/nativefiledialog/src/include)
 
+#TOML11 library
+include_directories(thirdparty/toml11)
+
 # --- Main source ---
 include_directories(src)
 file (GLOB _project_src RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}

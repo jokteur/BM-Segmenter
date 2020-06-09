@@ -1,5 +1,7 @@
 #include "project_manager.h"
 
+#include <toml.hpp>
+
 void ProjectManager::setCurrentProject(Project* project) {
     current_project = project;
 }
@@ -31,7 +33,12 @@ ProjectManager::~ProjectManager() {
 }
 
 bool ProjectManager::saveProjectToFile(Project *project, const std::string &filename) {
-    return false;
+    if (project != NULL) {
+
+    }
+    else {
+        return false;
+    }
 }
 
 Project* ProjectManager::openProjectFromFile(const std::string &filename) {
