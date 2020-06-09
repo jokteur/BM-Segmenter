@@ -7,3 +7,6 @@
 [submodule "thirdparty/nativefiledialog"]
 	path = thirdparty/nativefiledialog
 	url = https://github.com/mlabbe/nativefiledialog.git
+[submodule "thirdparty/toml11"]
+	path = thirdparty/toml11
+	url = https://github.com/ToruNiina/toml11.git
