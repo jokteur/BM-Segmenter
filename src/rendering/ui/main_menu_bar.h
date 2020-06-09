@@ -42,7 +42,7 @@ namespace Rendering {
         void projects_menu();
         void settings_menu();
 
-        void open_file();
+        void open_file(std::string filename = "");
     public:
         MainMenuBar()
         : project_manager_(ProjectManager::getInstance()),

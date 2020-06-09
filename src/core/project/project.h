@@ -8,6 +8,8 @@ private:
     std::string name_;
     std::string description_;
     std::string save_file_;
+
+    bool is_saved_ = false;
 public:
     Project(std::string &name, std::string &description);
 
@@ -38,10 +40,25 @@ public:
     }
 
     /**
+     * Sets the saved variable to true
+     * If the project is modified, then the variable is again set to false
+     */
+    void setSavedState() {
+        is_saved_ = true;
+    }
+
+    bool isSaved() {
+        return is_saved_;
+    }
+
+    /**
      * Sets the name of the projects
      * @param name name of project
      */
-    void setName(std::string name) { name_ = name; }
+    void setName(std::string name) {
+        name_ = name;
+        is_saved_ = false;
+    }
 };
 
 

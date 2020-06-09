@@ -115,6 +115,7 @@ void Rendering::Window::update() {
         // Hack for now, font manager is coming later
         io.Fonts->Clear();
         ImFont* font = io.Fonts->AddFontFromFileTTF("assets/verdana.ttf", 16.0f *  new_scale, NULL, NULL);
+        io.Fonts->AddFontFromFileTTF("assets/UbuntuMono-R.ttf", 16.f * new_scale, NULL, NULL);
         io.Fonts->Build();
 
         ImGui_ImplOpenGL3_DestroyFontsTexture();

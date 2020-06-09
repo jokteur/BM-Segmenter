@@ -43,6 +43,13 @@ namespace Rendering {
                     enter = true;
                 }
         };
+        Shortcut enter_kp_shortcut {
+                .keys = {GLFW_KEY_KP_ENTER},
+                .name = "enter",
+                .callback = [this] {
+                    enter = true;
+                }
+        };
 
         void ImGuiDraw(GLFWwindow *window) {
             if(show) {
@@ -54,6 +61,7 @@ namespace Rendering {
                 draw_fct(show, enter, escape);
                 KeyboardShortCut::addTempShortcut(escape_shortcut);
                 KeyboardShortCut::addTempShortcut(enter_shortcut);
+                KeyboardShortCut::addTempShortcut(enter_kp_shortcut);
                 if(modal != NULL) {
                     modal->ImGuiDraw(window);
                 }

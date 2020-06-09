@@ -33,7 +33,9 @@ void Rendering::MainMenuBar::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
             float pos = text_width + item_spacing + 20.f;
             ImGui::SameLine(ImGui::GetWindowWidth() - pos);
 
-            ImGui::Text((std::string("Current project: ") + project->getName()).c_str());
+            std::string str = "Current project: ";
+            str += project->isSaved() ? project->getName() : project->getName() + "*";
+            ImGui::Text(str.c_str());
             if (ImGui::IsItemHovered())
             {
                 ImGui::BeginTooltip();
@@ -61,9 +63,17 @@ void Rendering::MainMenuBar::file_menu()  {
     }
     if (ImGui::BeginMenu("Open Recent"))
     {
-        ImGui::MenuItem("prj1.c");
-        ImGui::MenuItem("prj2.inl");
-        ImGui::MenuItem("prj3.h");
+        auto recent_projects = Settings::getInstance().getRecentFiles();
+        if (recent_projects.empty()) {
+            ImGui::MenuItem("No recent projects", NULL, false, false);
+        }
+        else {
+            for(auto &filename : recent_projects) {
+                if (ImGui::MenuItem(filename.c_str())) {
+                    open_file(filename);
+                }
+            }
+        }
         ImGui::EndMenu();
     }
     if (ImGui::MenuItem("Save", Shortcuts::save_project_shortcut.description, false, is_project_active)) {
@@ -78,7 +88,8 @@ void Rendering::MainMenuBar::projects_menu() {
     if (project_manager_.getNumProjects() > 0) {
         for(auto &prj : project_manager_) {
             bool is_active = project_manager_.getCurrentProject() == prj;
-            if (ImGui::MenuItem(prj->getName().c_str(), prj->getSaveFile().c_str(), is_active)) {
+            std::string name = prj->isSaved() ? prj->getName() : "*" + prj->getName();
+            if (ImGui::MenuItem(name.c_str(), prj->getSaveFile().c_str(), is_active)) {
                 project_manager_.setCurrentProject(prj);
             }
         }
@@ -119,10 +130,15 @@ void Rendering::MainMenuBar::settings_menu(){
     }
 }
 
-void Rendering::MainMenuBar::open_file() {
-    nfdresult_t result = NFD_OpenDialog( "ml_prj", NULL, &outPath );
-    if (result == NFD_OKAY) {
-        // Do something
+void Rendering::MainMenuBar::open_file(std::string filename) {
+    if (filename.empty()) {
+        nfdresult_t result = NFD_OpenDialog("ml_prj", NULL, &outPath);
+        if (result == NFD_OKAY) {
+            // Do something
+        }
+    }
+    else {
+
     }
 }
 

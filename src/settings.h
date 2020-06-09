@@ -48,6 +48,7 @@ public:
     }
 
     void saveSettings();
+
     /**
      * Loads the setting from a file (in toml format)
      * If an error occurs, the toml library launches an exception
@@ -65,6 +66,7 @@ public:
 
     int &getUIsize() { return ui_size_; }
     int getCurrentTheme() { return current_theme_; }
+    std::vector<std::string>& getRecentFiles() { return recent_projects_; }
 };
 
 

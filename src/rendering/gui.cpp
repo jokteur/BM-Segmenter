@@ -3,6 +3,7 @@
 #include "rendering/ui/shortcuts_list.h"
 #include "rendering/ui/modales/error_message.h"
 #include "settings.h"
+#include "toml.hpp"
 
 Rendering::GUI::GUI(Rendering::Application &app) {
     //app.getMainWindow().addDrawable(&menu_bar_);
@@ -16,7 +17,7 @@ Rendering::GUI::GUI(Rendering::Application &app) {
         show_error_modal("Load setting error",
                          "An error occured when loading settings file (settings.toml)\n"
                          "Default settings have been applied",
-                         e.what(), 750, 205);
+                         e.what());
     }
 
     app.getMainWindow().addDrawable(&dockspace_);

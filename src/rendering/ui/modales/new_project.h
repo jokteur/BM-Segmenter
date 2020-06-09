@@ -42,7 +42,7 @@ namespace Rendering {
 
             if (ImGui::Button("Create project") || confirm) {
                 if (name_.empty()) {
-                    show_error_modal("New project error", "Cannot create project with an empty name", "", 400, 200);
+                    show_error_modal("New project error", "Cannot create project with an empty name", "");
                 }
                 else {
                     auto project = project_manager_.newProject(name_, description_);

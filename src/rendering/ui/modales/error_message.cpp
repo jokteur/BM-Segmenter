@@ -1,42 +1,62 @@
 #include "error_message.h"
 
-void Rendering::show_error_modal(const char *title, const char *short_descr, const char *detailed, float size_x, float size_y)  {
+void Rendering::show_error_modal(std::string title, std::string short_descr, std::string detailed)  {
     static std::string last_title;
-    static bool new_error_modal;
+    static bool redraw_modal = true;
     static bool show_details;
     if (last_title != title) {
         last_title = title;
-        new_error_modal = true;
         show_details = false;
     }
-    else {
-        new_error_modal = false;
-    }
 
-    const modal_fct error_fct = [title, short_descr, detailed, size_x, size_y] (bool &show, bool &enter, bool &escape) {
-        ImGui::TextWrapped(short_descr);
+    const modal_fct error_fct = [title, short_descr, detailed] (bool &show, bool &enter, bool &escape) {
+        ImGui::Text(short_descr.c_str());
 
-        if (new_error_modal) {
-            ImGui::SetWindowSize(ImVec2(size_x, size_y));
-            new_error_modal = false;
-            show_details = false;
+        float width = ImGui::GetItemRectSize().x;
+        float height = ImGui::GetItemRectSize().y;
+
+        ImGuiStyle& style = ImGui::GetStyle();
+
+
+        width += style.ScrollbarSize + style.ItemSpacing.x + style.WindowPadding.x;
+        height += style.WindowPadding.y;
+
+        if (!detailed.empty()) {
+            ImGui::NewLine();
         }
 
-        ImGui::NewLine();
+        height += ImGui::GetItemRectSize().y;
         if(ImGui::Button("Ok") || enter || escape)
             show = false;
 
-        if (detailed[0] != 0) {
+        // Show detailed description
+        height += ImGui::GetItemRectSize().y;
+
+        if (!detailed.empty()) {
             ImGui::SameLine();
+            height += ImGui::GetItemRectSize().y;
             if (ImGui::Button("Show details")) {
+                redraw_modal = true;
                 show_details = !show_details;
             }
 
             if (show_details) {
                 ImGui::Text("Error details:");
-                ImGui::TextWrapped(detailed);
+                //ImGui::PushFont();
+                height += ImGui::GetItemRectSize().y;
+                ImGui::TextWrapped(detailed.c_str());
+                height += ImGui::GetItemRectSize().y;
             }
         }
+
+        // Set the window size if the modal was just opened
+        if (redraw_modal) {
+            width = (width > 1000) ? 1000 : width;
+            height = (height > 1000) ? 1000 : height;
+            ImGui::SetWindowSize(ImVec2(width, height));
+            redraw_modal = false;
+        }
+
     };
 
     ImGui::SetNextWindowSizeConstraints(ImVec2(400, 200), ImVec2(FLT_MAX, FLT_MAX));
