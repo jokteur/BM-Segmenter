@@ -23,19 +23,9 @@ namespace Rendering {
 
         std::string error_msg;
 
-        modal_fct error_fct = [this] (bool &show) {
-            Shortcut shortcut{
-                    .keys = {KEY_ENTER},
-                    .name = "confirm",
-                    .callback = [&show] {
-                        show = false;
-                    }
-            };
-            KeyboardShortCut::addTempShortcut(shortcut);
-            KeyboardShortCut::ignoreNormalShortcuts();
-
+        modal_fct error_fct = [this] (bool &show, bool &escape, bool &enter) {
             ImGui::Text(error_msg.c_str());
-            if(ImGui::Button("Ok"))
+            if(ImGui::Button("Ok") || escape || enter)
                 show = false;
         };
 

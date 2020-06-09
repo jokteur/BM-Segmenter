@@ -105,13 +105,13 @@ void Rendering::MainMenuBar::settings_menu(){
         ImGui::EndMenu();
     }
     if (ImGui::MenuItem("Set UI size")) {
-        Modals::getInstance().setModal("Set UI size", [] (bool &show) {
+        Modals::getInstance().setModal("Set UI size", [] (bool &show, bool &enter, bool &escape) {
             ImGui::DragInt("Size", &Settings::getInstance().getUIsize(), 1, 50, 200, "%d%%");
             if(ImGui::Button("Reset")) {
                 Settings::getInstance().setUIsize(100);
             }
             ImGui::SameLine();
-            if(ImGui::Button("Ok")) {
+            if(ImGui::Button("Ok") || escape || enter) {
                 show = false;
             }
             }

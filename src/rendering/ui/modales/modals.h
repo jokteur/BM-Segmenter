@@ -13,7 +13,7 @@
 #include "rendering/drawables.h"
 
 namespace Rendering {
-    using modal_fct = std::function<void (bool&)>;
+    using modal_fct = std::function<void (bool&, bool&, bool&)>;
 
     /**
      * Struct to help draw a Modal
@@ -23,15 +23,24 @@ namespace Rendering {
         modal_fct draw_fct;
         int flags = 0;
         bool show = false;
+        bool enter = false;
+        bool escape = false;
 
         // Modals can be stacked inside other modals
         Modal* modal = NULL;
 
-        Shortcut shortcut{
+        Shortcut escape_shortcut {
                 .keys = {GLFW_KEY_ESCAPE},
                 .name = "escape",
                 .callback = [this] {
-                    show = false;
+                    escape = true;
+                }
+        };
+        Shortcut enter_shortcut {
+                .keys = {GLFW_KEY_ENTER},
+                .name = "enter",
+                .callback = [this] {
+                    enter = true;
                 }
         };
 
@@ -42,8 +51,9 @@ namespace Rendering {
             if (ImGui::BeginPopupModal(title.c_str(), &show, flags)) {
                 // Want that all parent shortcuts are ignored -> flush them
                 KeyboardShortCut::flushTempShortcuts();
-                KeyboardShortCut::addTempShortcut(shortcut);
-                draw_fct(show);
+                draw_fct(show, enter, escape);
+                KeyboardShortCut::addTempShortcut(escape_shortcut);
+                KeyboardShortCut::addTempShortcut(enter_shortcut);
                 if(modal != NULL) {
                     modal->ImGuiDraw(window);
                 }
@@ -101,12 +111,15 @@ namespace Rendering {
          * @param flags ImGui flags for the modal
          */
         void setModal(std::string title, modal_fct draw_fct, int flags = 0) {
+            free_memory();
+
             modal_.title = title;
             modal_.draw_fct = draw_fct;
             modal_.show = true;
+            modal_.modal = NULL;
+            modal_.enter = false;
+            modal_.escape = false;
             modal_.flags = flags;
-
-            free_memory();
         }
 
         /**

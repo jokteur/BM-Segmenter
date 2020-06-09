@@ -105,4 +105,4 @@ file(COPY assets DESTINATION ${CMAKE_BINARY_DIR})
 # Google test
 ################################################################
 
-#add_subdirectory(tests)
+add_subdirectory(tests)
