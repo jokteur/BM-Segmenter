@@ -11,7 +11,7 @@ private:
     using iterator_ = Project**;
 
     std::vector<Project*> projects_;
-    Project* current_project = NULL;
+    Project* current_project_ = NULL;
 
     ProjectManager() {}
 public:
@@ -41,7 +41,7 @@ public:
      * Returns the current active projects in the project manager
      * @return current active project
      */
-    Project* getCurrentProject() { return current_project; }
+    Project* getCurrentProject() { return current_project_; }
 
     /**
      * Returns the number of current projects
@@ -78,6 +78,13 @@ public:
      * @return true if successful, false if not
      */
     bool saveProjectToFile(Project* project, const std::string& filename);
+
+    /**
+     * Returns only the name of a project without opening it completly
+     * @param filename path of the project
+     * @return name of the project
+     */
+    std::string& getNameFromFile(const std::string& filename);
 
     /**
      * Iterator function for C++14 usage of for(auto p: ProjectManager)

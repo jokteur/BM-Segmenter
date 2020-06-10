@@ -123,6 +123,7 @@ void Rendering::MainMenuBar::settings_menu(){
             }
             ImGui::SameLine();
             if(ImGui::Button("Ok") || escape || enter) {
+                Settings::getInstance().saveSettings();
                 show = false;
             }
             }
@@ -132,13 +133,25 @@ void Rendering::MainMenuBar::settings_menu(){
 
 void Rendering::MainMenuBar::open_file(std::string filename) {
     if (filename.empty()) {
-        nfdresult_t result = NFD_OpenDialog("ml_prj", NULL, &outPath);
-        if (result == NFD_OKAY) {
-            // Do something
+        nfdresult_t result = NFD_OpenDialog(STRING(PROJECT_EXTENSION), NULL, &outPath);
+        if (result == NFD_ERROR) {
+            show_error_modal("Load project error",
+                             "Could not open project");
+            return;
         }
+        else if (result == NFD_CANCEL) {
+            return;
+        }
+        filename = outPath;
     }
-    else {
-
+    try {
+        project_manager_.openProjectFromFile(filename);
+        Settings::getInstance().addRecentFile(filename);
+    }
+    catch (std::exception &e) {
+        show_error_modal("Load project error",
+                         "An error occured when loading the project ''\n",
+                         e.what());
     }
 }
 
@@ -177,36 +190,43 @@ void Rendering::MainMenuBar::save_project() {
     auto project = project_manager_.getCurrentProject();
     if (project != NULL) {
         std::string out_path;
-        bool save = false;
+        bool proceed = false;
         if (project->getSaveFile().empty()) {
-            nfdresult_t result = NFD_SaveDialog("ml_prj", NULL, &outPath);
+            nfdresult_t result = NFD_SaveDialog(STRING(PROJECT_EXTENSION), NULL, &outPath);
             if (result == NFD_OKAY) {
                 out_path = outPath;
-                save = true;
+                out_path += ".ml_proj";
+                proceed = true;
             }
         }
         else {
-            save = true;
+            proceed = true;
             out_path = project->getSaveFile();
         }
 
-        if (save) {
-            bool result = project_manager_.saveProjectToFile(project, out_path);
-            if (!result) {
-                error_msg = "Error when saving '" + project->getName() + "', please try again";
-                Modals::getInstance().setModal("Error",  error_fct, ImGuiWindowFlags_AlwaysAutoResize);
-            }
+        if (proceed) {
+            save(project, outPath);
         }
     }
 }
 void Rendering::MainMenuBar::save_project_under() {
-    auto project = project_manager_.duplicateCurrentProject();
+    auto project = project_manager_.getCurrentProject();
     if (project != NULL) {
-        nfdresult_t result = NFD_SaveDialog("ml_prj", NULL, &outPath);
+        nfdresult_t result = NFD_SaveDialog(STRING(PROJECT_EXTENSION), NULL, &outPath);
         if (result == NFD_OKAY) {
-            project_manager_.saveProjectToFile(project, outPath);
-            error_msg = "Error when saving '" + project->getName() + "', please try again";
-            Modals::getInstance().setModal("Error",  error_fct, ImGuiWindowFlags_AlwaysAutoResize);
+            project = project_manager_.duplicateCurrentProject();
+            save(project, std::string(outPath) + STRING(PROJECT_EXTENSION));
         }
+    }
+}
+
+void Rendering::MainMenuBar::save(Project *project, std::string filename) {
+    bool result = project_manager_.saveProjectToFile(project, filename);
+    if (!result) {
+        error_msg = "Error when saving '" + project->getName() + "', please try again";
+        Modals::getInstance().setModal("Error",  error_fct, ImGuiWindowFlags_AlwaysAutoResize);
+    }
+    else {
+        Settings::getInstance().addRecentFile(filename);
     }
 }

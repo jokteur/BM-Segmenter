@@ -36,11 +36,14 @@ namespace Rendering {
 
         void save_project();
         void save_project_under();
+        // Called by either save_project or save_project_under()
+        void save(Project* project, std::string filename);
 
         void file_menu();
         //void edit_menu();
         void projects_menu();
         void settings_menu();
+
 
         void open_file(std::string filename = "");
     public:

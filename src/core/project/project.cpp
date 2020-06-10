@@ -1,6 +1,6 @@
 #include "project.h"
 
-Project::Project(std::string &name, std::string &description)
+Project::Project(const std::string &name, const std::string &description)
 : name_(name), description_(description)
 {
 

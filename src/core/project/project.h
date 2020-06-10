@@ -11,7 +11,7 @@ private:
 
     bool is_saved_ = false;
 public:
-    Project(std::string &name, std::string &description);
+    Project(const std::string &name, const std::string &description);
 
     /**
      * Returns the current name of the project
@@ -35,7 +35,7 @@ public:
      * Sets the current save file for this project
      * @param save_file path of the file
      */
-    void setSaveFile(std::string& save_file) {
+    void setSaveFile(const std::string& save_file) {
         save_file_ = save_file;
     }
 
