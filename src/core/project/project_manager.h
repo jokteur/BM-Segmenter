@@ -64,8 +64,7 @@ public:
     void removeProject(Project* project);
 
     /**
-     * Creates a project object by opening a file
-     * (should be in .ml_proj format)
+     * Creates a project object by opening a file (in toml format)
      * @param file
      * @return
      */

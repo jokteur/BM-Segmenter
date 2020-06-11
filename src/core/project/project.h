@@ -14,6 +14,13 @@ public:
     Project(const std::string &name, const std::string &description);
 
     /**
+     * Compares two projects and looks if they are identical (name, description, datasets, ...)
+     * @param project project to compare to
+     * @return true if identical, false if not
+     */
+    bool operator==(Project& project);
+
+    /**
      * Returns the current name of the project
      * @return name of project
      */
@@ -47,6 +54,10 @@ public:
         is_saved_ = true;
     }
 
+    /**
+     * Returns if the project is in a saved state
+     * @return true for saved state, false for non saved state
+     */
     bool isSaved() {
         return is_saved_;
     }

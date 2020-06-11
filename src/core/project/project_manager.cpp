@@ -108,7 +108,6 @@ Project* ProjectManager::openProjectFromFile(const std::string &filename) {
     Project* new_project = new Project(name, description);
     new_project->setSaveFile(filename);
     new_project->setSavedState();
-    current_project_ = new_project;
     projects_.push_back(new_project);
     return new_project;
 }
