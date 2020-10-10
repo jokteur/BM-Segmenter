@@ -10,6 +10,3 @@
 [submodule "thirdparty/toml11"]
 	path = thirdparty/toml11
 	url = https://github.com/ToruNiina/toml11.git
-[submodule "thirdparty/opencv"]
-	path = thirdparty/opencv
-	url = https://github.com/opencv/opencv.git
