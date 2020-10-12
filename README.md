@@ -4,11 +4,11 @@ The BM-Segmenter projects aims to simplify image segmentation in the Bio-Medical
 
 ## Features
 
-* Create and import projects
-* Create and import datasets (from CT dicoms and normal png / jpeg images)
-* Tools for image segmentation
-* Tools for training machine learning models on datasets
-* Tools for measurements on datasets and export to csv
+* [ ] Create and import projects
+* [ ] Create and import datasets (from CT dicoms and normal png / jpeg images)
+* [ ] Tools for image segmentation
+* [ ] Tools for training machine learning models on datasets
+* [ ] Tools for measurements on datasets and export to csv
 
 ## State of the project
 
