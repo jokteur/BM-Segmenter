@@ -127,7 +127,7 @@ void Rendering::Application::init() {
     // Setup Dear ImGui style
     ImGui::StyleColorsLight();
 
-    io.Fonts->AddFontFromFileTTF("assets/verdana.ttf", 16.0f, NULL, NULL);
+//    io.Fonts->AddFontFromFileTTF("assets/verdana.ttf", 16.0f, NULL, NULL);
 
     ImGuiStyle& style = ImGui::GetStyle();
 
