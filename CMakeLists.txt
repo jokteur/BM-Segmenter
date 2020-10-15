@@ -55,8 +55,6 @@ add_definitions(-DPy_ENABLE_SHARED)
 option(Python_ROOT_DIR "")
 
 find_package(Python REQUIRED Interpreter Development)
-#add_subdirectory(thirdparty/pybind11)
-#include_directories(thirdparty/pybind11/include)
 
 if((NOT ${Python_FOUND}))
     message(FATAL_ERROR
