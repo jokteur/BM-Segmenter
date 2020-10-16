@@ -44,12 +44,27 @@ find_package(OpenCV 4.4 REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 set(OpenCV_LIBS opencv_core opencv_imgproc opencv_highgui opencv_imgcodecs)
 
+# -------
+# PyTorch
+# -------
+#find_package(Torch REQUIRED)
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
+
+# The following code block is suggested to be used on Windows.
+# According to https://github.com/pytorch/pytorch/issues/25457,
+# the DLLs need to be copied to avoid memory errors.
+#if (WIN32)
+#    file(GLOB TORCH_DLLS "${TORCH_INSTALL_PREFIX}/lib/*.dll")
+#    install(
+#        FILES ${TORCH_INSTALL_PREFIX}/lib/*.dll
+#        DESTINATION ${INSTALL_DIR}
+#    )
+#endif (WIN32)
+
 # --------------------------------
 # Python installation and pybind11
 # --------------------------------
 
-set(PYTHON_NUMPY_PATH "" CACHE PATH "Path to python site-packages or dist-packages containing 'numpy' module")
-set(PYTHON_NUMPY_INCLUDE_DIRS ${PYTHON_NUMPY_PATH}/numpy/core/include CACHE PATH "Path to the include directory of the numpy module")
 add_definitions(-DPy_ENABLE_SHARED)
 
 option(Python_ROOT_DIR "")
@@ -75,7 +90,10 @@ if(NOT EXISTS "${Python_INCLUDE_DIRS}/Python.h")
 endif()
 
 include_directories(${Python_INCLUDE_DIRS})
-add_subdirectory(src/scripts)
+add_subdirectory(src/python)
+
+add_subdirectory(thirdparty/pybind11)
+include_directories(thirdparty/pybind11/include)
 
 # ----------
 # Dear Imgui
@@ -105,7 +123,9 @@ set(imgui_binding
         ${imgui_bindings_DIR}/imgui_impl_opengl3.h)
 include_directories(thirdparty/imgui_bindings)
 
-# --- nativefiledialog ---
+# ----------------
+# nativefiledialog
+# ----------------
 if (WIN32)
     set(native_DIR "thirdparty/nativefiledialog/src")
     set(native_src
@@ -123,13 +143,19 @@ endif()
 # TODO implement for other OS
 include_directories(thirdparty/nativefiledialog/src/include)
 
-#TOML11 library
+# ------
+# TOML11
+# ------
 include_directories(thirdparty/toml11)
 
-# --- Main source ---
+# -----------
+# Main source
+# -----------
 include_directories(src)
 file (GLOB _project_src RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         src/*.cpp src/*.h
+        src/python/*.h
+        src/python/*.cpp
         src/rendering/*.cpp src/rendering/*.h
         src/rendering/ui/*.cpp src/rendering/ui/*.h
         src/rendering/ui/modales/*.h
@@ -140,7 +166,6 @@ file (GLOB _project_src RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         src/core/dataset/*.cpp src/core/dataset/*.h
         src/core/editor/*.cpp src/core/editor/*.h)
 
-# --- All sources for the tests ---
 set(all_sources ${_project_src} ${GLAD_GL} ${imgui_src} ${imgui_binding} ${gl3w_src})
 list(REMOVE_ITEM all_sources "src/main.cpp")
 
@@ -151,18 +176,17 @@ target_link_libraries(${PROJECT_NAME}_lib ${OPENGL_gl_LIBRARY})
 target_link_libraries(${PROJECT_NAME}_lib nfd)
 target_link_libraries(${PROJECT_NAME}_lib ${OpenCV_LIBS})
 target_link_libraries(${PROJECT_NAME}_lib ${Python_LIBRARIES})
+target_link_libraries(${PROJECT_NAME}_lib "${TORCH_LIBRARIES}")
 
 
 add_executable(${PROJECT_NAME} src/main.cpp)
 target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}_lib)
-#target_link_libraries(${PROJECT_NAME}_lib PRIVATE pybind11::embed)
-
 
 install(TARGETS ${PROJECT_NAME} DESTINATION ${INSTALL_DIR})
 install(DIRECTORY assets DESTINATION ${INSTALL_DIR})
 
 ###############################################################
 # Google test
-################################################################
+###############################################################
 
-add_subdirectory(tests)
+#add_subdirectory(tests)

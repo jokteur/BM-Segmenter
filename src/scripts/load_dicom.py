@@ -1,3 +1,4 @@
+import numpy as np
 import pydicom
 from pydicom.filereader import read_dicomdir
 from os.path import dirname, join
@@ -29,23 +30,20 @@ def get_pixels_hu(scan):
     # Convert to int16 (from sometimes int16),
     # should be possible as values should always be low enough (<32k)
     image = scan.pixel_array
-    # image = image.astype(np.int16)
+    image = image.astype(np.int16)
 
-    # # Set outside-of-scan pixels to 1
-    # # The intercept is usually -1024, so air is approximately 0
-    # image[image == -2000] = 0
+    # Set outside-of-scan pixels to 1
+    # The intercept is usually -1024, so air is approximately 0
+    image[image == -2000] = 0
 
-    # # Convert to Hounsfield units (HU)
-    # intercept = scan.RescaleIntercept
-    # slope = scan.RescaleSlope
+    # Convert to Hounsfield units (HU)
+    intercept = scan.RescaleIntercept
+    slope = scan.RescaleSlope
 
-    # if slope != 1:
-    #     image = slope * image.astype(np.float64)
-    #     image = image.astype(np.int16)
+    if slope != 1:
+        image = slope * image.astype(np.float64)
+        image = image.astype(np.int16)
 
-    # image += np.int16(intercept)
+    image += np.int16(intercept)
 
-    # return np.array(image, dtype=np.int16)
-
-# dicom, path = load_scan_from_dicom("raw/poumon/1-875/DICOMDIR")
-# get_pixels_hu(dicom)
+    return np.array(image, dtype=np.int16)
