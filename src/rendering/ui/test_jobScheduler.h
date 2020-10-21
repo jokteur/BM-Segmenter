@@ -2,7 +2,8 @@
 #define BM_SEGMENTER_TEST_WINDOW_H
 
 #include <iostream>
-#include <unistd.h>
+#include <chrono>
+#include <thread>
 #include <vector>
 
 #include "../drawables.h"
@@ -12,6 +13,8 @@
 #include "../../jobscheduler.h"
 
 namespace Rendering {
+    using namespace std::literals::chrono_literals;
+
     class MyWindow : public AbstractLayout {
     private:
         JobScheduler &scheduler_;
@@ -40,13 +43,15 @@ namespace Rendering {
             }
         }
 
-        Listener listener{.filter="jobs/names/*",
-                          .callback = [this] (Event_ptr &event) {
-                auto job = JOBEVENT_PTRCAST(event.get());
-                std::cout << "Job finished: " << job->getJob().id <<
-                "State : " << to_state(job->getJob().state) << std::endl;
-            }
+        Listener listener = {
+                "jobs/names/*",
+                [this] (Event_ptr &event) {
+                    auto job = JOBEVENT_PTRCAST(event.get());
+                    std::cout << "Job finished: " << job->getJob().id <<
+                              "State : " << to_state(job->getJob().state) << std::endl;
+                }
         };
+
     public:
         MyWindow() : scheduler_(JobScheduler::getInstance()), event_queue_(EventQueue::getInstance()) {
             scheduler_.setWorkerPoolSize(2);
@@ -59,11 +64,11 @@ namespace Rendering {
             jobFct job = [counter] (float &progress, bool &abort) -> bool {
                 // Simulate a progression of some kind, update every 0.5 second
                 for(int i = 0;i < 20;i++) {
-                    usleep(0.5*1e6);
+                    std::this_thread::sleep_for(500000us);
                     glfwPostEmptyEvent();
                     if (abort)
                         return false;
-                    progress = float(i+1)/20.;
+                    progress = (i+1)/20.;
                 }
                 return true ;
             };

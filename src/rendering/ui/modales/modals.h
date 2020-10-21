@@ -29,24 +29,27 @@ namespace Rendering {
         // Modals can be stacked inside other modals
         Modal* modal = NULL;
 
-        Shortcut escape_shortcut {
-                .keys = {GLFW_KEY_ESCAPE},
-                .name = "escape",
-                .callback = [this] {
+        Shortcut escape_shortcut = {
+                {GLFW_KEY_ESCAPE},
+                "escape",
+                "",
+                [this] {
                     escape = true;
                 }
         };
-        Shortcut enter_shortcut {
-                .keys = {GLFW_KEY_ENTER},
-                .name = "enter",
-                .callback = [this] {
+        Shortcut enter_shortcut = {
+                {GLFW_KEY_ENTER},
+                "enter",
+                "",
+                [this] {
                     enter = true;
                 }
         };
-        Shortcut enter_kp_shortcut {
-                .keys = {GLFW_KEY_KP_ENTER},
-                .name = "enter",
-                .callback = [this] {
+        Shortcut enter_kp_shortcut = {
+                {GLFW_KEY_KP_ENTER},
+                "enter",
+                "",
+                [this] {
                     enter = true;
                 }
         };
@@ -149,12 +152,12 @@ namespace Rendering {
                 Modal *tmp_modal = modal_.modal;
                 while (tmp_modal != NULL)
                     tmp_modal = tmp_modal->modal;
-                auto modal = new Modal{
-                        .title = title,
-                        .draw_fct = draw_fct,
-                        .flags = flags,
-                        .show = true
-                };
+                auto modal = new Modal;
+                modal->title = title;
+                modal->draw_fct = draw_fct;
+                modal->flags = flags;
+                modal->show = true;
+
                 modal_.modal = modal;
                 stacked_modals_.push_back(modal);
             }

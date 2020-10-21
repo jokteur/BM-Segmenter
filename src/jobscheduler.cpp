@@ -119,18 +119,17 @@ void JobScheduler::worker_fct(JobScheduler::Worker &worker) {
 }
 
 JobReference JobScheduler::addJob(std::string name, jobFct &function, Job::jobPriority priority) {
-    Job job{
-        .name = name,
-        .id = job_counter_++,
-        .fct = function,
-        .priority = priority,
-    };
+    Job job;
+    job.name = name;
+    job.id = job_counter_++;
+    job.fct = function;
+    job.priority = priority;
+
     std::lock_guard<std::mutex> guard(jobs_mutex_);
     jobs_list_.push_back(job);
 
-    JobReference jobReference {
-        .it = --(jobs_list_.end())
-    };
+    JobReference jobReference;
+    jobReference.it = --(jobs_list_.end());
 
     priority_queue_.push(jobReference);
     semaphore_.post();
@@ -160,10 +159,9 @@ const Job JobScheduler::getJobInfo(jobId id) {
         }
     }
     // Did not found any job
-    Job job{
-        .name = "",
-        .state = Job::JOB_STATE_NOTEXISTING,
-    };
+    Job job;
+    job.name = "";
+    job.state = Job::JOB_STATE_NOTEXISTING;
     return job;
 }
 

@@ -22,12 +22,11 @@ namespace Rendering {
         bool confirm = false;
 
         modal_fct draw_fct = [this] (bool &show, bool &enter, bool &escape) {
-            Shortcut shortcut{
-                    .keys = {KEY_ENTER, CMD_KEY},
-                    .name = "confirm",
-                    .callback = [this] {
-                        confirm = true;
-                    }
+            Shortcut shortcut;
+            shortcut.keys = {KEY_ENTER, CMD_KEY};
+            shortcut.name = "confirm";
+            shortcut.callback = [this] {
+                confirm = true;
             };
 
             KeyboardShortCut::addTempShortcut(shortcut);

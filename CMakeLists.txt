@@ -4,11 +4,15 @@ project(BM-Segmenter)
 set(CMAKE_CXX_STANDARD 14)
 
 set(CMAKE_EXE_LINKER_FLAGS -static)
-set(GCC_COVERAGE_COMPILE_FLAGS "-s -O3 -static-libgcc -static-libstdc++ -fvisibility=hidden")
+set(GCC_COVERAGE_COMPILE_FLAGS "-s -O3 -fvisibility=hidden")
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 
 set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/install)
+
+# Python and TOML11 do not like each other
+# This flag avoids interopabilities problems
+add_compile_definitions(HAVE_SNPRINTF)
 
 # -----
 # glfw3
@@ -47,19 +51,20 @@ set(OpenCV_LIBS opencv_core opencv_imgproc opencv_highgui opencv_imgcodecs)
 # -------
 # PyTorch
 # -------
-#find_package(Torch REQUIRED)
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
+find_package(Torch REQUIRED)
+#message("${TORCH_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
 
 # The following code block is suggested to be used on Windows.
 # According to https://github.com/pytorch/pytorch/issues/25457,
 # the DLLs need to be copied to avoid memory errors.
-#if (WIN32)
-#    file(GLOB TORCH_DLLS "${TORCH_INSTALL_PREFIX}/lib/*.dll")
-#    install(
-#        FILES ${TORCH_INSTALL_PREFIX}/lib/*.dll
-#        DESTINATION ${INSTALL_DIR}
-#    )
-#endif (WIN32)
+if (WIN32)
+    file(GLOB TORCH_DLLS "${TORCH_INSTALL_PREFIX}/lib/*.dll")
+    install(
+        FILES ${TORCH_DLLS}
+        DESTINATION ${INSTALL_DIR}
+    )
+endif (WIN32)
 
 # --------------------------------
 # Python installation and pybind11

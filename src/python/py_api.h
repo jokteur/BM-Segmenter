@@ -1,9 +1,18 @@
 #ifndef BM_SEGMENTER_PY_API_H
 #define BM_SEGMENTER_PY_API_H
 
-#define PY_SSIZE_T_CLEAN
-#include <Python.h>
+#ifdef _DEBUG
+#undef _DEBUG
+#include <python.h>
+#define _DEBUG
+#else
+#include <python.h>
+#endif
+
 #include <pybind11/embed.h>
+
+#include <string>
+#include <iostream>
 
 namespace PyAPI {
     namespace py = pybind11;
@@ -51,5 +60,4 @@ namespace PyAPI {
 
     };
 }
-
 #endif //BM_SEGMENTER_PY_API_H

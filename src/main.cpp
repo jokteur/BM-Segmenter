@@ -12,11 +12,10 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     std::cout << "KEY : " << keyName << std::endl;
 }
 
+
 int main(int, char**)
 {
     auto *python = &PyAPI::Handler::getInstance();
-
-    python->testFct();
 
     GLFWwindowHandler::focus_all = true;
 

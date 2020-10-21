@@ -127,12 +127,10 @@ void Rendering::Window::update() {
     glfwGetWindowPos(window, &xpos, &ypos);
     glfwGetWindowSize(window, &width, &height);
     // Adapt for DPI
-    dimensions = {
-            .xpos = (float)xpos / xscale_,
-            .ypos = (float)ypos / xscale_,
-            .width = (float)width / xscale_,
-            .height = (float)height / xscale_,
-    };
+    dimensions.xpos = (float)xpos / xscale_;
+    dimensions.ypos = (float)ypos / xscale_;
+    dimensions.width = (float)width / xscale_;
+    dimensions.height = (float)height / xscale_;
 
     for(auto &drawable : drawables_)
         drawable->update(window, dimensions);

@@ -74,7 +74,13 @@ static inline int charToUtf8(char* buf, int buf_size, unsigned int c)
  */
 bool KeyboardShortCut::is_shortcut_valid(Shortcut &shortcut) {
     bool is_valid = false;
-    timepoint previous_time = keyboard_events_[0].time;
+
+    timepoint previous_time;
+    bool no_time_check = true;
+    if (!keyboard_events_.empty()) {
+        previous_time = keyboard_events_[0].time;
+        no_time_check = false;
+    }
     float time_between_keys = 0;
 
     // Once a shortcut is complete, it "consumes" the key events in the deque
@@ -83,7 +89,9 @@ bool KeyboardShortCut::is_shortcut_valid(Shortcut &shortcut) {
     for(auto it = keyboard_events_.begin(); it != keyboard_events_.end(); it++) {
         auto &event = *it;
         auto shortcut_iterator = find_key(shortcut, event.key);
-        time_between_keys = std::chrono::duration_cast<std::chrono::milliseconds>(previous_time - event.time).count();
+        time_between_keys = (float)std::chrono::duration_cast<std::chrono::milliseconds>(previous_time - event.time).count();
+        if (no_time_check)
+            time_between_keys = 0;
 
         if (shortcut_iterator != shortcut.tmp_keys.end()
             && (event.state == GLFW_PRESS || time_between_keys < shortcut.delay)) {
@@ -120,10 +128,8 @@ void KeyboardShortCut::key_callback(GLFWwindow *window, int key, int scancode, i
     key = translate_keycode(key);
     if (action == GLFW_PRESS) {
         //last_keystroke_ = key;
-        keyboard_events_.push_front(KeyEvent{
-            .key = key,
-            .state = GLFW_PRESS,
-            .time = std::chrono::system_clock::now()});
+        KeyEvent keyevent = {key, GLFW_PRESS, std::chrono::system_clock::now()};
+        keyboard_events_.push_front(keyevent);
 
         if  (keyboard_events_.size() > KEYBOARD_SHORTCUT_QUEUE_LENGTH)
             keyboard_events_.pop_back();

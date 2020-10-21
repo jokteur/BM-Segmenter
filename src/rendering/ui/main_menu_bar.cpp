@@ -156,25 +156,25 @@ void Rendering::MainMenuBar::open_file(std::string filename) {
 }
 
 void Rendering::MainMenuBar::init_listeners() {
-    auto shortcuts_listener = new Listener{
-        .filter = "shortcuts/global/*",
-        .callback = [this] (Event_ptr &event) {
-            std::string name = event->getName();
+    auto shortcuts_listener = new Listener;
+    shortcuts_listener->filter = "shortcuts/global/*";
+    shortcuts_listener->callback = [this] (Event_ptr &event) {
+        std::string name = event->getName();
 
-            if (name == "shortcuts/global/new project") {
-                new_project_modal_.showModal();
-            }
-            else if (name == "shortcuts/global/open project") {
-                open_file();
-            }
-            else if (name == "shortcuts/global/save project under") {
-                save_project_under();
-            }
-            else if (name == "shortcuts/global/save project") {
-                save_project();
-            }
+        if (name == "shortcuts/global/new project") {
+            new_project_modal_.showModal();
+        }
+        else if (name == "shortcuts/global/open project") {
+            open_file();
+        }
+        else if (name == "shortcuts/global/save project under") {
+            save_project_under();
+        }
+        else if (name == "shortcuts/global/save project") {
+            save_project();
         }
     };
+
     event_queue_.subscribe(shortcuts_listener);
     listeners_.push_back(shortcuts_listener);
 }

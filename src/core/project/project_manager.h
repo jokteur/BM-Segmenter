@@ -47,7 +47,7 @@ public:
      * Returns the number of current projects
      * @return
      */
-    int getNumProjects() { return projects_.size(); }
+    size_t getNumProjects() { return projects_.size(); }
 
     /**
      * Creates a new project a adds it to the ProjectManager
