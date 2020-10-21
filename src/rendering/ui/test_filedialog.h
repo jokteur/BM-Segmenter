@@ -6,13 +6,12 @@
 #include "../drawables.h"
 #include <GLFW/glfw3.h>
 #include "imgui.h"
-
+#include "python/py_api.h"
 
 namespace Rendering {
     class MyFile : public AbstractLayout {
     private:
         int counter_ = 0;
-        nfdchar_t *outPath = NULL;
 
     public:
         MyFile() {
@@ -21,7 +20,13 @@ namespace Rendering {
         void ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) override {
             ImGui::Begin("File window");
             if(ImGui::Button("Open file")) {
-                nfdresult_t result = NFD_OpenDialog( "png,jpg;pdf", NULL, &outPath );
+                NFD_Init();
+                nfdchar_t *outPath;
+                nfdresult_t result = NFD_PickFolder(&outPath, NULL);
+                if (result == NFD_OKAY) {
+                    PyAPI::Handler::getInstance().testFct(outPath);
+                }
+                NFD_Quit();
             }
             ImGui::End();
 

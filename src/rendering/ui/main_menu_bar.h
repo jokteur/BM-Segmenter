@@ -15,7 +15,6 @@ namespace Rendering {
     class MainMenuBar : public AbstractLayout {
     private:
         int counter_ = 0;
-        nfdchar_t *outPath = NULL;
         ProjectManager& project_manager_;
         EventQueue& event_queue_;
         Settings& settings_;

@@ -133,7 +133,9 @@ void Rendering::MainMenuBar::settings_menu(){
 
 void Rendering::MainMenuBar::open_file(std::string filename) {
     if (filename.empty()) {
-        nfdresult_t result = NFD_OpenDialog(STRING(PROJECT_EXTENSION), NULL, &outPath);
+        nfdchar_t *outPath;
+        nfdfilteritem_t filterItem[1] = { { "Project", STRING(PROJECT_EXTENSION) } };
+        nfdresult_t result = NFD_OpenDialog(&outPath, filterItem, 1, NULL);
         if (result == NFD_ERROR) {
             show_error_modal("Load project error",
                              "Could not open project");
@@ -190,9 +192,11 @@ void Rendering::MainMenuBar::save_project() {
     auto project = project_manager_.getCurrentProject();
     if (project != NULL) {
         std::string out_path;
+        nfdchar_t *outPath = NULL;
+        nfdfilteritem_t filterItem[1] = { { "Project", STRING(PROJECT_EXTENSION) } };
         bool proceed = false;
         if (project->getSaveFile().empty()) {
-            nfdresult_t result = NFD_SaveDialog(STRING(PROJECT_EXTENSION), NULL, &outPath);
+            nfdresult_t result = NFD_SaveDialog(&outPath, filterItem, 1, NULL, NULL);
             if (result == NFD_OKAY) {
                 out_path = outPath;
                 out_path += ".ml_proj";
@@ -212,7 +216,9 @@ void Rendering::MainMenuBar::save_project() {
 void Rendering::MainMenuBar::save_project_under() {
     auto project = project_manager_.getCurrentProject();
     if (project != NULL) {
-        nfdresult_t result = NFD_SaveDialog(STRING(PROJECT_EXTENSION), NULL, &outPath);
+        nfdchar_t *outPath = NULL;
+        nfdfilteritem_t filterItem[1] = { { "Project", STRING(PROJECT_EXTENSION) } };
+        nfdresult_t result = NFD_SaveDialog(&outPath, filterItem, 1, NULL, NULL);
         if (result == NFD_OKAY) {
             project = project_manager_.duplicateCurrentProject();
             save(project, std::string(outPath) + STRING(PROJECT_EXTENSION));

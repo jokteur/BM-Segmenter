@@ -131,22 +131,12 @@ include_directories(thirdparty/imgui_bindings)
 # ----------------
 # nativefiledialog
 # ----------------
+add_subdirectory(thirdparty/nativefiledialog-extended)
 if (WIN32)
-    set(native_DIR "thirdparty/nativefiledialog/src")
-    set(native_src
-            ${native_DIR}/common.h
-            ${native_DIR}/include/nfd.h
-            ${native_DIR}/nfd_common.h
-            ${native_DIR}/nfd_common.c
-            ${native_DIR}/nfd_win.cpp
-            ${native_DIR}/common.h)
-
-    add_library(nfd ${native_src})
-
-    target_link_libraries(nfd comctl32.lib)
+    target_link_libraries(nfd comctl32.lib uuid.lib)
 endif()
 # TODO implement for other OS
-include_directories(thirdparty/nativefiledialog/src/include)
+include_directories(thirdparty/nativefiledialog-extended/src/include)
 
 # ------
 # TOML11
