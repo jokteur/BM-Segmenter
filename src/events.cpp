@@ -15,7 +15,7 @@ private:
     const char* what_;
 public:
     explicit EventQueueException(const char* what) : what_(what) {}
-    virtual const char* what() const noexcept
+    const char* what() const noexcept override
     {
         return what_;
     }
@@ -33,8 +33,8 @@ void EventQueue::unsubscribe(Listener *listener) {
     bool has_found = false;
     {
         std::lock_guard<std::mutex> guard(listeners_mutex_);
-        for (auto it = listeners_.begin(); it != listeners_.end(); it++) {
-            if (*it == listener) {
+        for (auto it : listeners_) {
+            if (it == listener) {
                 has_found = true;
                 break;
             }
@@ -79,7 +79,7 @@ void EventQueue::pollEvents() {
 
             std::lock_guard<std::mutex> listener_guard(listeners_mutex_);
             for (const auto &listener : listeners_) {
-                bool filter_ok = isListener(listener->filter, event.get()->getName());
+                bool filter_ok = isListener(listener->filter, event->getName());
 
                 if (filter_ok) {
                     listener->callback(event);
@@ -102,7 +102,7 @@ void EventQueue::pollEvents() {
     }
 }
 
-int EventQueue::getNumSubscribers(std::vector<std::string> event_names) {
+int EventQueue::getNumSubscribers(const std::vector<std::string>& event_names) {
     std::set<Listener*> listener_set;
     std::lock_guard<std::mutex> listener_guard(listeners_mutex_);
     for(const auto &event_name : event_names) {

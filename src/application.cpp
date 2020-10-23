@@ -101,7 +101,7 @@ void Rendering::Application::init_glfw() {
     glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE);
 }
 void Rendering::Application::init() {
-    GLFWwindow* window = *main_window_->getGLFWwindow_ptr().lock().get();
+    GLFWwindow* window = *main_window_->getGLFWwindow_ptr().lock();
 
     // Init imGUI
     glfwMakeContextCurrent(window);

@@ -28,7 +28,7 @@ namespace Rendering {
         bool escape = false;
 
         // Modals can be stacked inside other modals
-        Modal* modal = NULL;
+        Modal* modal = nullptr;
 
         Shortcut escape_shortcut = {
                 {GLFW_KEY_ESCAPE},
@@ -66,7 +66,7 @@ namespace Rendering {
                 KeyboardShortCut::addTempShortcut(escape_shortcut);
                 KeyboardShortCut::addTempShortcut(enter_shortcut);
                 KeyboardShortCut::addTempShortcut(enter_kp_shortcut);
-                if(modal != NULL) {
+                if(modal != nullptr) {
                     modal->ImGuiDraw(window);
                 }
                 ImGui::EndPopup();
@@ -92,7 +92,7 @@ namespace Rendering {
             stacked_modals_.clear();
         }
 
-        Modals() {}
+        Modals() = default;
     public:
         /**
          * Copy constructors stay empty, because of the Singleton
@@ -112,7 +112,7 @@ namespace Rendering {
          * Returns true if any modal is already active
          * @return
          */
-        bool isActive() {
+        bool isActive() const {
             return modal_.show;
         }
 
@@ -125,10 +125,10 @@ namespace Rendering {
         void setModal(std::string title, modal_fct draw_fct, int flags = 0) {
             free_memory();
 
-            modal_.title = title;
-            modal_.draw_fct = draw_fct;
+            modal_.title = std::move(title);
+            modal_.draw_fct = std::move(draw_fct);
             modal_.show = true;
-            modal_.modal = NULL;
+            modal_.modal = nullptr;
             modal_.enter = false;
             modal_.escape = false;
             modal_.flags = flags;
@@ -140,18 +140,18 @@ namespace Rendering {
          * @param draw_fct function to be drawn in the modal
          * @param flags ImGui flags for the modal
          */
-        void stackModal(std::string title, modal_fct draw_fct, int flags = 0) {
+        void stackModal(const std::string& title, const modal_fct& draw_fct, int flags = 0) {
             // Means that no modal is currently showing
             if (!modal_.show) {
                 modal_.show = true;
                 modal_.flags = flags;
                 modal_.title = title;
                 modal_.draw_fct = draw_fct;
-                modal_.modal = NULL;
+                modal_.modal = nullptr;
             }
             else {
                 Modal *tmp_modal = modal_.modal;
-                while (tmp_modal != NULL)
+                while (tmp_modal != nullptr)
                     tmp_modal = tmp_modal->modal;
                 auto modal = new Modal;
                 modal->title = title;
@@ -175,7 +175,7 @@ namespace Rendering {
 
     class ModalsDrawable : public AbstractLayout {
     public:
-        ModalsDrawable() {}
+        ModalsDrawable() = default;
 
         void ImGuiDraw(GLFWwindow *window, Rect &dimensions) override {
             Modals::getInstance().ImGuiDraw(window);

@@ -1,5 +1,4 @@
-#ifndef BM_SEGMENTER_NEW_PROJECT_H
-#define BM_SEGMENTER_NEW_PROJECT_H
+#pragma once
 
 #include "rendering/drawables.h"
 #include "rendering/ui/modales/modals.h"
@@ -73,4 +72,3 @@ namespace Rendering {
     };
 }
 
-#endif //BM_SEGMENTER_NEW_PROJECT_H

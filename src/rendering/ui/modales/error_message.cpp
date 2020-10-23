@@ -1,6 +1,6 @@
 #include "error_message.h"
 
-void Rendering::show_error_modal(std::string title, std::string short_descr, std::string detailed)  {
+void Rendering::show_error_modal(const std::string& title, const std::string& short_descr, const std::string& detailed)  {
     static std::string last_title;
     static bool redraw_modal = true;
     static bool show_details;
@@ -10,7 +10,7 @@ void Rendering::show_error_modal(std::string title, std::string short_descr, std
     }
 
     const modal_fct error_fct = [title, short_descr, detailed] (bool &show, bool &enter, bool &escape) {
-        ImGui::Text(short_descr.c_str());
+        ImGui::Text("%s", short_descr.c_str());
 
         float width = ImGui::GetItemRectSize().x;
         float height = ImGui::GetItemRectSize().y;
@@ -44,7 +44,7 @@ void Rendering::show_error_modal(std::string title, std::string short_descr, std
                 ImGui::Text("Error details:");
                 //ImGui::PushFont();
                 height += ImGui::GetItemRectSize().y;
-                ImGui::TextWrapped(detailed.c_str());
+                ImGui::TextWrapped("%s", detailed.c_str());
                 height += ImGui::GetItemRectSize().y;
             }
         }

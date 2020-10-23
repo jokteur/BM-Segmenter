@@ -32,7 +32,7 @@ public:
      * has been polled, otherwise there could be concurrency problems.
      */
     explicit Event(std::string name, bool acknowledgable = false) :
-    name_(name), time_(std::chrono::system_clock::now()), acknowledgable_(acknowledgable) {}
+    name_(std::move(name)), time_(std::chrono::system_clock::now()), acknowledgable_(acknowledgable) {}
 
     /**
      * @return returns the name of the event
@@ -165,7 +165,7 @@ public:
      * @param event_names list of events by names
      * @return number of listeners
      */
-    int getNumSubscribers(std::vector<std::string> event_names);
+    int getNumSubscribers(const std::vector<std::string>& event_names);
 
     /**
      * Returns true if the given filter corresponds to a given event name
@@ -173,7 +173,7 @@ public:
      * @param event_name
      * @return
      */
-    bool isListener(const std::string &filter, const std::string &event_name);
+    static bool isListener(const std::string &filter, const std::string &event_name);
 
     /**
      * Sends an event in the event queue

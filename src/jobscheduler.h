@@ -38,6 +38,15 @@ public:
     }
 };
 
+/**
+ * Typedef for the lambda function that will be executed
+ *
+ * First argument is the progress of the function
+ * Second argument is the abort bool of the function
+ * If this is set to true, the function should abort itself
+ *
+ * The function should return true if successful, false if not
+ */
 typedef std::function<bool (float &, bool &)> jobFct;
 typedef uint64_t jobId;
 typedef uint64_t workerId;

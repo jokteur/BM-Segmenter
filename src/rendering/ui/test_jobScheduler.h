@@ -113,7 +113,7 @@ namespace Rendering {
             }
             ImGui::SameLine();
             std::string text = std::to_string(scheduler_.getNumberOfWorkers());
-            ImGui::Text(text.c_str());
+            ImGui::Text("%s", text.c_str());
 
             ImGui::Separator();
             std::string name;
@@ -130,7 +130,7 @@ namespace Rendering {
                     if (jobInfo.priority == Job::JOB_PRIORITY_LOWEST)
                         priority = "(L-)";
                     name = std::string("Job ") + std::to_string(jobInfo.id) + priority;
-                    ImGui::Text(name.c_str());
+                    ImGui::Text("%s", name.c_str());
                     ImGui::SameLine();
                     ImGui::PushID(jobInfo.id);
                     if (ImGui::Button("Cancel")) {
@@ -141,7 +141,7 @@ namespace Rendering {
                     float progress = jobInfo.progress;
                     name = std::string("Job ") + std::to_string(jobInfo.id) + std::string(" ( ") +
                            std::to_string(progress) + std::string("%)");
-                    ImGui::Text(name.c_str());
+                    ImGui::Text("%s", name.c_str());
                     ImGui::SameLine();
                     ImGui::PushID(jobInfo.id);
                     if (ImGui::Button("Cancel")) {
@@ -155,11 +155,11 @@ namespace Rendering {
                 Job jobInfo = *jobs_[i].it;
                 if (jobInfo.state == Job::JOB_STATE_FINISHED) {
                     name = std::string("Job ") + std::to_string(jobInfo.id) + std::string(" (F)");
-                    ImGui::Text(name.c_str());
+                    ImGui::Text("%s", name.c_str());
                 }
                 if (jobInfo.state == Job::JOB_STATE_CANCELED || jobInfo.state == Job::JOB_STATE_ABORTED) {
                     name = std::string("Job ") + std::to_string(jobInfo.id) + std::string(" (C)");
-                    ImGui::Text(name.c_str());
+                    ImGui::Text("%s", name.c_str());
                 }
             }
             ImGui::End();

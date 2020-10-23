@@ -31,7 +31,7 @@ namespace Rendering {
         /**
          * Default constructor, does nothing
          */
-        AbstractDrawable() {};
+        AbstractDrawable() = default;;
 
 
         virtual ~AbstractDrawable() = default;
@@ -40,14 +40,15 @@ namespace Rendering {
 
         /**
          * Updates the class, before any ImGui::NewFrame() is called
-         * @param window
-         * @param parent_dimension
+         * @param window GLFW window pointer to which the drawable should be drawn
+         * @param parent_dimension dimension of the parent layout
          */
         void update(GLFWwindow *window, Rect &parent_dimension) {}
 
         /**
          * Draws ImGui elements to the window (between ImGui::NewFrame() and ImGui::Render())
-         * @return
+         * @param window GLFW window pointer to which the drawable should be drawn
+         * @param parent_dimension dimension of the parent layout
          */
         virtual void ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) = 0;
 
@@ -58,13 +59,13 @@ namespace Rendering {
     public:
         AbstractLayout() = default;
 
-        virtual ~AbstractLayout() = default;
+        ~AbstractLayout() override = default;
 
         /**
          * Draws ImGui elements to the window (between ImGui::NewFrame() and ImGui::Render())
          * @return
          */
-        virtual void ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) = 0;
+        void ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) override = 0;
     };
 }
 

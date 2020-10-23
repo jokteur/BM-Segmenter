@@ -1,7 +1,3 @@
-//
-// Created by jokte on 16.05.2020.
-//
-
 #ifndef BM_SEGMENTER_APPLICATION_H
 #define BM_SEGMENTER_APPLICATION_H
 
