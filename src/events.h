@@ -1,6 +1,7 @@
 #ifndef BM_SEGMENTER_EVENTS_H
 #define BM_SEGMENTER_EVENTS_H
 
+#include <utility>
 #include <vector>
 #include <queue>
 #include <string>

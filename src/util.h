@@ -1,0 +1,7 @@
+#ifndef BM_SEGMENTER_UTIL_H
+#define BM_SEGMENTER_UTIL_H
+
+#define STRING2(X) #X
+#define STRING(X) STRING2(X)
+
+#endif //BM_SEGMENTER_UTIL_H

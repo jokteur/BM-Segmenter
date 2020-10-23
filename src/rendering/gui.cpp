@@ -21,7 +21,7 @@ Rendering::GUI::GUI(Rendering::Application &app) {
     }
 
     app.getMainWindow().addDrawable(&dockspace_);
-    app.getMainWindow().addDrawable(&window_);
+//    app.getMainWindow().addDrawable(&window_);
     app.getMainWindow().addDrawable(&modals_);
-    app.getMainWindow().addDrawable(&file_);
+    app.getMainWindow().addDrawable(&exploreFolder_);
 }

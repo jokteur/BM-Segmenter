@@ -24,7 +24,7 @@ namespace Rendering {
                 nfdchar_t *outPath;
                 nfdresult_t result = NFD_PickFolder(&outPath, NULL);
                 if (result == NFD_OKAY) {
-                    PyAPI::Handler::getInstance().testFct(outPath);
+//                    PyAPI::Handler::getInstance().testFct(outPath);
                 }
                 NFD_Quit();
             }

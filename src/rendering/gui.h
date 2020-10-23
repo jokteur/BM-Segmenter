@@ -1,7 +1,7 @@
-#ifndef BM_SEGMENTER_GUI_H
-#define BM_SEGMENTER_GUI_H
+#pragma once
 
-#include "../application.h"
+#include "application.h"
+#include "ui/dataset/ui_explore.h"
 #include "ui/test_jobScheduler.h"
 #include "ui/test_filedialog.h"
 #include "ui/modales/modals.h"
@@ -10,13 +10,11 @@
 namespace Rendering {
     class GUI {
     private:
-        MyWindow window_;
-        MyFile file_;
+//        MyWindow window_;
+        ExploreFolder exploreFolder_;
         Dockspace dockspace_;
         ModalsDrawable modals_;
     public:
         GUI(Application &app);
     };
 }
-
-#endif //BM_SEGMENTER_GUI_H

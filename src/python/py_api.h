@@ -29,10 +29,11 @@ namespace PyAPI {
     private:
 
         Handler() {
-            wchar_t *home_dir = Py_DecodeLocale("python", NULL);
+            wchar_t *home_dir = Py_DecodeLocale("python", nullptr);
             Py_SetPythonHome(home_dir);
 
             py::initialize_interpreter();
+            PyEval_SaveThread();
         }
     public:
         /**
@@ -49,13 +50,10 @@ namespace PyAPI {
             return instance;
         }
 
-        void testFct() {
-            py::module scripts = py::module::import("python.scripts");
-        }
-
 
         ~Handler() {
-            pybind11::finalize_interpreter();
+//            PyGILState_Ensure();
+//            py::finalize_interpreter();
         }
 
     };
