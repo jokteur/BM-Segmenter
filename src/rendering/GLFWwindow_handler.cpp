@@ -1,5 +1,6 @@
 #include "GLFWwindow_handler.h"
 #include "rendering/keyboard_shortcuts.h"
+#include "events.h"
 
 #include <iostream>
 
@@ -36,6 +37,7 @@ void GLFWwindowHandler::addWindow(GLFWwindow *window, int z_index) {
     windows_.insert(std::pair<int, GLFWwindow*>(z_index, window));
     glfwSetWindowFocusCallback(window, &GLFWwindowHandler::focus_callback);
     glfwSetKeyCallback(window, &KeyboardShortCut::key_callback);
+    glfwSetFramebufferSizeCallback(window, &GLFWwindowHandler::framebuffer_size_callback);
     //glfwSetCharCallback(window, &KeyboardShortCut::character_callback);
 }
 
@@ -52,4 +54,10 @@ void GLFWwindowHandler::setZIndex(GLFWwindow *window, int z_index) {
     removeWindow(window);
     addWindow(window, z_index);
 
+}
+
+void GLFWwindowHandler::framebuffer_size_callback(GLFWwindow *window, int width, int height) {
+    glViewport(0, 0, width, height);
+    EventQueue::getInstance().post(Event_ptr(new Event("rendering/redraw")));
+    // TODO Multi-threaded app: https://stackoverflow.com/a/56614042/8523520
 }

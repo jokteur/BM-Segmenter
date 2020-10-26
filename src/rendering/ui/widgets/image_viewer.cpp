@@ -1,12 +1,16 @@
 #include "image_viewer.h"
+#include "imgui.h"
 
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
+int Rendering::ImageViewer::instance_number = 0;
 
 void Rendering::ImageViewer::ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) {
-
-}
-
-void Rendering::ImageViewer::setImage(char *image) {
-
+    ImGui::Begin("Test Image");
+    if (ImGui::Button("open")) {
+        auto image = ::core::Image();
+        image.setImage("assets/giuli.jpg");
+        image_widget_.setImage(image);
+//        image_widget_.setSize(ImVec2(100, 100));
+    }
+    image_widget_.ImGuiDraw(window, parent_dimension);
+    ImGui::End();
 }

@@ -26,7 +26,7 @@ namespace Rendering {
      */
     class AbstractDrawable {
     protected:
-        Rect dimensions;
+        Rect dimensions_;
     public:
         /**
          * Default constructor, does nothing
@@ -36,7 +36,7 @@ namespace Rendering {
 
         virtual ~AbstractDrawable() = default;
 
-        Rect& getDimensions() { return dimensions; }
+        Rect& getDimensions() { return dimensions_; }
 
         /**
          * Updates the class, before any ImGui::NewFrame() is called

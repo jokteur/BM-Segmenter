@@ -25,7 +25,7 @@ Rendering::ExploreFolder::ExploreFolder() {
 void Rendering::ExploreFolder::ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) {
     // Open, and cancel a new folder
     ImGui::Begin("Find dicoms in folder");
-    if (explorer_.getStatus() == ::core::dataset::Explore::WORKING) {
+    if (explorer_.getStatus() == ::core::dataset::Explore::EXPLORE_WORKING) {
         if (ImGui::Button("Cancel")) {
             JobScheduler::getInstance().stopJob(explorer_.getJobReference());
             std::cout << explorer_.getJobReference().getJob().exception.what() << std::endl;
@@ -65,28 +65,28 @@ void Rendering::ExploreFolder::ImGuiDraw(GLFWwindow *window, Rect &parent_dimens
     ImGui::Text("Status:");
     ImGui::Separator();
     switch (explorer_.getStatus()) {
-        case dataset::Explore::WORKING:
+        case dataset::Explore::EXPLORE_WORKING:
             ImGui::Text("Searching the folder %s...", path_.c_str());
             break;
-        case dataset::Explore::SUCCESS:
+        case dataset::Explore::EXPLORE_SUCCESS:
             ImGui::Text("Finished searching. Found the following results:");
             break;
-        case dataset::Explore::CANCELLED:
+        case dataset::Explore::EXPLORE_CANCELLED:
             ImGui::Text("Cancelled last search");
             break;
-        case dataset::Explore::ERROR:
+        case dataset::Explore::EXPLORE_ERROR:
             ImGui::TextColored(ImVec4(200.f/255.f, 0.f,0.f,1.f), "Error when searching the folder.");
             break;
-        case dataset::Explore::PARTIAL_SUCCESS:
+        case dataset::Explore::EXPLORE_PARTIAL_SUCCESS:
             ImGui::Text("Finished searching. Found some errors.");
             break;
-        case dataset::Explore::SLEEPING:
+        case dataset::Explore::EXPLORE_SLEEPING:
             ImGui::Text("Open a folder to start searching for dicoms.");
             break;
     }
 
     // Draw the log of the exploration
-    if (explorer_.getStatus() == dataset::Explore::WORKING) {
+    if (explorer_.getStatus() == dataset::Explore::EXPLORE_WORKING) {
         ImGui::Separator();
         ImGui::BeginChild("log_scroll", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
         ImGui::TextUnformatted(log_buffer_.begin(), log_buffer_.end());
@@ -95,7 +95,7 @@ void Rendering::ExploreFolder::ImGuiDraw(GLFWwindow *window, Rect &parent_dimens
         ImGui::EndChild();
     }
     // Draw the result and / or the errors
-    else if (explorer_.getStatus() != dataset::Explore::SLEEPING) {
+    else if (explorer_.getStatus() != dataset::Explore::EXPLORE_SLEEPING) {
         ImGui::Separator();
 
         // Error log
@@ -155,6 +155,7 @@ void Rendering::ExploreFolder::ImGuiDraw(GLFWwindow *window, Rect &parent_dimens
                         continue;
                     }
                     for (auto &image : series.images) {
+                        image.tree_count = 0;
                         if (image_filter_.PassFilter(image.number.c_str())) {
                             patient.tree_count++;
                             study.tree_count++;

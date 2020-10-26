@@ -2,9 +2,9 @@
 
 #include <iostream>
 
-#include "application.h"
 #include "rendering/gui.h"
 #include "GLFWwindow_handler.h"
+
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {

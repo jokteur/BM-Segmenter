@@ -1,15 +1,11 @@
-//
-// Created by jokte on 16.05.2020.
-//
-
 #include <exception>
 #include <iostream>
 
+#include <GL/gl3w.h>    // Initialize with gl3wInit()
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 
-#include <GL/gl3w.h>    // Initialize with gl3wInit()
 #include <GLFW/glfw3.h>
 
 #include "application.h"

@@ -1,5 +1,4 @@
-#ifndef BM_SEGMENTER_GLFWWINDOW_HANDLER_H
-#define BM_SEGMENTER_GLFWWINDOW_HANDLER_H
+#pragma once
 
 #include <map>
 #include <GLFW/glfw3.h>
@@ -18,6 +17,14 @@ public:
      * If focus_all is set to true, then
      */
     static bool focus_all;
+
+    /**
+     * Callback for GLFW when resizing the window
+     * @param window
+     * @param width
+     * @param height
+     */
+    static void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 
     /**
      * Callback for GLFW when any window is focused or defocused
@@ -55,7 +62,3 @@ public:
      */
     static void removeWindow(GLFWwindow* window);
 };
-
-
-
-#endif //BM_SEGMENTER_GLFWWINDOW_HANDLER_H

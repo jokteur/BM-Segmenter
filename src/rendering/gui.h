@@ -1,11 +1,12 @@
 #pragma once
 
-#include "application.h"
+#include "first_include.h"
+
+#include "ui/widgets/image_viewer.h"
 #include "ui/dataset/ui_explore.h"
-#include "ui/test_jobScheduler.h"
-#include "ui/test_filedialog.h"
 #include "ui/modales/modals.h"
 #include "ui/dockspace.h"
+#include "application.h"
 
 namespace Rendering {
     class GUI {
@@ -13,8 +14,9 @@ namespace Rendering {
 //        MyWindow window_;
         ExploreFolder exploreFolder_;
         Dockspace dockspace_;
+        ImageViewer imageViewer_;
         ModalsDrawable modals_;
     public:
-        GUI(Application &app);
+        explicit GUI(Application &app);
     };
 }
