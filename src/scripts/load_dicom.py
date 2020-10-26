@@ -54,7 +54,7 @@ class DicomFolder:
         if study_key not in self.dicoms[patientID]:
             self.dicoms[patientID][study_key] = {}
 
-        if study_key not in self.dicoms[patientID][study_key]:
+        if series_key not in self.dicoms[patientID][study_key]:
             self.dicoms[patientID][study_key][series_key] = []
 
         self.dicoms[patientID][study_key][series_key].append(

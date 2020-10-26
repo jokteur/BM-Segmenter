@@ -48,7 +48,7 @@ namespace Rendering {
         /**
          * Safely shuts down ImGUI
          */
-        void shutdown();
+        static void shutdown();
     public:
         /**
          * Constructor which initializes the main window of the application

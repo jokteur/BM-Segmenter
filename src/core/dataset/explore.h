@@ -78,7 +78,7 @@
          */
          class Explore {
          public:
-             enum status {SLEEPING, WORKING, SUCCESS, CANCELLED, PARTIAL_SUCCESS, ERROR};
+             enum status {EXPLORE_SLEEPING, EXPLORE_WORKING, EXPLORE_SUCCESS, EXPLORE_CANCELLED, EXPLORE_PARTIAL_SUCCESS, EXPLORE_ERROR};
          private:
              std::string path_;
              std::vector<PatientNode> cases_; // Tree representation of the cases discovered in the folder
@@ -94,7 +94,7 @@
               *
               * The path can not be changed later
               */
-             explicit Explore() : event_queue_(EventQueue::getInstance()), status_(SLEEPING) {}
+             explicit Explore() : event_queue_(EventQueue::getInstance()), status_(EXPLORE_SLEEPING) {}
 
              /**
               * @brief Opens the Python interpreter and explores all the readable DICOMs present in

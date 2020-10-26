@@ -146,7 +146,7 @@ bool Rendering::Application::loop() {
     GLFWwindow* main_window;
     do {
         ImGuiIO& io = ImGui::GetIO(); (void)io;
-        main_window = *main_window_->getGLFWwindow_ptr().lock().get();
+        main_window = *main_window_->getGLFWwindow_ptr().lock();
 
         glfwPollEvents();
         event_queue_.pollEvents();

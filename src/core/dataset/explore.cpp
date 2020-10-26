@@ -11,16 +11,16 @@ namespace core {
         void Explore::findDicoms(const std::string &path) {
             path_ = path;
             jobFct job = [=](float &progress, bool &abort) -> bool {
-                status_ = WORKING;
+                status_ = EXPLORE_WORKING;
                 auto state = PyGILState_Ensure();
 
-                Explore::status status = SUCCESS;
+                Explore::status status = EXPLORE_SUCCESS;
                 try {
                     py::module scripts = py::module::import("python.scripts.load_dicom");
                     py::object dicoms = scripts.attr("DiscoverDicoms")(path_.c_str());
                     for (auto &element : dicoms) {
                         if (abort) {
-                            status = CANCELLED;
+                            status = EXPLORE_CANCELLED;
                             break;
                         }
                         auto tuple = element.cast<py::tuple>();
@@ -33,7 +33,7 @@ namespace core {
 
                         event_queue_.post(Event_ptr(new LogEvent("dicom_search", message)));
                         if (!errors.empty()) {
-                            status = PARTIAL_SUCCESS;
+                            status = EXPLORE_PARTIAL_SUCCESS;
                             event_queue_.post(Event_ptr(new LogEvent("dicom_error", errors)));
                         }
                     }
@@ -81,19 +81,19 @@ namespace core {
                 catch (const std::exception &e) {
                     std::string error(e.what());
                     event_queue_.post(Event_ptr(new LogEvent("dicom_error", error)));
-                    status = ERROR;
+                    status = EXPLORE_ERROR;
                 }
 
                 PyGILState_Release(state);
 
                 status_ = status;
-                if (status == ERROR)
+                if (status == EXPLORE_ERROR)
                     return false;
                 else
                     return true;
             };
 
-            if (status_ != WORKING)
+            if (status_ != EXPLORE_WORKING)
                 jobRef_ = JobScheduler::getInstance().addJob(STRING(JOBEXPLORENAME), job);
         }
 
