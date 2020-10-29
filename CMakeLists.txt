@@ -44,9 +44,10 @@ include_directories(thirdparty/stb_image)
 # ------
 # OpenCV
 # ------
+set(BUILD_SHARED_LIBS OFF)
 find_package(OpenCV 4.4 REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
-set(OpenCV_LIBS opencv_core opencv_imgproc opencv_highgui opencv_imgcodecs)
+set(OpenCV_LIBS opencv_core opencv_imgproc opencv_imgcodecs)
 
 # -------
 # PyTorch

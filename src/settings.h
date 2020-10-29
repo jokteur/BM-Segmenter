@@ -98,9 +98,14 @@ public:
     int &getUIsize() { return ui_size_; }
 
     /**
+     * @return returns the adjusted scale of the ui (taking into account the DPI)
+     */
+    float getAdjustedScale() const { return current_scale_* (float)ui_size_ / 100.f; }
+
+    /**
      * @return returns the current theme
      */
-    int getCurrentTheme() { return current_theme_; }
+    Theme getCurrentTheme() { return current_theme_; }
 
     /**
      * @return returns the recent files (projects) saved in the settings

@@ -109,6 +109,9 @@ void Rendering::Application::init() {
         throw FailedToInitializeApp();
     }
 
+    glfwWindowHint(GLFW_SAMPLES, 4);
+    glEnable(GL_MULTISAMPLE);
+
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();

@@ -21,5 +21,16 @@ namespace Rendering {
                 va_end(args);
             }
         }
+
+        /**
+         * Checks if the mouse is inside the rectangle
+         * @param mouse_position
+         * @param dimensions
+         * @return
+         */
+        static bool check_hitbox(const ImVec2 &mouse_position, const Rect &dimensions) {
+            return mouse_position.x > dimensions.xpos && mouse_position.x < dimensions.xpos + dimensions.width
+                   && mouse_position.y > dimensions.ypos && mouse_position.y < dimensions.ypos + dimensions.height;
+        }
     }
 }

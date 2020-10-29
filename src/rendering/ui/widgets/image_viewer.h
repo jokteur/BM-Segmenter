@@ -5,6 +5,7 @@
 #include "core/image.h"
 #include "rendering/drawables.h"
 #include "rendering/ui/widgets/image_simple.h"
+#include "rendering/ui/widgets/image_button.h"
 
 namespace Rendering {
 
@@ -16,9 +17,12 @@ namespace Rendering {
         const char* identifier_;
 
         SimpleImage image_widget_;
+        ImageButton button_;
 
     public:
-        ImageViewer() {
+        ImageViewer() :
+        button_("assets/lasso.png", "assets/lasso_dark.png", true,"sdsdf")
+        {
             instance_number++;
             identifier_ = (std::to_string(instance_number) + std::string("ImageViewer")).c_str();
             image_widget_.setInteractiveZoom(SimpleImage::IMAGE_MODIFIER_INTERACT);

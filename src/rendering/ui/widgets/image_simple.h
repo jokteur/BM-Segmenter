@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <iostream>
 
 #include "imgui.h"
 #include "core/image.h"
@@ -39,6 +40,10 @@ namespace Rendering {
         bool fixed_size_ = false;
         ImVec2 size_;
 
+        const char* tooltip_;
+        bool border_ = false;
+        ImGuiWindowFlags flags_ = 0;
+
         ImageInteraction interactive_zoom_;
 
         ImageInteraction image_drag_;
@@ -47,11 +52,12 @@ namespace Rendering {
         ImVec2 current_drag_;
 
         bool redraw_image_ = false;
+        bool scale_to_viewport_ = false;
         float rescale_factor_ = 1.f;
         ImVec2 scaled_sizes_;
         ImVec2 content_size_;
 
-        const char* identifier_;
+        std::string identifier_;
 
     public:
 
@@ -62,6 +68,7 @@ namespace Rendering {
          * @param size set the size (in viewport) of the widget
          */
         explicit SimpleImage(ImVec2 size = ImVec2(0,0),
+                             const char* tooltip = "",
                              ImageInteraction interactive_zoom = IMAGE_NO_INTERACT,
                              ImageInteraction image_drag = IMAGE_NO_INTERACT,
                              float max_zoom = 20.f,
@@ -71,9 +78,10 @@ namespace Rendering {
                              zoom_speed_(zoom_speed),
                              image_drag_(image_drag),
                              interactive_zoom_(interactive_zoom),
+                             tooltip_(tooltip),
                              size_(size) {
             instance_number++;
-            identifier_ = (std::to_string(instance_number) + std::string("ImageSimple")).c_str();
+            identifier_ = std::to_string(instance_number) + std::string("ImageSimple");
         }
 
         /**
@@ -95,6 +103,15 @@ namespace Rendering {
             else
                 fixed_size_ = true;
             redraw_image_ = true;
+        }
+
+        /**
+         * Sets the auto scale of the image.
+         * The image will always be scaled to the viewport with the correct aspect ratio
+         * @param autoscale autoscale yes or no
+         */
+        void setAutoScale(bool autoscale) {
+            scale_to_viewport_ = autoscale;
         }
 
         /**
@@ -120,6 +137,18 @@ namespace Rendering {
             interactive_zoom_ = IMAGE_NO_INTERACT;
             image_drag_ = IMAGE_NO_INTERACT;
         }
+
+        /**
+         * Sets the ImGui window flags for the child
+         * @param flags
+         */
+        void setWindowFlags(ImGuiWindowFlags flags) { flags_ = flags; }
+
+        /**
+         * Set the border of the viewport
+         * @param border border (yes or no)
+         */
+        void setBorder(bool border) { border_ = border;}
 
         /**
          * Sets the image in the viewport

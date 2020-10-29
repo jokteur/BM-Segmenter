@@ -1,5 +1,4 @@
-#ifndef PROJECT_WINDOW_H
-#define PROJECT_WINDOW_H
+#pragma once
 
 #include <string>
 #include <vector>
@@ -94,7 +93,7 @@ namespace Rendering {
          * If something failed while initializing the window, this function will return true
          * @return true if could not initialize the window, false success
          */
-        bool getError() { return error_; }
+        bool getError() const { return error_; }
 
         /**
          * @return current width and height of the window if it is initialized, 0 otherwise
@@ -113,5 +112,3 @@ namespace Rendering {
         ~Window();
     };
 }
-
-#endif //PROJECT_WINDOW_H
