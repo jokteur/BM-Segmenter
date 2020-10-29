@@ -7,17 +7,18 @@
 int Rendering::SimpleImage::instance_number = 0;
 
 void Rendering::SimpleImage::ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) {
-    ImGui::BeginChild(identifier_, size_);
+    ImGui::BeginChild(identifier_.c_str(), size_, border_, flags_);
 
     // Calculate the available pixels in viewport for drawing the image
     ImVec2 content = ImGui::GetContentRegionAvail();
     ImVec2 window_pos = ImGui::GetWindowPos();
 
+    auto style = ImGui::GetStyle();
     // Set the dimensions of the widget
     dimensions_.xpos = window_pos.x;
     dimensions_.ypos = window_pos.y;
-    dimensions_.width = content.x;
-    dimensions_.height = content.y;
+    dimensions_.width = content.x + 2*style.WindowPadding.x;
+    dimensions_.height = content.y + 2*style.WindowPadding.y;
 
     if ((content.x != content_size_.x || content.y != content_size_.x) && !fixed_size_) {
         redraw_image_ = true;
@@ -26,25 +27,33 @@ void Rendering::SimpleImage::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
     if (redraw_image_) {
         float rescale_factor_x = 1.f;
         float rescale_factor_y = 1.f;
-        if ((float)image_.width() > content.x) {
-            rescale_factor_x = content.x / (float) image_.width();
-        }
-        if ((float)image_.height() > content.y) {
-            rescale_factor_y = content.y / (float) image_.height();
-        }
+
+        auto width = (float)image_.width();
+        auto height = (float)image_.height();
+        rescale_factor_x = content.x / (float) image_.width();
+        rescale_factor_y = content.y / (float) image_.height();
+
         rescale_factor_ = (rescale_factor_x > rescale_factor_y) ? rescale_factor_y : rescale_factor_x;
-        scaled_sizes_.x = (float)image_.width()*rescale_factor_ * 0.99f;
-        scaled_sizes_.y = (float)image_.height()*rescale_factor_ * 0.99f;
+        scaled_sizes_.x = width*rescale_factor_;
+        scaled_sizes_.y = height*rescale_factor_;
 
         redraw_image_ = false;
     }
 
 
     if (image_.isImageSet()) {
+        ImGui::BeginGroup();
+        // Center the image
+        float x_difference = 0;
+        if (scaled_sizes_.x < content.x) {
+            x_difference = 0.5f*(content.x - scaled_sizes_.x);
+            ImGui::Dummy(ImVec2(x_difference, scaled_sizes_.y));
+            ImGui::SameLine();
+        }
         ImVec2 mouse_pos =  ImGui::GetMousePos();
         ImGuiIO& io = ImGui::GetIO();
 
-        ImVec2 rel_mouse_pos = ImVec2((mouse_pos.x - window_pos.x) / scaled_sizes_.x,
+        ImVec2 rel_mouse_pos = ImVec2((mouse_pos.x - window_pos.x - x_difference) / scaled_sizes_.x,
                                     (mouse_pos.y - window_pos.y) / scaled_sizes_.y);
 
         ImVec2 corrected_rel = ImVec2(crop_.x0 + (crop_.x1 - crop_.x0) * rel_mouse_pos.x,
@@ -113,12 +122,17 @@ void Rendering::SimpleImage::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
             }
         }
 
+
         ImGui::Image(
                 image_.texture(),
-                scaled_sizes_,
+                ImVec2(scaled_sizes_.x*0.98f, scaled_sizes_.y*0.98f),
                 ImVec2(crop_.x0,crop_.y0),
                 ImVec2(crop_.x1,crop_.y1)
         );
+        if (ImGui::IsItemHovered() && tooltip_[0] != '\0') {
+            ImGui::SetTooltip("%s", tooltip_);
+        }
+        ImGui::EndGroup();
     }
     ImGui::EndChild();
 }

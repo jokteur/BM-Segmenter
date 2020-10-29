@@ -1,5 +1,6 @@
 #include "ui_explore.h"
 #include "rendering/ui/widgets/util.h"
+#include "rendering/drag_and_drop.h"
 
 namespace dataset = ::core::dataset;
 
@@ -175,6 +176,7 @@ void Rendering::ExploreFolder::ImGuiDraw(GLFWwindow *window, Rect &parent_dimens
 
         ImGui::BeginChild("patient_ids", ImVec2(0, -10), true, ImGuiWindowFlags_HorizontalScrollbar);
         ImGuiTreeNodeFlags nodeFlags = ImGuiTreeNodeFlags_DefaultOpen;
+        ImGui::Columns(2, "dicom_explore_col");
         for (auto &patient : explorer_.getCases()) {
             if (patient.tree_count < 4) {
                 continue;
@@ -197,10 +199,42 @@ void Rendering::ExploreFolder::ImGuiDraw(GLFWwindow *window, Rect &parent_dimens
                     if (series.tree_count < 2) {
                         continue;
                     }
-                    ImGui::SetNextTreeNodeOpen(true);
                     bool node3 = ImGui::TreeNodeEx((void*)&series, nodeFlags, "Series %s, Modality %s", series.number.c_str(), series.modality.c_str());
                     if (!node3)
                         continue;
+
+                    if (ImGui::BeginDragDropSource()) {
+                        dataset::SeriesPayload payload;
+                        payload.series = series;
+                        payload.case_.patientID = patient.ID;
+                        payload.case_.studyDescription = study.description;
+                        payload.case_.studyDate = study.date;
+                        payload.case_.studyTime = study.time;
+                        auto &drag_and_drop = DragAndDrop<dataset::SeriesPayload>::getInstance();
+                        drag_and_drop.giveData(payload);
+
+                        int a = 0; // Dummy int
+                        ImGui::SetDragDropPayload("_DICOM_VIEW", &a, sizeof(a));
+                        ImGui::Text("Drag Series %s to viewer to visualize", series.number.c_str());
+                        ImGui::EndDragDropSource();
+                    }
+                    ImGui::SameLine();
+                    Widgets::HelpMarker("You can drag and drop the entire series to the DICOM viewer to visualize");
+                    ImGui::SameLine();
+                    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(5, 0));
+                    if (ImGui::Button("Open", ImVec2(0, ImGui::GetItemRectSize().y))) {
+                        dataset::SeriesPayload payload;
+                        payload.series = series;
+                        payload.case_.patientID = patient.ID;
+                        payload.case_.studyDescription = study.description;
+                        payload.case_.studyDate = study.date;
+                        payload.case_.studyTime = study.time;
+                        auto &drag_and_drop = DragAndDrop<dataset::SeriesPayload>::getInstance();
+                        EventQueue::getInstance().post(
+                                Event_ptr(new dataset::SelectSeriesEvent("dicom_open", payload))
+                        );
+                    }
+                    ImGui::PopStyleVar();
 
                     for (auto &image : series.images) {
                         if (!image.tree_count) {
@@ -211,37 +245,6 @@ void Rendering::ExploreFolder::ImGuiDraw(GLFWwindow *window, Rect &parent_dimens
                             leaf_flag = leaf_flag | ImGuiTreeNodeFlags_Selected;
                         }
                         bool node4 = ImGui::TreeNodeEx((void*)&image, leaf_flag, "%s", image.number.c_str());
-                        if (ImGui::IsItemClicked()) {
-                            selected_node_ = &image;
-                            dataset::Case case_ {
-                                image.path,
-                                patient.ID,
-                                study.date,
-                                study.time,
-                                study.description,
-                                series.number,
-                                series.modality,
-                                image.number
-                            };
-                            EventQueue::getInstance().post(
-                                Event_ptr(new dataset::SelectCaseEvent("dicom_open", case_))
-                            );
-                        }
-                        if (ImGui::BeginDragDropSource()) {
-                            dataset::Case case_ {
-                                    image.path,
-                                    patient.ID,
-                                    study.date,
-                                    study.time,
-                                    study.description,
-                                    series.number,
-                                    series.modality,
-                                    image.number
-                            };
-                            ImGui::SetDragDropPayload("_IMAGE_VIEW", &case_, sizeof(case_));
-                            ImGui::Text("Drag Image %s to viewer to visualize", image.number.c_str());
-                            ImGui::EndDragDropSource();
-                        }
                         if (node4)
                             ImGui::TreePop();
                     }
@@ -251,6 +254,7 @@ void Rendering::ExploreFolder::ImGuiDraw(GLFWwindow *window, Rect &parent_dimens
             }
             ImGui::TreePop();
         }
+        ImGui::Columns(1);
         ImGui::EndChild();
     }
     ImGui::End();

@@ -69,3 +69,31 @@ bool core::Image::setImage(unsigned char *data, int width, int height, Filtering
     return success_;
 }
 
+bool core::Image::setImageFromHU(const cv::Mat& mat, float window_width, float window_center, Filtering filtering) {
+    auto* tmp_array = new unsigned char[mat.rows * mat.cols * 4];
+    int i = 0;
+    for(int row = 0; row < mat.rows; ++row) {
+        auto p = mat.ptr<short int>(row);
+        for(int col = 0; col < mat.cols; ++col) {
+            auto value = (float)*p;
+            unsigned char gray;
+            if (value <= window_center - 0.5f - (window_width - 1.f) * 0.5f)
+                gray = 0;
+            else if (value > window_center - 0.5f + (window_width - 1.f) * 0.5f)
+                gray = 255;
+            else
+                gray = static_cast<unsigned char>(((value - (window_center - 0.5f))/(window_width - 1.f) + 0.5f) * 255);
+            tmp_array[4*i] = gray;
+            tmp_array[4*i + 1] = gray;
+            tmp_array[4*i + 2] = gray;
+            tmp_array[4*i + 3] = 255;
+            i++;
+            p++;
+        }
+
+    }
+    load_texture_from_memory(tmp_array, mat.cols, mat.rows, filtering);
+    delete [] tmp_array;
+    return false;
+}
+

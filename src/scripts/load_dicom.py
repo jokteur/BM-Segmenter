@@ -166,7 +166,7 @@ class DiscoverDicoms:
                 self.exclude_pattern = dirpath
                 for instance in fs:
                     self.data.add(
-                        filepath,
+                        instance.path,
                         instance.PatientID,
                         instance.StudyDate,
                         instance.StudyTime,
@@ -215,21 +215,31 @@ class DiscoverDicoms:
 
 def load_scan_from_dicom(path):
     """
-    Loads the dicomdir and reads the image from the first series of the first study
-    Returns scan, image_dir
+    Loads the dicomdir and reads the image depending on the arguments
+
+    Returns
+    -------
+    numpy array : hu reading of the image
+    bool : if no image has been read or found, returns false
     """
-    dicom_dir = read_dicomdir(path)
-    base_dir = dirname(path)
 
-    # Get directly to the series of images, considering there is only one patient and one study in the dicomdir
-    series = dicom_dir.patient_records[0].children[0].children[0]
+    ds = None
+    try:
+        ds = pydicom.dcmread(path)
+    except pydicom.errors.InvalidDicomError:
+        return False, "Invalid DICOM file."
+    except FileNotFoundError:
+        return False, "Could not find the DICOM file."
+    except AttributeError:
+        return False, "Attribute error when reading the DICOM file."
 
-    # Take the first image of the series
-    image_name = series.children[0]
-    image_path = join(base_dir, *image_name.ReferencedFileID)
+    try:
+        ds.pixel_array
+        ds["PixelSpacing"]
+    except:
+        return False, "Problem when opening the image in the DICOM file."
 
-    # For reading the ROI
-    return pydicom.dcmread(image_path), dirname(image_path)
+    return get_pixels_hu(ds)
 
 
 def get_pixels_hu(scan):
@@ -238,8 +248,8 @@ def get_pixels_hu(scan):
     """
     # Convert to int16 (from sometimes int16),
     # should be possible as values should always be low enough (<32k)
-    image = scan.pixel_array
-    image = image.astype(np.int16)
+    pixel_array = scan.pixel_array
+    image = np.array(pixel_array, dtype=np.int16)
 
     # Set outside-of-scan pixels to 1
     # The intercept is usually -1024, so air is approximately 0
@@ -255,4 +265,4 @@ def get_pixels_hu(scan):
 
     image += np.int16(intercept)
 
-    return np.array(image, dtype=np.int16)
+    return np.array(image, dtype=np.int16), scan["PixelSpacing"]

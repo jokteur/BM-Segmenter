@@ -51,23 +51,20 @@ namespace core {
                         for (auto &py_study : patient_tuple[1].cast<py::dict>()) {
                             auto study_tuple = py_study.first.cast<py::tuple>();
 
-                            StudyNode study {&patient,
-                                             study_tuple[0].cast<std::string>(),
+                            StudyNode study {study_tuple[0].cast<std::string>(),
                                              study_tuple[1].cast<std::string>(),
                                              study_tuple[2].cast<std::string>()};
 
                             for (auto &py_series : py_study.second.cast<py::dict>()) {
                                 auto series_tuple = py_series.first.cast<py::tuple>();
 
-                                SeriesNode series {&study,
-                                                   series_tuple[1].cast<std::string>(),
+                                SeriesNode series {series_tuple[1].cast<std::string>(),
                                                    series_tuple[0].cast<std::string>()};
 
                                 for (auto &py_image : py_series.second.cast<py::list>()) {
                                     auto image_dict = py_image.cast<py::dict>();
 
-                                    ImageNode image {&series,
-                                                     image_dict["path"].cast<std::string>(),
+                                    ImageNode image {image_dict["path"].cast<std::string>(),
                                                      image_dict["instanceNumber"].cast<std::string>()};
                                     series.images.push_back(image);
                                 }
@@ -94,7 +91,7 @@ namespace core {
             };
 
             if (status_ != EXPLORE_WORKING)
-                jobRef_ = JobScheduler::getInstance().addJob(STRING(JOBEXPLORENAME), job);
+                jobRef_ = JobScheduler::getInstance().addJob(STRING(JOB_EXPLORE_NAME), job);
         }
 
     }

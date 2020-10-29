@@ -1,6 +1,7 @@
 #pragma once
 
 #include <GL/gl3w.h>
+#include <opencv2/core/mat.hpp>
 
 namespace core {
 
@@ -14,6 +15,7 @@ namespace core {
         GLuint texture_ = -1;
         int width_ = 0;
         int height_ = 0;
+        int samples_ = 4;
 
         bool success_ = false;
 
@@ -31,12 +33,25 @@ namespace core {
          */
         bool setImage(const char* filename, Filtering filtering = FILTER_NEAREST);
 
+
         /**
          * Set image from memory
          * @param data RGB array
          * @return if successful or not
          */
         bool setImage(unsigned char* data, int width, int height, Filtering filtering = FILTER_NEAREST);
+
+        /**
+         * Sets image from a DICOM image in Houndsfield units
+         * @param data data array
+         * @param width width of image
+         * @param height height of image
+         * @param window_width VOI LUT window width (see https://dicom.innolitics.com/ciods/ct-image/voi-lut/00281050)
+         * @param window_center VOI LUT window center (see https://dicom.innolitics.com/ciods/ct-image/voi-lut/00281050)
+         * @param filtering FILTERING
+         * @return
+         */
+        bool setImageFromHU(const cv::Mat& mat, float window_width, float window_center, Filtering filtering = FILTER_NEAREST);
 
         /**
          * @return if the image has been successfully loaded in mage

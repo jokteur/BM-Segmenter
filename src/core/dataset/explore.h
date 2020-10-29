@@ -6,7 +6,7 @@
 #include "events.h"
 #include "jobscheduler.h"
 
-#define JOBEXPLORENAME explore_dataset
+#define JOB_EXPLORE_NAME explore_dataset
 
  namespace core {
      namespace dataset {
@@ -16,13 +16,13 @@
           * Here using the DICOM nomenclature (Camel Case)
           */
          struct Case {
-             std::string path;              // Path to the DICOMDIR of dicom image
              std::string patientID;         // Patient ID, can be a number, of some sort
              std::string studyDate;         // Date of study
              std::string studyTime;         // Time of study
              std::string studyDescription;  // Description of the study
              std::string seriesNumber;              // Number that identifies the series in the study
              std::string modality;          // Modality of the series (CT, MR, etc.)
+             std::string path;              // Path to the DICOMDIR of dicom image
              std::string instanceNumber;            // Image instance number in the series
          };
 
@@ -33,20 +33,17 @@
           * A tree representation of a medical cases
           */
          struct ImageNode {
-             SeriesNode* parent;
              std::string path;
              std::string number;
              int tree_count;
          };
          struct SeriesNode {
-             StudyNode* parent;
              std::string modality;
              std::string number;
              std::vector<ImageNode> images;
              int tree_count;
          };
          struct StudyNode {
-             PatientNode* parent;
              std::string date;
              std::string time;
              std::string description;
@@ -59,15 +56,20 @@
              int tree_count;
          };
 
-         class SelectCaseEvent : public Event {
-         private:
+         struct SeriesPayload {
+             SeriesNode series;
              Case case_;
-         public:
-             explicit SelectCaseEvent(const std::string& name, Case& image) : case_(image), Event(std::string("dataset/") + name) {}
-
-             Case& getCase() { return case_; }
          };
-#define SELECTCASEEVENT_PTRCAST(image) (reinterpret_cast<SelectCaseEvent*>((image)))
+
+         class SelectSeriesEvent : public Event {
+         private:
+             SeriesPayload series_;
+         public:
+             explicit SelectSeriesEvent(const std::string& name, SeriesPayload& series) : series_(series), Event(std::string("dataset/") + name) {}
+
+             SeriesPayload& getSeries() { return series_; }
+         };
+#define SELECTCASEEVENT_PTRCAST(image) (reinterpret_cast<SeriesPayload*>((image)))
 
         /**
          * @brief The Explore class allows to explore and discover the content of a certain folder
@@ -101,7 +103,7 @@
               * the folder.
               *
               * The function will push some log events about the progression of the exploration.
-              * The function is launched as a Job on the JobScheduler under the name JOBEXPLORENAME
+              * The function is launched as a Job on the JobScheduler under the name JOB_EXPLORE_NAME
               *
               * @returns SUCCESS if no error have been encountered, PARTIAL SUCCESS when encountering
               * some errors but still DICOMS have been found and ERROR if the exploration failed
