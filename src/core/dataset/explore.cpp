@@ -96,5 +96,45 @@ namespace core {
                 jobRef_ = JobScheduler::getInstance().addJob(STRING(JOB_EXPLORE_NAME), job);
         }
 
+        void build_tree(std::vector<PatientNode>& tree, const ImGuiTextFilter& case_filter, const ImGuiTextFilter& study_filter, const ImGuiTextFilter& series_filter) {
+            for (auto &patient : tree) {
+                patient.tree_count = 0;
+                if (case_filter.PassFilter(patient.ID.c_str())) {
+                    patient.tree_count++;
+                } else {
+                    continue;
+                }
+                for (auto &study : patient.study) {
+                    study.tree_count = 0;
+                    if (study_filter.PassFilter(study.description.c_str())) {
+                        patient.tree_count++;
+                        study.tree_count++;
+                    } else {
+                        patient.tree_count--;
+                        continue;
+                    }
+                    for (auto &series : study.series) {
+                        series.tree_count = 0;
+                        if (series_filter.PassFilter(series.modality.c_str())) {
+                            patient.tree_count++;
+                            study.tree_count++;
+                            series.tree_count++;
+                        } else {
+                            patient.tree_count--;
+                            study.tree_count--;
+                            continue;
+                        }
+                        for (auto &image : series.images) {
+                            patient.tree_count++;
+                            study.tree_count++;
+                            series.tree_count++;
+                            image.tree_count = 1;
+
+                        }
+                    }
+                }
+            }
+        }
+
     }
 }

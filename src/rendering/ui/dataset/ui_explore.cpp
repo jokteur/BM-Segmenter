@@ -68,6 +68,7 @@ void Rendering::ExploreFolder::ImGuiDraw(GLFWwindow *window, Rect &parent_dimens
     switch (explorer_.getStatus()) {
         case dataset::Explore::EXPLORE_WORKING:
             build_tree_ = true;
+            is_new_tree_ = true;
             ImGui::Text("Searching the folder %s...", path_.c_str());
             break;
         case dataset::Explore::EXPLORE_SUCCESS:
@@ -130,6 +131,7 @@ void Rendering::ExploreFolder::ImGuiDraw(GLFWwindow *window, Rect &parent_dimens
             study_filter_str_ = std::string(study_filter_.InputBuf);
             series_filter_str_ = std::string(series_filter_.InputBuf);
             build_tree_ = true;
+            is_new_tree_ = false;
         }
 
         build_tree();
@@ -217,44 +219,12 @@ Rendering::ExploreFolder::~ExploreFolder() {
 void Rendering::ExploreFolder::build_tree() {
     if (build_tree_) {
         // Build tree, first look which nodes should be drawn
-        for (auto &patient : explorer_.getCases()) {
-            patient.tree_count = 0;
-            if (case_filter_.PassFilter(patient.ID.c_str())) {
-                patient.tree_count++;
-            } else {
-                continue;
-            }
-            for (auto &study : patient.study) {
-                study.tree_count = 0;
-                if (study_filter_.PassFilter(study.description.c_str())) {
-                    patient.tree_count++;
-                    study.tree_count++;
-                } else {
-                    patient.tree_count--;
-                    continue;
-                }
-                for (auto &series : study.series) {
-                    series.tree_count = 0;
-                    if (series_filter_.PassFilter(series.modality.c_str())) {
-                        patient.tree_count++;
-                        study.tree_count++;
-                        series.tree_count++;
-                    } else {
-                        patient.tree_count--;
-                        study.tree_count--;
-                        continue;
-                    }
-                    for (auto &image : series.images) {
-                        patient.tree_count++;
-                        study.tree_count++;
-                        series.tree_count++;
-                        image.tree_count = 1;
-
-                    }
-                }
-            }
-        }
-        EventQueue::getInstance().post(Event_ptr(new ::core::dataset::ExplorerBuildEvent(explorer_.getCases())));
+        ::core::dataset::build_tree(explorer_.getCases(), case_filter_, study_filter_, series_filter_);
+        if (is_new_tree_)
+            EventQueue::getInstance().post(Event_ptr(new ::core::dataset::ExplorerBuildEvent(explorer_.getCases())));
+        else
+            EventQueue::getInstance().post(Event_ptr(new ::core::dataset::ExplorerFilterEvent(case_filter_, study_filter_, series_filter_)));
+        is_new_tree_ = false;
         build_tree_ = false;
     }
 }

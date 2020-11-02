@@ -133,6 +133,7 @@ void Rendering::SimpleImage::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
         if (ImGui::IsItemHovered() && tooltip_[0] != '\0') {
             ImGui::SetTooltip("%s", tooltip_);
         }
+        drag_source_fct_();
         ImGui::PopID();
         ImGui::EndGroup();
     }

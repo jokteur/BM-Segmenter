@@ -2,6 +2,8 @@
 
 #include <string>
 #include <iostream>
+#include <functional>
+#include <utility>
 
 #include "imgui.h"
 #include "core/image.h"
@@ -58,6 +60,8 @@ namespace Rendering {
         ImVec2 content_size_;
 
         std::string identifier_;
+
+        std::function<void ()> drag_source_fct_ = [] {};
 
     public:
 
@@ -160,6 +164,8 @@ namespace Rendering {
             redraw_image_ = true;
             image_ = image;
         }
+
+        void setDragSourceFunction(std::function<void ()> function) { drag_source_fct_ = std::move(function); }
 
     };
 }

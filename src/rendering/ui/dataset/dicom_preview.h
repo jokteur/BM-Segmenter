@@ -37,8 +37,14 @@ namespace Rendering {
         std::string error_message_;
 
         std::vector<std::string> series_;
+        ::core::dataset::SeriesPayload series_payload_;
         bool is_subscribed_ = false;
+
         int max_im_size_ = 512;
+        float crop_ = 0.f;
+
+        bool allow_scroll_ = false;
+        int case_idx = 0;
 
         void selectCase(const std::string& path);
         void dicom_to_image();
@@ -55,7 +61,21 @@ namespace Rendering {
 
         void setSize(const ImVec2& size) { size_ = size; }
 
-        void loadSeries(const ::core::dataset::SeriesNode& series);
+        void setWindowing(int width, int center) { window_width_ = width; window_center_ = center; reset_image_ = true; }
+
+        /**
+         * Sets the case number (in percentage)
+         * @param percentage
+         */
+        void setCase(float percentage);
+
+        void setCrop(float crop);
+
+        std::string& getIdentifier() { return identifier_; }
+
+        void setAllowScroll(bool allow_scroll) { allow_scroll_ = allow_scroll; }
+
+        void loadSeries(const ::core::dataset::SeriesPayload& series);
 
     };
 }

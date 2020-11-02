@@ -1,5 +1,7 @@
 #include "dicom_preview.h"
 #include "core/dataset/dicom_to_image.h"
+#include "ui/widgets/util.h"
+#include "drag_and_drop.h"
 #include "log.h"
 
 int Rendering::DicomPreview::instance_number = 0;
@@ -18,27 +20,60 @@ void Rendering::DicomPreview::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensi
     io.ConfigWindowsMoveFromTitleBarOnly = true;
     ImGui::BeginChild(identifier_.c_str(), size_);
 
+
     // Reload the image when it has been loaded
     // We do this because setting the image_ can lead to segfault when not done
     // in the main thread
     if (reset_image_) {
         dicom_to_image();
         reset_image_ = false;
+        image_widget_.setDragSourceFunction([this] {
+            if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
+                auto &drag_and_drop = DragAndDrop<dataset::SeriesPayload>::getInstance();
+                drag_and_drop.giveData(series_payload_);
+
+                int a = 0; // Dummy int
+                ImGui::SetDragDropPayload("_DICOM_VIEW", &a, sizeof(a));
+                ImGui::Text("Drag Series %s to viewer to visualize", series_payload_.series.number.c_str());
+                ImGui::PushID("Image_Drag_Drop");
+                ImGui::Image(
+                        image_.texture(),
+                        ImVec2(128, 128)
+                );
+                ImGui::PopID();
+                ImGui::EndDragDropSource();
+            }}
+        );
     }
 
     ImVec2 content = ImGui::GetContentRegionAvail();
     ImVec2 window_pos = ImGui::GetWindowPos();
+    ImVec2 mouse_pos = ImGui::GetMousePos();
     auto style = ImGui::GetStyle();
 
     dimensions_.xpos = window_pos.x;
     dimensions_.ypos = window_pos.y;
-    dimensions_.width = content.x + 2 * style.WindowPadding.x;
+    dimensions_.width = content.x;
     dimensions_.height = dimensions_.width;
 
+    if (allow_scroll_ && Widgets::check_hitbox(mouse_pos, dimensions_)) {
+        setCase((mouse_pos.x - dimensions_.xpos)/dimensions_.width);
+    }
+    else {
+        setCase(0.f);
+    }
     if (image_.isImageSet()) {
         image_widget_.setAutoScale(true);
         image_widget_.ImGuiDraw(window, parent_dimension);
     }
+
+    if (ImGui::BeginPopupContextItem(identifier_.c_str())) {
+        if (ImGui::Selectable((std::string("Open file in DICOM viewer###") + identifier_).c_str())) {
+            EventQueue::getInstance().post(Event_ptr(new ::core::dataset::SelectSeriesEvent(series_payload_)));
+        }
+        ImGui::EndPopup();
+    }
+
     ImGui::EndChild();
 }
 
@@ -79,12 +114,26 @@ void Rendering::DicomPreview::dicom_to_image() {
     image_widget_.setImage(image_);
 }
 
-void Rendering::DicomPreview::loadSeries(const ::core::dataset::SeriesNode& series) {
+void Rendering::DicomPreview::loadSeries(const ::core::dataset::SeriesPayload& payload) {
     series_.clear();
-    for (auto &image : series.images) {
+    series_payload_ = payload;
+    for (auto &image : payload.series.images) {
         series_.push_back(image.path);
     }
     if (!series_.empty()) {
         selectCase(series_[0]);
     }
+}
+
+void Rendering::DicomPreview::setCase(float percentage) {
+    int idx = (int)(percentage * (float)(series_.size() - 1));
+    if (idx != case_idx) {
+        selectCase(series_[idx]);
+        case_idx = idx;
+    }
+}
+
+void Rendering::DicomPreview::setCrop(float crop) {
+    crop_ = crop;
+    selectCase(series_[0]);
 }

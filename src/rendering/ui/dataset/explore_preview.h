@@ -22,7 +22,8 @@ namespace Rendering {
         /*
          * For capturing the log sent by the Dicom Search
          */
-        Listener explore_tree_listener_;
+        Listener build_tree_listener_;
+        Listener filter_tree_listener_;
 
         std::vector<core::dataset::PatientNode> cases_;
         std::map<::core::dataset::SeriesNode*, DicomPreview> dicom_previews_;

@@ -3,6 +3,8 @@
 #include <string>
 #include <vector>
 
+#include "imgui.h"
+
 #include "events.h"
 #include "jobscheduler.h"
 
@@ -70,16 +72,38 @@
 
              std::vector<core::dataset::PatientNode>& getCases() { return cases_; }
          };
+         class ExplorerFilterEvent : public Event {
+         private:
+             ImGuiTextFilter& case_filter_;
+             ImGuiTextFilter& study_filter_;
+             ImGuiTextFilter& series_filter_;
+         public:
+             explicit ExplorerFilterEvent(ImGuiTextFilter& case_filter, ImGuiTextFilter& study_filter, ImGuiTextFilter& series_filter) :
+                     case_filter_(case_filter), study_filter_(study_filter), series_filter_(series_filter), Event("dataset/explorer/filter") {}
+
+             ImGuiTextFilter& caseFilter() {return case_filter_;}
+             ImGuiTextFilter& studyFilter() {return study_filter_;}
+             ImGuiTextFilter& seriesFilter() {return series_filter_;}
+         };
 
          class SelectSeriesEvent : public Event {
          private:
              SeriesPayload series_;
          public:
-             explicit SelectSeriesEvent(const std::string& name, SeriesPayload& series) : series_(series), Event(std::string("dataset/") + name) {}
+             explicit SelectSeriesEvent(SeriesPayload& series) : series_(series), Event("dataset/dicom_open") {}
 
              SeriesPayload& getSeries() { return series_; }
          };
 #define SELECTCASEEVENT_PTRCAST(image) (reinterpret_cast<SeriesPayload*>((image)))
+
+         /**
+          * Builds the tree of cases with filtering
+          * @param tree root of the tree
+          * @param case_filter filter for cases
+          * @param study_filter filter for study descriptions
+          * @param series_filter filter for series modalities
+          */
+         void build_tree(std::vector<PatientNode>& tree, const ImGuiTextFilter& case_filter, const ImGuiTextFilter& study_filter, const ImGuiTextFilter& series_filter);
 
         /**
          * @brief The Explore class allows to explore and discover the content of a certain folder
