@@ -17,18 +17,6 @@ namespace core {
     namespace dataset {
         namespace py = pybind11;
 
-        /**
-         * Custom class for sending the result of the dicom image
-         */
-        class DicomReadyEvent : public Event {
-        private:
-            cv::Mat mat_;
-        public:
-            explicit DicomReadyEvent(const std::string& name, cv::Mat& mat) : mat_(std::move(mat)), Event(std::string("dataset/dicom/") + name) {}
-
-            cv::Mat&& getMat() { return std::move(mat_); }
-        };
-
         struct DicomResult : public JobResult {
             cv::Mat data;
             std::string error_msg;

@@ -46,7 +46,6 @@ void Rendering::ExploreFolder::ImGuiDraw(GLFWwindow *window, Rect &parent_dimens
                 case_filter_.Clear();
                 study_filter_.Clear();
                 series_filter_.Clear();
-                image_filter_.Clear();
                 explorer_.findDicoms(outPath);
                 path_ = outPath;
             } else if (result == NFD_ERROR) {
@@ -68,7 +67,7 @@ void Rendering::ExploreFolder::ImGuiDraw(GLFWwindow *window, Rect &parent_dimens
     ImGui::Separator();
     switch (explorer_.getStatus()) {
         case dataset::Explore::EXPLORE_WORKING:
-            build_preview_ = true;
+            build_tree_ = true;
             ImGui::Text("Searching the folder %s...", path_.c_str());
             break;
         case dataset::Explore::EXPLORE_SUCCESS:
@@ -99,10 +98,6 @@ void Rendering::ExploreFolder::ImGuiDraw(GLFWwindow *window, Rect &parent_dimens
     }
     // Draw the result and / or the errors
     else if (explorer_.getStatus() != dataset::Explore::EXPLORE_SLEEPING) {
-        if (build_preview_) {
-            build_preview();
-            build_preview_ = false;
-        }
         ImGui::Separator();
 
         // Error log
@@ -127,58 +122,17 @@ void Rendering::ExploreFolder::ImGuiDraw(GLFWwindow *window, Rect &parent_dimens
             case_filter_.Draw("Case ID filter");
             study_filter_.Draw("Study filter");
             series_filter_.Draw("Modality filter");
-            image_filter_.Draw("Image number filter");
+        }
+        if (case_filter_str_ != std::string(case_filter_.InputBuf)
+            || study_filter_str_ != std::string(study_filter_.InputBuf)
+            || series_filter_str_ != std::string(series_filter_.InputBuf)) {
+            case_filter_str_ = std::string(case_filter_.InputBuf);
+            study_filter_str_ = std::string(study_filter_.InputBuf);
+            series_filter_str_ = std::string(series_filter_.InputBuf);
+            build_tree_ = true;
         }
 
-        // Build tree, first look which nodes should be drawn
-        for (auto &patient : explorer_.getCases()) {
-            patient.tree_count = 0;
-            if (case_filter_.PassFilter(patient.ID.c_str())) {
-                patient.tree_count++;
-            }
-            else {
-                continue;
-            }
-            for(auto &study : patient.study) {
-                study.tree_count = 0;
-                if (study_filter_.PassFilter(study.description.c_str())) {
-                    patient.tree_count++;
-                    study.tree_count++;
-                }
-                else {
-                    patient.tree_count--;
-                    continue;
-                }
-                for (auto &series : study.series) {
-                    series.tree_count = 0;
-                    if (series_filter_.PassFilter(series.modality.c_str())) {
-                        patient.tree_count++;
-                        study.tree_count++;
-                        series.tree_count++;
-                    }
-                    else {
-                        patient.tree_count--;
-                        study.tree_count--;
-                        continue;
-                    }
-                    for (auto &image : series.images) {
-                        image.tree_count = 0;
-                        if (image_filter_.PassFilter(image.number.c_str())) {
-                            patient.tree_count++;
-                            study.tree_count++;
-                            series.tree_count++;
-                            image.tree_count = 1;
-                        }
-                        else {
-                            patient.tree_count--;
-                            study.tree_count--;
-                            series.tree_count--;
-                            image.tree_count = 0;
-                        }
-                    }
-                }
-            }
-        }
+        build_tree();
 
         ImGui::BeginChild("patient_ids", ImVec2(0, -10), true, ImGuiWindowFlags_HorizontalScrollbar);
         ImGuiTreeNodeFlags nodeFlags = ImGuiTreeNodeFlags_DefaultOpen;
@@ -228,32 +182,17 @@ void Rendering::ExploreFolder::ImGuiDraw(GLFWwindow *window, Rect &parent_dimens
                         ImGui::Text("Drag Series %s to viewer to visualize", series.number.c_str());
                         ImGui::EndDragDropSource();
                     }
-                    ImGui::SameLine();
-                    Widgets::HelpMarker("You can drag and drop the entire series to the DICOM viewer to visualize");
-                    ImGui::SameLine();
-                    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(5, 0));
-                    if (ImGui::Button("Open", ImVec2(0, ImGui::GetItemRectSize().y))) {
-                        dataset::SeriesPayload payload;
-                        payload.series = series;
-                        payload.case_.patientID = patient.ID;
-                        payload.case_.studyDescription = study.description;
-                        payload.case_.studyDate = study.date;
-                        payload.case_.studyTime = study.time;
-                        auto &drag_and_drop = DragAndDrop<dataset::SeriesPayload>::getInstance();
-                        EventQueue::getInstance().post(
-                                Event_ptr(new dataset::SelectSeriesEvent("dicom_open", payload))
-                        );
+                    if(ImGui::IsItemHovered()) {
+                        ImGui::SetTooltip("You can drag and drop the entire series to the DICOM viewer to visualize");
                     }
-                    ImGui::PopStyleVar();
+                    ImGui::NextColumn();
+                    ImGui::NextColumn();
 
                     for (auto &image : series.images) {
                         if (!image.tree_count) {
                             continue;
                         }
                         ImGuiTreeNodeFlags leaf_flag = nodeFlags | ImGuiTreeNodeFlags_Bullet;
-                        if (selected_node_ == &image) {
-                            leaf_flag = leaf_flag | ImGuiTreeNodeFlags_Selected;
-                        }
                         bool node4 = ImGui::TreeNodeEx((void*)&image, leaf_flag, "%s", image.number.c_str());
                         if (node4)
                             ImGui::TreePop();
@@ -275,14 +214,47 @@ Rendering::ExploreFolder::~ExploreFolder() {
     EventQueue::getInstance().unsubscribe(&error_listener_);
 }
 
-void Rendering::ExploreFolder::build_preview() {
-    previews_.clear();
-    for (auto &patient : explorer_.getCases()) {
-        for (auto &study : patient.study) {
-            for (auto &series : study.series) {
-                auto ret = previews_.emplace(std::make_pair(&series, DicomPreview()));
-//                (*ret.first).second.loadSeries(series);
+void Rendering::ExploreFolder::build_tree() {
+    if (build_tree_) {
+        // Build tree, first look which nodes should be drawn
+        for (auto &patient : explorer_.getCases()) {
+            patient.tree_count = 0;
+            if (case_filter_.PassFilter(patient.ID.c_str())) {
+                patient.tree_count++;
+            } else {
+                continue;
+            }
+            for (auto &study : patient.study) {
+                study.tree_count = 0;
+                if (study_filter_.PassFilter(study.description.c_str())) {
+                    patient.tree_count++;
+                    study.tree_count++;
+                } else {
+                    patient.tree_count--;
+                    continue;
+                }
+                for (auto &series : study.series) {
+                    series.tree_count = 0;
+                    if (series_filter_.PassFilter(series.modality.c_str())) {
+                        patient.tree_count++;
+                        study.tree_count++;
+                        series.tree_count++;
+                    } else {
+                        patient.tree_count--;
+                        study.tree_count--;
+                        continue;
+                    }
+                    for (auto &image : series.images) {
+                        patient.tree_count++;
+                        study.tree_count++;
+                        series.tree_count++;
+                        image.tree_count = 1;
+
+                    }
+                }
             }
         }
+        EventQueue::getInstance().post(Event_ptr(new ::core::dataset::ExplorerBuildEvent(explorer_.getCases())));
+        build_tree_ = false;
     }
 }

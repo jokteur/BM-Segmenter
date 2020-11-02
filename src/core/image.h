@@ -22,7 +22,6 @@ namespace core {
         void load_texture(unsigned char* data, int width, int height, Filtering filtering);
         void load_texture_from_file(const char *filename, Filtering filtering);
         void load_texture_from_memory(unsigned char* data, int width, int height, Filtering filtering);
-        void reset();
     public:
         Image() = default;
         ~Image();
@@ -53,6 +52,12 @@ namespace core {
          * @return
          */
         bool setImageFromHU(const cv::Mat& mat, float window_width, float window_center, Filtering filtering = FILTER_NEAREST);
+
+        /**
+         * Erases any content in the image
+         * After this function, isImageSet will return false
+         */
+        void reset();
 
         /**
          * @return if the image has been successfully loaded in mage

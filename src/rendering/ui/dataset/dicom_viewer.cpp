@@ -87,6 +87,7 @@ void Rendering::DicomViewer::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
     ImGui::Separator();
 
     if (!error_message_.empty()) {
+        image_.reset();
         ImGui::Text("When trying to open the DICOM file, the following error appeared:\n\n%s", error_message_.c_str());
     }
 

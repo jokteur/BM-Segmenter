@@ -28,24 +28,24 @@ foreach(_package IN LISTS PYTHON_REQUIREMENTS)
     endif()
 endforeach()
 
-install(
-    DIRECTORY ${Python_STDLIB}
-    DESTINATION ${INSTALL_DIR}/python/
-    PATTERN "__pycache__" EXCLUDE               # * any cache *
-    PATTERN "config-${Python_VERSION}m/*.a" EXCLUDE  # static lib
-    PATTERN "lib2to3" EXCLUDE                   # ./lib2to3
-    PATTERN "site-packages/pydicom/data/test_files" EXCLUDE           # useless test data from pydicom
-    PATTERN "tkinter" EXCLUDE                   # ./tkinter
-    PATTERN "lib-dynload/_tkinter.*" EXCLUDE    # ./lib-dynload/_tkinter.co
-    PATTERN "idlelib" EXCLUDE                   # ./idlelib
-    PATTERN "test" EXCLUDE                      # ./test
-    PATTERN "turtledemo" EXCLUDE                # ./turtledemo
-    PATTERN "turtle.py" EXCLUDE                 # ./turtle.py
-    PATTERN "wininst*.exe" EXCLUDE              # from distutils, avoid malware false positive
-)
-#
-## Needed for distutils/pip
-## get the last part of the include dir, will be 'python{version}{abiflag}',
+#install(
+#    DIRECTORY ${Python_STDLIB}
+#    DESTINATION ${INSTALL_DIR}/python/
+#    PATTERN "__pycache__" EXCLUDE               # * any cache *
+#    PATTERN "config-${Python_VERSION}m/*.a" EXCLUDE  # static lib
+#    PATTERN "lib2to3" EXCLUDE                   # ./lib2to3
+#    PATTERN "site-packages/pydicom/data/test_files" EXCLUDE           # useless test data from pydicom
+#    PATTERN "tkinter" EXCLUDE                   # ./tkinter
+#    PATTERN "lib-dynload/_tkinter.*" EXCLUDE    # ./lib-dynload/_tkinter.co
+#    PATTERN "idlelib" EXCLUDE                   # ./idlelib
+#    PATTERN "test" EXCLUDE                      # ./test
+#    PATTERN "turtledemo" EXCLUDE                # ./turtledemo
+#    PATTERN "turtle.py" EXCLUDE                 # ./turtle.py
+#    PATTERN "wininst*.exe" EXCLUDE              # from distutils, avoid malware false positive
+#)
+
+# Needed for distutils/pip
+# get the last part of the include dir, will be 'python{version}{abiflag}',
 install(
         FILES ${Python_INCLUDE_DIRS}/pyconfig.h
         DESTINATION ${INSTALL_DIR}/python

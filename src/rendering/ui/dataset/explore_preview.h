@@ -1,6 +1,5 @@
 #pragma once
 
-#include "nfd.h"
 #include <vector>
 #include <string>
 #include <map>
@@ -8,54 +7,42 @@
 
 #include "core/dataset/explore.h"
 #include "rendering/drawables.h"
-#include "rendering/ui/modales/error_message.h"
 #include "rendering/ui/dataset/dicom_preview.h"
 #include "jobscheduler.h"
-#include "log.h"
 #include "util.h"
 
 namespace Rendering {
+
     /**
      * Defines the UI for opening and exploring new folders
      */
-    class ExploreFolder : public AbstractLayout {
+    class ExplorerPreview : public AbstractLayout {
     private:
 
         /*
          * For capturing the log sent by the Dicom Search
          */
-        Listener log_listener_;
-        Listener error_listener_;
-        Listener job_listener_;
+        Listener explore_tree_listener_;
 
-        ::core::dataset::Explore explorer_;
+        std::vector<core::dataset::PatientNode> cases_;
+        std::map<::core::dataset::SeriesNode*, DicomPreview> dicom_previews_;
 
-        ImGuiTextBuffer log_buffer_;
-        ImGuiTextBuffer error_buffer_;
+        int num_cols_ = 3;
 
-        bool build_tree_ = true;
-
-        ImGuiTextFilter case_filter_;
-        std::string case_filter_str_;
-        ImGuiTextFilter study_filter_;
-        std::string study_filter_str_;
-        ImGuiTextFilter series_filter_;
-        std::string series_filter_str_;
-
-        std::string path_;
-
-        void build_tree();
+        bool open_ = true;
+        bool just_opened_ =  true;
+        ImVec2 init_size_;
 
     public:
         /**
          * Initializes the listener and subscribes to the queue
          */
-        ExploreFolder();
+        explicit ExplorerPreview(ImVec2 init_size = ImVec2(800, 400));
 
         /**
          * Destructor
          */
-        ~ExploreFolder() override;
+        ~ExplorerPreview() override;
 
         /**
          * Draws ImGui elements to the window (between ImGui::NewFrame() and ImGui::Render())

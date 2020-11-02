@@ -61,6 +61,16 @@
              Case case_;
          };
 
+         class ExplorerBuildEvent : public Event {
+         private:
+             std::vector<core::dataset::PatientNode>& cases_;
+         public:
+             explicit ExplorerBuildEvent(std::vector<core::dataset::PatientNode>& cases) :
+                     cases_(cases), Event("dataset/explorer/build") {}
+
+             std::vector<core::dataset::PatientNode>& getCases() { return cases_; }
+         };
+
          class SelectSeriesEvent : public Event {
          private:
              SeriesPayload series_;

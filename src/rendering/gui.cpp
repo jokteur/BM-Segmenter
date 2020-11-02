@@ -22,7 +22,9 @@ Rendering::GUI::GUI(Rendering::Application &app) {
 
     app.getMainWindow().addDrawable(&dockspace_);
 //    app.getMainWindow().addDrawable(&window_);
-    app.getMainWindow().addDrawable(&dicomViewer_);
+//    app.getMainWindow().addDrawable(&dicomViewer_2);
+    app.getMainWindow().addDrawable(&preview_);
     app.getMainWindow().addDrawable(&modals_);
+    app.getMainWindow().addDrawable(&dicomViewer_);
     app.getMainWindow().addDrawable(&exploreFolder_);
 }
