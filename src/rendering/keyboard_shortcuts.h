@@ -1,5 +1,4 @@
-#ifndef BM_SEGMENTER_KEYBOARD_SHORTCUTS_H
-#define BM_SEGMENTER_KEYBOARD_SHORTCUTS_H
+#pragma once
 
 #include <vector>
 #include <queue>
@@ -133,6 +132,3 @@ public:
      */
     static void dispatchShortcuts();
 };
-
-
-#endif //BM_SEGMENTER_KEYBOARD_SHORTCUTS_H

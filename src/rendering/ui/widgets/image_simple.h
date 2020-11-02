@@ -84,6 +84,8 @@ namespace Rendering {
             identifier_ = std::to_string(instance_number) + std::string("ImageSimple");
         }
 
+        SimpleImage(const SimpleImage& other) = default;
+
         /**
          * Draws the viewer image widget
          * @param window GLFW window pointer to which the drawable should be drawn

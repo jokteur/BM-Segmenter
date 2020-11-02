@@ -7,7 +7,7 @@
 int Rendering::SimpleImage::instance_number = 0;
 
 void Rendering::SimpleImage::ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) {
-    ImGui::BeginChild(identifier_.c_str(), size_, border_, flags_);
+    ImGui::BeginChild((std::string("Image") + identifier_).c_str(), size_, border_, flags_);
 
     // Calculate the available pixels in viewport for drawing the image
     ImVec2 content = ImGui::GetContentRegionAvail();
@@ -123,6 +123,7 @@ void Rendering::SimpleImage::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
         }
 
 
+        ImGui::PushID(identifier_.c_str());
         ImGui::Image(
                 image_.texture(),
                 ImVec2(scaled_sizes_.x*0.98f, scaled_sizes_.y*0.98f),
@@ -132,6 +133,7 @@ void Rendering::SimpleImage::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
         if (ImGui::IsItemHovered() && tooltip_[0] != '\0') {
             ImGui::SetTooltip("%s", tooltip_);
         }
+        ImGui::PopID();
         ImGui::EndGroup();
     }
     ImGui::EndChild();

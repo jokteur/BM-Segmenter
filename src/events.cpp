@@ -26,7 +26,8 @@ public:
  */
 void EventQueue::subscribe(Listener *listener) {
     std::lock_guard<std::mutex> guard(listeners_mutex_);
-    listeners_.insert(listener);
+    if (listeners_.find(listener) == listeners_.end())
+        listeners_.insert(listener);
 }
 
 void EventQueue::unsubscribe(Listener *listener) {

@@ -17,6 +17,11 @@ Rendering::DicomViewer::DicomViewer()
             "When active, click and drag up and down to change the window center\n"
             "and drag left to right to change to change the window length"
             ) {
+    my_instance_ = instance_number++;
+    identifier_ = std::to_string(my_instance_) + std::string("DicomViewer");
+    image_widget_.setInteractiveZoom(SimpleImage::IMAGE_NORMAL_INTERACT);
+    image_widget_.setImageDrag(SimpleImage::IMAGE_NORMAL_INTERACT);
+
     // Listen to selection in the Dicom explorer
     listener_.callback = [=](Event_ptr &event) {
         auto log = reinterpret_cast<dataset::SelectSeriesEvent*>(event.get());
@@ -25,40 +30,16 @@ Rendering::DicomViewer::DicomViewer()
     listener_.filter = "dataset/dicom_open";
     EventQueue::getInstance().subscribe(&listener_);
 
-    // Listen to potential errors
-    log_listener_.callback = [=](Event_ptr &event) {
-        auto log = LOGEVENT_PTRCAST(event.get());
-        error_message_ = log->getMessage();
-    };
-    log_listener_.filter = "log/dicom_read_error";
-    EventQueue::getInstance().subscribe(&log_listener_);
-
-    // Listen when the job of opening the dicom is finished
-    job_listener_.callback = [=](Event_ptr &event) {
-        auto job = JOBEVENT_PTRCAST(event.get());
-        if (job->getJob().success) {
-            reset_image_ = true;
-        }
-    };
-    job_listener_.filter = "jobs/names/" STRING(JOB_DICOM_TO_IMAGE);
-    EventQueue::getInstance().subscribe(&job_listener_);
-
-
-    instance_number++;
-    identifier_ = (std::to_string(instance_number) + std::string("ImageViewer")).c_str();
-    image_widget_.setInteractiveZoom(SimpleImage::IMAGE_NORMAL_INTERACT);
-    image_widget_.setImageDrag(SimpleImage::IMAGE_NORMAL_INTERACT);
 }
 
 Rendering::DicomViewer::~DicomViewer() {
     EventQueue::getInstance().unsubscribe(&listener_);
-    EventQueue::getInstance().unsubscribe(&log_listener_);
 }
 
 void Rendering::DicomViewer::ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) {
     auto &io = ImGui::GetIO();
     io.ConfigWindowsMoveFromTitleBarOnly = true;
-    ImGui::Begin("DICOM viewer");
+    ImGui::Begin((std::string("DICOM viewer###") + identifier_).c_str(), &is_open_);
 
     // Reload the image when it has been loaded
     // We do this because setting the image_ can lead to segfault when not done
@@ -71,7 +52,6 @@ void Rendering::DicomViewer::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
     auto aCase = case_;
     if (!series_.empty()) {
         aCase = series_[0];
-//        std::cout << "Not empty" << std::endl;
     }
 
     if (!aCase.patientID.empty()) {
@@ -93,7 +73,7 @@ void Rendering::DicomViewer::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
             if (case_select_ > 0 && case_select_ < series_.size())
                 selectCase(series_[case_select_ - 1]);
         }
-        ImGui::SliderInt("Select image", &case_select_, 1, series_.size(), "image n° %d");
+        ImGui::SliderInt((std::string("Select image###") + identifier_).c_str(), &case_select_, 1, series_.size(), "image n° %d");
         ImGui::SameLine();
         Widgets::HelpMarker("Ctrl+click to input manually the number");
     }
@@ -173,7 +153,17 @@ void Rendering::DicomViewer::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
 
 void Rendering::DicomViewer::selectCase(dataset::Case& aCase) {
     error_message_.clear();
-    dataset::dicom_to_matrix(&dicom_matrix_, aCase.path);
+    jobResultFct fct = [=] (const std::shared_ptr<JobResult> &result) {
+        auto dicom_result = std::dynamic_pointer_cast<::core::dataset::DicomResult>(result);
+        if (dicom_result->success) {
+            dicom_matrix_ = dicom_result->data;
+            reset_image_ = true;
+        }
+        else {
+            error_message_ = dicom_result->error_msg;
+        }
+    };
+    dataset::dicom_to_matrix(aCase.path, fct);
 }
 
 void Rendering::DicomViewer::dicom_to_image() {

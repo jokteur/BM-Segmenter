@@ -1,5 +1,4 @@
-#ifndef BM_SEGMENTER_MODALS_H
-#define BM_SEGMENTER_MODALS_H
+#pragma once
 
 #include <string>
 #include <functional>
@@ -182,5 +181,3 @@ namespace Rendering {
         }
     };
 }
-
-#endif //BM_SEGMENTER_MODALS_H

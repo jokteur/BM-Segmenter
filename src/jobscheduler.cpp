@@ -5,6 +5,8 @@
 #include <condition_variable>
 #include <chrono>
 
+jobResultFct JobScheduler::no_op_fct = [] (const std::shared_ptr<JobResult>&) {};
+
 /*
  * Exceptions related to the JobScheduler class
  */
@@ -66,19 +68,21 @@ void JobScheduler::worker_fct(JobScheduler::Worker &worker) {
             }
         }
 
-        Job *current_job;
+        JobReference job_ref;
+        std::shared_ptr<Job> current_job;
+
         bool execute_job = false;
         // Search for a pending job
         {
             std::lock_guard<std::mutex> guard(jobs_mutex_);
             // Get the most urgent job from the priority queue
-            Job &job = *priority_queue_.top().it;
-            if(job.abort) {
-                job.state = Job::JOB_STATE_CANCELED;
-                post_event(job);
+            job_ref = priority_queue_.top();
+            current_job = *job_ref.it;
+            if(current_job->abort) {
+                current_job->state = Job::JOB_STATE_CANCELED;
+                post_event(current_job);
             }
             else {
-                current_job = &job;
                 current_job->state = Job::JOB_STATE_RUNNING;
                 execute_job = true;
             }
@@ -88,45 +92,47 @@ void JobScheduler::worker_fct(JobScheduler::Worker &worker) {
 
         if(execute_job) {
             // Execute job
-            bool error = false;
-            bool success = false;
-            std::exception exception;
             try {
                 worker.state = WORKER_STATE_WORKING;
-                success = current_job->fct(current_job->progress, current_job->abort);
+                auto result = current_job->fct(current_job->progress, current_job->abort);
+                {
+                    std::lock_guard<std::mutex> guard(jobs_mutex_);
+                    if (current_job->abort) {
+                        current_job->state = Job::JOB_STATE_ABORTED;
+                        current_job->success = result->success;
+                    } else {
+                        current_job->state = Job::JOB_STATE_FINISHED;
+                        current_job->success = result->success;
+                    }
+                    current_job->result = result;
+                    finalize_jobs_list_.push_back(current_job);
+                }
             }
             catch (std::exception &e) {
-                exception = e;
-                error = true;
-            }
-            // Process result of job
-            {
                 std::lock_guard<std::mutex> guard(jobs_mutex_);
-                if (error) {
-                    current_job->state = Job::JOB_STATE_ERROR;
-                    current_job->exception = exception;
-                } else if (current_job->abort) {
-                    current_job->state = Job::JOB_STATE_ABORTED;
-                    current_job->success = success;
-                } else {
-                    current_job->state = Job::JOB_STATE_FINISHED;
-                    current_job->success = success;
-                }
-                post_event(*current_job);
+                current_job->state = Job::JOB_STATE_ERROR;
+                current_job->exception = e;
+                finalize_jobs_list_.push_back(current_job);
             }
+            post_event(current_job);
+        }
+        {
+            std::lock_guard<std::mutex> guard(jobs_mutex_);
+            remove_job_from_list(job_ref);
         }
     }
 }
 
-JobReference JobScheduler::addJob(std::string name, jobFct &function, Job::jobPriority priority) {
+JobReference JobScheduler::addJob(std::string name, jobFct &function, jobResultFct &result_fct, Job::jobPriority priority) {
     Job job;
     job.name = name;
     job.id = job_counter_++;
     job.fct = function;
     job.priority = priority;
+    job.result_fct = result_fct;
 
     std::lock_guard<std::mutex> guard(jobs_mutex_);
-    jobs_list_.push_back(job);
+    jobs_list_.emplace_back(std::make_shared<Job>(job));
 
     JobReference jobReference;
     jobReference.it = --(jobs_list_.end());
@@ -138,7 +144,7 @@ JobReference JobScheduler::addJob(std::string name, jobFct &function, Job::jobPr
 
 void JobScheduler::stopJob(JobReference& jobReference) {
     std::lock_guard<std::mutex> guard(jobs_mutex_);
-    jobReference.it->abort = true;
+    (*jobReference.it)->abort = true;
 }
 
 void JobScheduler::clean() {
@@ -151,11 +157,20 @@ void JobScheduler::clean() {
 }
 
 
-const Job JobScheduler::getJobInfo(jobId id) {
+Job JobScheduler::getJobInfo(jobId id) {
     std::lock_guard<std::mutex> guard(jobs_mutex_);
     for (auto &job : jobs_list_) {
-        if(job.id == id) {
-            return job;
+        if(job->id == id) {
+            Job return_job;
+            return_job.name = job->name;
+            return_job.id = job->id;
+            return_job.state = job->state;
+            return_job.priority = job->priority;
+            return_job.progress = job->progress;
+            return_job.exception = job->exception;
+            return_job.abort = job->abort;
+            return_job.success = job->success;
+            return return_job;
         }
     }
     // Did not found any job
@@ -168,8 +183,7 @@ const Job JobScheduler::getJobInfo(jobId id) {
 bool JobScheduler::isBusy() {
     std::lock_guard<std::mutex> guard(jobs_mutex_);
     for (auto &job : jobs_list_) {
-        if(job.state == Job::JOB_STATE_PENDING || job.state == Job::JOB_STATE_RUNNING)
-
+        if(job->state == Job::JOB_STATE_PENDING || job->state == Job::JOB_STATE_RUNNING)
             return true;
     }
     return false;
@@ -178,8 +192,8 @@ bool JobScheduler::isBusy() {
 void JobScheduler::cancelAllPendingJobs() {
     std::lock_guard<std::mutex> guard(jobs_mutex_);
     for (auto &job : jobs_list_) {
-        if(job.state == Job::JOB_STATE_PENDING) {
-            job.abort = true;
+        if(job->state == Job::JOB_STATE_PENDING) {
+            job->abort = true;
         }
     }
 }
@@ -187,14 +201,14 @@ void JobScheduler::cancelAllPendingJobs() {
 void JobScheduler::abortAll() {
     std::lock_guard<std::mutex> guard(jobs_mutex_);
     for (auto &job : jobs_list_) {
-        job.abort = true;
+        job->abort = true;
     }
 }
 
 
-void JobScheduler::post_event(Job &job) {
-    std::string event_name = std::string("jobs/ids/") + std::to_string(job.id);
-    std::string event_name2 = std::string("jobs/names/") + job.name;
+void JobScheduler::post_event(std::shared_ptr<Job> job) {
+    std::string event_name = std::string("jobs/ids/") + std::to_string(job->id);
+    std::string event_name2 = std::string("jobs/names/") + job->name;
 
     event_queue_.post(Event_ptr(new JobEvent(event_name, job)));
     event_queue_.post(Event_ptr(new JobEvent(event_name2, job)));
@@ -204,12 +218,11 @@ void JobScheduler::remove_job_from_list(JobReference &jobReference) {
     jobs_list_.erase(jobReference.it);
 }
 
-void JobScheduler::removeJob(JobReference &jobReference) {
+void JobScheduler::finalizeJobs() {
     std::lock_guard<std::mutex> guard(jobs_mutex_);
-    Job &job = *jobReference.it;
-    if (job.state == Job::JOB_STATE_PENDING || job.state == Job::JOB_STATE_RUNNING)
-        throw JobSchedulerException("Tried to call removeJob() on a Job before it terminated");
-
-    remove_job_from_list(jobReference);
+    for (auto& job : finalize_jobs_list_) {
+        job->result_fct(job->result);
+    }
+    finalize_jobs_list_.clear();
 }
 

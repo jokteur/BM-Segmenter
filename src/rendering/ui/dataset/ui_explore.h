@@ -1,14 +1,15 @@
 #pragma once
 
 #include "nfd.h"
-#include <GLFW/glfw3.h>
 #include <vector>
 #include <string>
+#include <map>
 #include "imgui.h"
 
 #include "core/dataset/explore.h"
 #include "rendering/drawables.h"
 #include "rendering/ui/modales/error_message.h"
+#include "rendering/ui/dataset/dicom_preview.h"
 #include "jobscheduler.h"
 #include "log.h"
 #include "util.h"
@@ -25,6 +26,7 @@ namespace Rendering {
          */
         Listener log_listener_;
         Listener error_listener_;
+        Listener job_listener_;
 
         ::core::dataset::Explore explorer_;
 
@@ -36,9 +38,12 @@ namespace Rendering {
         ImGuiTextFilter series_filter_;
         ImGuiTextFilter image_filter_;
 
-        ::core::dataset::ImageNode *selected_node_;
+        std::map<::core::dataset::SeriesNode*, DicomPreview> previews_;
 
         std::string path_;
+
+        bool build_preview_ = false;
+        void build_preview();
 
     public:
         /**

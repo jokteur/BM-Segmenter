@@ -58,6 +58,17 @@ void Rendering::MainMenuBar::file_menu()  {
     if (ImGui::MenuItem("New project", Shortcuts::new_project_shortcut.description)) {
         new_project_modal_.showModal();
     }
+    if (ImGui::MenuItem("WOW", "Baby")) {
+        jobFct job = [=](float &progress, bool &abort) -> std::shared_ptr<JobResult> {
+            std::cout << "Executing job" << std::endl;
+            return std::make_shared<DummyResult>("lol");
+        };
+        jobResultFct result_fct = [=] (const std::shared_ptr<JobResult>& result) {
+            auto res = std::dynamic_pointer_cast<DummyResult>(result);
+            std::cout << "Hello from result " << res->data.str << std::endl;
+        };
+        JobScheduler::getInstance().addJob("test", job, result_fct);
+    }
     if (ImGui::MenuItem("Open project", Shortcuts::open_project_shortcut.description)) {
         open_file();
     }

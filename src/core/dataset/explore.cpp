@@ -10,11 +10,12 @@ namespace core {
 
         void Explore::findDicoms(const std::string &path) {
             path_ = path;
-            jobFct job = [=](float &progress, bool &abort) -> bool {
+            jobFct job = [=](float &progress, bool &abort) -> std::shared_ptr<JobResult> {
                 status_ = EXPLORE_WORKING;
                 auto state = PyGILState_Ensure();
 
                 Explore::status status = EXPLORE_SUCCESS;
+                JobResult job_result;
                 try {
                     py::module scripts = py::module::import("python.scripts.load_dicom");
                     py::object dicoms = scripts.attr("DiscoverDicoms")(path_.c_str());
@@ -85,9 +86,10 @@ namespace core {
 
                 status_ = status;
                 if (status == EXPLORE_ERROR)
-                    return false;
+                    job_result.success = false;
                 else
-                    return true;
+                    job_result.success = true;
+                return std::make_shared<JobResult>(job_result);
             };
 
             if (status_ != EXPLORE_WORKING)

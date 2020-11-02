@@ -4,12 +4,38 @@
 #include "nfd.h"
 #include "rendering/drawables.h"
 #include <GLFW/glfw3.h>
+
+#include <utility>
 #include "events.h"
 #include "imgui.h"
 
 #include "core/project/project_manager.h"
 #include "settings.h"
 #include "rendering/ui/modales/new_project.h"
+
+#include "jobscheduler.h"
+
+class Dummy {
+public:
+    std::string str;
+    explicit Dummy(std::string str) : str(std::move(str)) {
+        std::cout << "I am created" << std::endl;
+    }
+    Dummy(const Dummy& other) {
+        std::cout << "I am copied" << std::endl;
+        str = other.str;
+    }
+    ~Dummy(){
+        std::cout << "I am destroyed" << std::endl;
+    }
+};
+
+struct DummyResult : public JobResult {
+    Dummy data;
+    explicit DummyResult(std::string str) : data(std::move(str)) {}
+    DummyResult(const DummyResult& other) = delete;
+    ~DummyResult() { std::cout << "Result destroyed" << std::endl; }
+};
 
 namespace Rendering {
     class MainMenuBar : public AbstractLayout {

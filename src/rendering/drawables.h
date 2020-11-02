@@ -1,6 +1,10 @@
-#ifndef BM_SEGMENTER_LAYOUT_H
-#define BM_SEGMENTER_LAYOUT_H
+#pragma once
 
+
+// gl3w.h HAS to be included before glfw3.h
+// As drawables.h is included very often, I put both includes
+// here to avoid conflict.
+#include <GL/gl3w.h>
 #include <GLFW/glfw3.h>
 
 struct Dimension {
@@ -68,5 +72,3 @@ namespace Rendering {
         void ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) override = 0;
     };
 }
-
-#endif //BM_SEGMENTER_LAYOUT_H

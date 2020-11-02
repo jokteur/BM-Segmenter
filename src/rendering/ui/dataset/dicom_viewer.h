@@ -20,8 +20,10 @@ namespace Rendering {
     class DicomViewer : public AbstractLayout {
     private:
         static int instance_number;
+        int my_instance_;
 
-        const char* identifier_;
+        std::string identifier_;
+        bool is_open_ = true;
 
         SimpleImage image_widget_;
         ImageButton windowing_button_;

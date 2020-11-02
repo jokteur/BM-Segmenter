@@ -1,5 +1,4 @@
-#ifndef BM_SEGMENTER_JOBSCHEDULER_H
-#define BM_SEGMENTER_JOBSCHEDULER_H
+#pragma once
 
 #include <thread>
 #include <string>
@@ -10,6 +9,7 @@
 #include <iostream>
 #include <functional>
 #include <condition_variable>
+#include <utility>
 
 #include "events.h"
 
@@ -39,6 +39,18 @@ public:
 };
 
 /**
+ * Struct for processing the results of a job after it
+ * has been executed.
+ *
+ * It is possible to store some data in the shared_ptr
+ */
+struct JobResult {
+    bool success = false;
+    JobResult() = default;
+    virtual ~JobResult() = default;
+};
+
+/**
  * Typedef for the lambda function that will be executed
  *
  * First argument is the progress of the function
@@ -47,7 +59,8 @@ public:
  *
  * The function should return true if successful, false if not
  */
-typedef std::function<bool (float &, bool &)> jobFct;
+typedef std::function<std::shared_ptr<JobResult> (float &, bool &)> jobFct;
+typedef std::function<void (std::shared_ptr<JobResult>)> jobResultFct;
 typedef uint64_t jobId;
 typedef uint64_t workerId;
 
@@ -63,6 +76,7 @@ struct Job {
     jobId id;
 
     jobFct fct;
+    jobResultFct result_fct = [] (const std::shared_ptr<JobResult>&) {};
     jobState state = JOB_STATE_PENDING;
     jobPriority priority = JOB_PRIORITY_NORMAL;
     float progress = 0.f;
@@ -70,14 +84,15 @@ struct Job {
     std::exception exception;
     bool abort = false;
     bool success = false;
+    std::shared_ptr<JobResult> result;
 };
 
 class JobEvent : public Event {
 private:
-    Job &job_;
+    std::shared_ptr<Job> job_;
 public:
-    JobEvent(std::string &name, Job &job) : Event(name), job_(job) {}
-    Job getJob() { return job_; }
+    JobEvent(std::string &name, std::shared_ptr<Job> job) : Event(name), job_(std::move(job)) {}
+    std::shared_ptr<Job> getJob() { return job_; }
 };
 #define JOBEVENT_PTRCAST(job) (reinterpret_cast<JobEvent*>((job)))
 
@@ -87,17 +102,17 @@ public:
  */
 
 struct JobReference {
-    std::list<Job>::iterator it;
+    std::list<std::shared_ptr<Job>>::iterator it;
 
-    const Job& getJob() {
+    const std::shared_ptr<Job>& getJob() const {
         return *it;
     }
 
     bool operator()(const JobReference& lhs, const JobReference& rhs) {
-        if (lhs.it->priority == rhs.it->priority)
-            return lhs.it->id > rhs.it->id;
+        if ((*lhs.it)->priority == (*rhs.it)->priority)
+            return (*lhs.it)->id > (*rhs.it)->id;
         else
-            return lhs.it->priority < rhs.it->priority;
+            return (*lhs.it)->priority < (*rhs.it)->priority;
     }
 };
 
@@ -175,8 +190,9 @@ private:
     int kill_x_workers_ = 0;
     std::mutex kill_mutex_;
 
-    std::list<Job> jobs_list_;
+    std::list<std::shared_ptr<Job>> jobs_list_;
     std::mutex jobs_mutex_;
+    std::vector<std::shared_ptr<Job>> finalize_jobs_list_;
     std::priority_queue<JobReference, std::vector<JobReference>, JobReference> priority_queue_;
     Semaphore semaphore_;
     std::list<Worker> workers_;
@@ -187,7 +203,7 @@ private:
      * Post an JobEvent to the event queue
      * If nobody was listening to the event corresponding of this job, the function returns false
      */
-    void post_event(Job & job);
+    void post_event(std::shared_ptr<Job> job);
 
     /**
      * Removes the job from the list
@@ -196,8 +212,10 @@ private:
      */
     inline void remove_job_from_list(JobReference &jobReference);
 
+    static jobResultFct no_op_fct;
+
     JobScheduler() : event_queue_(EventQueue::getInstance()) {
-        setWorkerPoolSize(1);
+        setWorkerPoolSize(2);
     }
 
 
@@ -243,7 +261,7 @@ public:
      * retires automatically
      * @return id of the given job
      */
-    JobReference addJob(std::string name, jobFct &function, Job::jobPriority priority = Job::JOB_PRIORITY_NORMAL);
+    JobReference addJob(std::string name, jobFct &function, jobResultFct &result_fct = no_op_fct, Job::jobPriority priority = Job::JOB_PRIORITY_NORMAL);
 
     /**
      * Stops the job with the given JobReference (if the jobs has implemented bool &abort of the lambda function)
@@ -251,16 +269,7 @@ public:
      */
     void stopJob(JobReference &jobReference);
 
-    /**
-     * Removes the job from the history of the JobScheduler
-     * After that, the job can never be accessed again with getJobInfo() or JobReference
-     *
-     * This function can only be called if the job terminated (by any mean), otherwise it will throw
-     * an JobSchedulerException(). It is recommended to do this via a listener that listens to the
-     * posted Event of the JobScheduler
-     * @param jobReference
-     */
-    void removeJob(JobReference &jobReference);
+    void finalizeJobs();
 
     /**
      * Get the information about a certain job at a given time (copy of the job)
@@ -270,12 +279,12 @@ public:
      * @param id id of the job
      * @return a copy of the Job structure which should contain informations about the job's state, success, ...
      */
-    const Job getJobInfo(jobId id);
+    Job getJobInfo(jobId id);
 
     /**
      * @return number of active workers
      */
-    const int getNumberOfWorkers() { return num_active_workers_; }
+    int getNumberOfWorkers() const { return num_active_workers_; }
 
     /**
      * Function to check if there are any pending or running jobs
@@ -309,5 +318,3 @@ public:
         clean();
     }
 };
-
-#endif //BM_SEGMENTER_JOBSCHEDULER_H

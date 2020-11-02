@@ -19,6 +19,7 @@ Rendering::ExploreFolder::ExploreFolder() {
     };
     error_listener_.filter = "log/dicom_error";
 
+
     EventQueue::getInstance().subscribe(&log_listener_);
     EventQueue::getInstance().subscribe(&error_listener_);
 }
@@ -29,7 +30,7 @@ void Rendering::ExploreFolder::ImGuiDraw(GLFWwindow *window, Rect &parent_dimens
     if (explorer_.getStatus() == ::core::dataset::Explore::EXPLORE_WORKING) {
         if (ImGui::Button("Cancel")) {
             JobScheduler::getInstance().stopJob(explorer_.getJobReference());
-            std::cout << explorer_.getJobReference().getJob().exception.what() << std::endl;
+            std::cout << explorer_.getJobReference().getJob()->exception.what() << std::endl;
         }
         ImGui::SameLine();
         Widgets::HelpMarker("Cancel the current on-going search.\n"
@@ -67,6 +68,7 @@ void Rendering::ExploreFolder::ImGuiDraw(GLFWwindow *window, Rect &parent_dimens
     ImGui::Separator();
     switch (explorer_.getStatus()) {
         case dataset::Explore::EXPLORE_WORKING:
+            build_preview_ = true;
             ImGui::Text("Searching the folder %s...", path_.c_str());
             break;
         case dataset::Explore::EXPLORE_SUCCESS:
@@ -97,6 +99,10 @@ void Rendering::ExploreFolder::ImGuiDraw(GLFWwindow *window, Rect &parent_dimens
     }
     // Draw the result and / or the errors
     else if (explorer_.getStatus() != dataset::Explore::EXPLORE_SLEEPING) {
+        if (build_preview_) {
+            build_preview();
+            build_preview_ = false;
+        }
         ImGui::Separator();
 
         // Error log
@@ -182,16 +188,20 @@ void Rendering::ExploreFolder::ImGuiDraw(GLFWwindow *window, Rect &parent_dimens
                 continue;
             }
             bool node1 = ImGui::TreeNodeEx((void*)&patient, nodeFlags, "Case ID: %s", patient.ID.c_str());
+            ImGui::NextColumn(); ImGui::NextColumn();
             if (!node1)
                 continue;
 
+            int i = 0;
             for (auto &study : patient.study) {
                 if (study.tree_count < 3) {
                     continue;
                 }
                 bool node2 = ImGui::TreeNodeEx((void*)&study, nodeFlags, "%s", study.description.c_str());
-                ImGui::SameLine();
-                Widgets::HelpMarker("%s at %s", study.date.c_str(), study.time.c_str());
+                if (ImGui::IsItemHovered()) {
+                    ImGui::SetTooltip("%s at %s", study.date.c_str(), study.time.c_str());
+                }
+                ImGui::NextColumn(); ImGui::NextColumn();
                 if (!node2)
                     continue;
 
@@ -263,4 +273,16 @@ void Rendering::ExploreFolder::ImGuiDraw(GLFWwindow *window, Rect &parent_dimens
 Rendering::ExploreFolder::~ExploreFolder() {
     EventQueue::getInstance().unsubscribe(&log_listener_);
     EventQueue::getInstance().unsubscribe(&error_listener_);
+}
+
+void Rendering::ExploreFolder::build_preview() {
+    previews_.clear();
+    for (auto &patient : explorer_.getCases()) {
+        for (auto &study : patient.study) {
+            for (auto &series : study.series) {
+                auto ret = previews_.emplace(std::make_pair(&series, DicomPreview()));
+//                (*ret.first).second.loadSeries(series);
+            }
+        }
+    }
 }

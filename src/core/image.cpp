@@ -97,3 +97,7 @@ bool core::Image::setImageFromHU(const cv::Mat& mat, float window_width, float w
     return false;
 }
 
+core::Image::~Image() {
+    reset();
+}
+

@@ -3,7 +3,6 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include <GLFW/glfw3.h>
 
 #include "drawables.h"
 #include "dimensions.h"

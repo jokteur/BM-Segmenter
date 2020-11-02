@@ -1,6 +1,4 @@
-#ifndef BM_SEGMENTER_ERROR_MESSAGE_H
-#define BM_SEGMENTER_ERROR_MESSAGE_H
-
+#pragma once
 #include "rendering/drawables.h"
 #include "rendering/ui/modales/modals.h"
 
@@ -18,5 +16,3 @@ namespace Rendering {
      */
     void show_error_modal(const std::string& title, const std::string& short_descr, const std::string& detailed = "");
 }
-
-#endif //BM_SEGMENTER_ERROR_MESSAGE_H

@@ -185,6 +185,8 @@ bool Rendering::Application::loop() {
             glfwMakeContextCurrent(backup_current_context);
         }
 
+        JobScheduler::getInstance().finalizeJobs();
+
         glfwSwapBuffers(main_window);
 
         if (glfwWindowShouldClose(main_window)) {

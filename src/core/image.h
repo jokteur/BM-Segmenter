@@ -25,6 +25,7 @@ namespace core {
         void reset();
     public:
         Image() = default;
+        ~Image();
 
         /**
          * Set image from disk
