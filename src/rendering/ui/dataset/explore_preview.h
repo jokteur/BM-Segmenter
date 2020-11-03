@@ -25,12 +25,19 @@ namespace Rendering {
         Listener build_tree_listener_;
         Listener filter_tree_listener_;
 
-        std::vector<core::dataset::PatientNode> cases_;
+        std::shared_ptr<std::vector<core::dataset::PatientNode>> cases_;
         std::map<::core::dataset::SeriesNode*, DicomPreview> dicom_previews_;
 
         int num_cols_ = 3;
 
+        // Image editing options
+        ImVec2 crop_x_ = ImVec2(0, 100);
+        ImVec2 crop_y_ = ImVec2(0, 100);
+        int window_width_ = 400;
+        int window_center_ = 40;
+
         bool open_ = true;
+        bool is_cases_set_ = false;
         bool just_opened_ =  true;
         ImVec2 init_size_;
 

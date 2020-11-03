@@ -43,9 +43,13 @@ namespace Rendering {
         ImGuiTextFilter series_filter_;
         std::string series_filter_str_;
 
+        ImVec4 disabled_text_color_;
+
         std::string path_;
 
         void build_tree();
+
+        static void exclude_menu(bool &is_active, const std::string &desc);
 
     public:
         /**

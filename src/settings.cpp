@@ -27,6 +27,9 @@ void Settings::defineLightStyle() {
     // Popup Bg
     style.Colors[ImGuiCol_PopupBg] = ImColor(240, 240, 240, 255);
     light_ = style;
+
+    // Define all the colors
+    colors_.disabled_text = ImVec4(0.4f, 0.4f, 0.4f, 1.f);
 }
 
 
@@ -34,6 +37,9 @@ void Settings::defineDarkStyle() {
     ImGui::StyleColorsDark();
     ImGuiStyle& style = ImGui::GetStyle();
     dark_ = style;
+
+    // Define all the colors
+    colors_.disabled_text = ImVec4(0.4f, 0.4f, 0.4f, 1.f);
 }
 
 void Settings::setStyle(Theme theme) {

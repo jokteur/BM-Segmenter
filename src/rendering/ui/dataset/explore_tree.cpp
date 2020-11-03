@@ -1,6 +1,7 @@
-#include "ui_explore.h"
+#include "explore_tree.h"
 #include "rendering/ui/widgets/util.h"
 #include "rendering/drag_and_drop.h"
+#include "settings.h"
 
 namespace dataset = ::core::dataset;
 
@@ -110,7 +111,7 @@ void Rendering::ExploreFolder::ImGuiDraw(GLFWwindow *window, Rect &parent_dimens
 
         // Show all the cases found
         ImGui::Separator();
-        ImGui::Text("Found %llu images.", explorer_.getCases().size());
+        ImGui::Text("Found %llu images.", explorer_.getCases()->size());
 
         if (ImGui::CollapsingHeader("Filters", ImGuiTreeNodeFlags_None)) {
             ImGui::SameLine();
@@ -138,74 +139,91 @@ void Rendering::ExploreFolder::ImGuiDraw(GLFWwindow *window, Rect &parent_dimens
 
         ImGui::BeginChild("patient_ids", ImVec2(0, -10), true, ImGuiWindowFlags_HorizontalScrollbar);
         ImGuiTreeNodeFlags nodeFlags = ImGuiTreeNodeFlags_DefaultOpen;
-        ImGui::Columns(2, "dicom_explore_col");
-        for (auto &patient : explorer_.getCases()) {
+        auto disabled_text_color = Settings::getInstance().getColors().disabled_text;
+        for (auto &patient : *explorer_.getCases()) {
+            // Check if node must be display (because of filters)
             if (patient.tree_count < 4) {
                 continue;
             }
+
+            // Check if node is disabled
+            bool patient_active = patient.is_active;
+            if (!patient_active)
+                ImGui::PushStyleColor(ImGuiCol_Text, disabled_text_color);
+
+            // Patient ID node
             bool node1 = ImGui::TreeNodeEx((void*)&patient, nodeFlags, "Case ID: %s", patient.ID.c_str());
-            ImGui::NextColumn(); ImGui::NextColumn();
-            if (!node1)
-                continue;
+            exclude_menu(patient.is_active, "case");
 
-            int i = 0;
-            for (auto &study : patient.study) {
-                if (study.tree_count < 3) {
-                    continue;
-                }
-                bool node2 = ImGui::TreeNodeEx((void*)&study, nodeFlags, "%s", study.description.c_str());
-                if (ImGui::IsItemHovered()) {
-                    ImGui::SetTooltip("%s at %s", study.date.c_str(), study.time.c_str());
-                }
-                ImGui::NextColumn(); ImGui::NextColumn();
-                if (!node2)
-                    continue;
-
-                for (auto &series : study.series) {
-                    if (series.tree_count < 2) {
+            if (node1) {
+                for (auto &study : patient.study) {
+                    // Check if node must be display (because of filters)
+                    if (study.tree_count < 3) {
                         continue;
                     }
-                    bool node3 = ImGui::TreeNodeEx((void*)&series, nodeFlags, "Series %s, Modality %s", series.number.c_str(), series.modality.c_str());
-                    if (!node3)
-                        continue;
 
-                    if (ImGui::BeginDragDropSource()) {
-                        dataset::SeriesPayload payload;
-                        payload.series = series;
-                        payload.case_.patientID = patient.ID;
-                        payload.case_.studyDescription = study.description;
-                        payload.case_.studyDate = study.date;
-                        payload.case_.studyTime = study.time;
-                        auto &drag_and_drop = DragAndDrop<dataset::SeriesPayload>::getInstance();
-                        drag_and_drop.giveData(payload);
-
-                        int a = 0; // Dummy int
-                        ImGui::SetDragDropPayload("_DICOM_VIEW", &a, sizeof(a));
-                        ImGui::Text("Drag Series %s to viewer to visualize", series.number.c_str());
-                        ImGui::EndDragDropSource();
+                    // Check if node is disabled but not from parent
+                    bool study_active = study.is_active && patient_active;
+                    if (!study_active)
+                        ImGui::PushStyleColor(ImGuiCol_Text, disabled_text_color);
+                    // Study node
+                    bool node2 = ImGui::TreeNodeEx((void *) &study, nodeFlags, "%s", study.description.c_str());
+                    if (ImGui::IsItemHovered()) {
+                        ImGui::SetTooltip("%s at %s", study.date.c_str(), study.time.c_str());
                     }
-                    if(ImGui::IsItemHovered()) {
-                        ImGui::SetTooltip("You can drag and drop the entire series to the DICOM viewer to visualize");
-                    }
-                    ImGui::NextColumn();
-                    ImGui::NextColumn();
+                    exclude_menu(study.is_active, "study");
 
-                    for (auto &image : series.images) {
-                        if (!image.tree_count) {
-                            continue;
+                    if (node2) {
+                        for (auto &series : study.series) {
+                            if (series.tree_count < 2) {
+                                continue;
+                            }
+
+
+                            bool series_active = series.is_active && study_active && patient_active;
+                            if (!series_active)
+                                ImGui::PushStyleColor(ImGuiCol_Text, disabled_text_color);
+                            // Series node
+                            bool node3 = ImGui::TreeNodeEx((void *) &series, nodeFlags, "Series %s, Modality %s",
+                                                           series.number.c_str(), series.modality.c_str());
+                            exclude_menu(series.is_active, "series");
+
+                            if (node3) {
+                                for (auto &image : series.images) {
+                                    if (!image.tree_count) {
+                                        continue;
+                                    }
+                                    ImGuiTreeNodeFlags leaf_flag = nodeFlags | ImGuiTreeNodeFlags_Bullet;
+
+                                    bool image_active =
+                                            image.is_active && series_active && study_active && patient_active;
+                                    if (!image_active)
+                                        ImGui::PushStyleColor(ImGuiCol_Text, disabled_text_color);
+
+                                    // Image node
+                                    bool node4 = ImGui::TreeNodeEx((void *) &image, leaf_flag, "%s",
+                                                                   image.number.c_str());
+                                    exclude_menu(image.is_active, "image");
+                                    if (node4)
+                                        ImGui::TreePop();
+                                    if (!image_active)
+                                        ImGui::PopStyleColor();
+                                }
+                                ImGui::TreePop();
+                            }
+                            if (!series_active)
+                                ImGui::PopStyleColor();
                         }
-                        ImGuiTreeNodeFlags leaf_flag = nodeFlags | ImGuiTreeNodeFlags_Bullet;
-                        bool node4 = ImGui::TreeNodeEx((void*)&image, leaf_flag, "%s", image.number.c_str());
-                        if (node4)
-                            ImGui::TreePop();
+                        ImGui::TreePop();
                     }
-                    ImGui::TreePop();
+                    if (!study_active)
+                        ImGui::PopStyleColor();
                 }
                 ImGui::TreePop();
             }
-            ImGui::TreePop();
+            if (!patient_active)
+                ImGui::PopStyleColor();
         }
-        ImGui::Columns(1);
         ImGui::EndChild();
     }
     ImGui::End();
@@ -222,9 +240,23 @@ void Rendering::ExploreFolder::build_tree() {
         ::core::dataset::build_tree(explorer_.getCases(), case_filter_, study_filter_, series_filter_);
         if (is_new_tree_)
             EventQueue::getInstance().post(Event_ptr(new ::core::dataset::ExplorerBuildEvent(explorer_.getCases())));
-        else
-            EventQueue::getInstance().post(Event_ptr(new ::core::dataset::ExplorerFilterEvent(case_filter_, study_filter_, series_filter_)));
+//        else
+//            EventQueue::getInstance().post(Event_ptr(new ::core::dataset::ExplorerFilterEvent(case_filter_, study_filter_, series_filter_)));
         is_new_tree_ = false;
         build_tree_ = false;
+    }
+}
+
+void Rendering::ExploreFolder::exclude_menu(bool &is_active, const std::string &desc) {
+    if (ImGui::BeginPopupContextItem()) {
+        if (is_active) {
+            if (ImGui::Selectable((std::string("Exclude ") + desc).c_str()))
+                is_active = !is_active;
+        }
+        else {
+            if (ImGui::Selectable((std::string("Include ") + desc).c_str()))
+                is_active = !is_active;
+        }
+        ImGui::EndPopup();
     }
 }

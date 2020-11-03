@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "imgui.h"
@@ -26,6 +27,7 @@
              std::string modality;          // Modality of the series (CT, MR, etc.)
              std::string path;              // Path to the DICOMDIR of dicom image
              std::string instanceNumber;            // Image instance number in the series
+             bool is_active = true;
          };
 
          struct SeriesNode;
@@ -38,12 +40,14 @@
              std::string path;
              std::string number;
              int tree_count;
+             bool is_active = true;
          };
          struct SeriesNode {
              std::string modality;
              std::string number;
              std::vector<ImageNode> images;
              int tree_count;
+             bool is_active = true;
          };
          struct StudyNode {
              std::string date;
@@ -51,11 +55,13 @@
              std::string description;
              std::vector<SeriesNode> series;
              int tree_count;
+             bool is_active = true;
          };
          struct PatientNode {
              std::string ID;
              std::vector<StudyNode> study;
              int tree_count;
+             bool is_active = true;
          };
 
          struct SeriesPayload {
@@ -65,12 +71,12 @@
 
          class ExplorerBuildEvent : public Event {
          private:
-             std::vector<core::dataset::PatientNode>& cases_;
+             std::shared_ptr<std::vector<PatientNode>> cases_;
          public:
-             explicit ExplorerBuildEvent(std::vector<core::dataset::PatientNode>& cases) :
-                     cases_(cases), Event("dataset/explorer/build") {}
+             explicit ExplorerBuildEvent(std::shared_ptr<std::vector<PatientNode>> cases) :
+                     cases_(std::move(cases)), Event("dataset/explorer/build") {}
 
-             std::vector<core::dataset::PatientNode>& getCases() { return cases_; }
+             std::shared_ptr<std::vector<PatientNode>> getCases() { return cases_; }
          };
          class ExplorerFilterEvent : public Event {
          private:
@@ -103,7 +109,7 @@
           * @param study_filter filter for study descriptions
           * @param series_filter filter for series modalities
           */
-         void build_tree(std::vector<PatientNode>& tree, const ImGuiTextFilter& case_filter, const ImGuiTextFilter& study_filter, const ImGuiTextFilter& series_filter);
+         void build_tree(std::shared_ptr<std::vector<PatientNode>> tree, const ImGuiTextFilter& case_filter, const ImGuiTextFilter& study_filter, const ImGuiTextFilter& series_filter);
 
         /**
          * @brief The Explore class allows to explore and discover the content of a certain folder
@@ -117,7 +123,7 @@
              enum status {EXPLORE_SLEEPING, EXPLORE_WORKING, EXPLORE_SUCCESS, EXPLORE_CANCELLED, EXPLORE_PARTIAL_SUCCESS, EXPLORE_ERROR};
          private:
              std::string path_;
-             std::vector<PatientNode> cases_; // Tree representation of the cases discovered in the folder
+             std::shared_ptr<std::vector<PatientNode>> cases_; // Tree representation of the cases discovered in the folder
 
              EventQueue& event_queue_;
              status status_;
@@ -130,7 +136,11 @@
               *
               * The path can not be changed later
               */
-             explicit Explore() : event_queue_(EventQueue::getInstance()), status_(EXPLORE_SLEEPING) {}
+             explicit Explore() :
+             event_queue_(EventQueue::getInstance()),
+             status_(EXPLORE_SLEEPING),
+             cases_(std::make_shared<std::vector<PatientNode>>())
+             {}
 
              /**
               * @brief Opens the Python interpreter and explores all the readable DICOMs present in
@@ -147,7 +157,7 @@
              /**
               * @return a flat representation of all the cases the have been found
               */
-             std::vector<PatientNode>& getCases() { return cases_; }
+             std::shared_ptr<std::vector<PatientNode>> getCases() { return cases_; }
 
              /**
               * @return the status of the exploration of the folder

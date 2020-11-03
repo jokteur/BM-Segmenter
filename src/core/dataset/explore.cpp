@@ -41,7 +41,7 @@ namespace core {
                     // Once it has finished building the cases, copy the dictionary that represents
                     // all the cases
                     // See load_dicom.py
-                    cases_.clear();
+                    cases_->clear();
                     py::list data_dict = dicoms.attr("data").attr("get_cases_list")();
                     for (auto &py_patient : data_dict) {
                         auto patient_tuple = py_patient.cast<py::tuple>();
@@ -73,7 +73,7 @@ namespace core {
                             }
                             patient.study.push_back(study);
                         }
-                        cases_.push_back(patient);
+                        cases_->push_back(patient);
                     }
                 }
                 catch (const std::exception &e) {
@@ -96,8 +96,8 @@ namespace core {
                 jobRef_ = JobScheduler::getInstance().addJob(STRING(JOB_EXPLORE_NAME), job);
         }
 
-        void build_tree(std::vector<PatientNode>& tree, const ImGuiTextFilter& case_filter, const ImGuiTextFilter& study_filter, const ImGuiTextFilter& series_filter) {
-            for (auto &patient : tree) {
+        void build_tree(std::shared_ptr<std::vector<PatientNode>> tree, const ImGuiTextFilter& case_filter, const ImGuiTextFilter& study_filter, const ImGuiTextFilter& series_filter) {
+            for (auto &patient : *tree) {
                 patient.tree_count = 0;
                 if (case_filter.PassFilter(patient.ID.c_str())) {
                     patient.tree_count++;

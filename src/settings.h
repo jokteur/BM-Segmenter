@@ -12,6 +12,10 @@
 class Settings {
 public:
     enum Theme {SETTINGS_LIGHT_THEME, SETTINGS_DARK_THEME};
+
+    struct CustomColors {
+        ImVec4 disabled_text;
+    };
 private:
     Theme current_theme_ = SETTINGS_LIGHT_THEME;
 
@@ -27,6 +31,8 @@ private:
     std::list<std::string> recent_projects_;
 
     float current_scale_ = 1.f;
+
+    CustomColors colors_;
 
     void defineLightStyle();
     void defineDarkStyle();
@@ -91,6 +97,8 @@ public:
         static Settings instance;
         return instance;
     }
+
+    CustomColors& getColors() { return colors_; }
 
     /**
      * @return returns current size of the ui

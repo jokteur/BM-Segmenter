@@ -20,6 +20,15 @@ void Rendering::DicomPreview::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensi
     io.ConfigWindowsMoveFromTitleBarOnly = true;
     ImGui::BeginChild(identifier_.c_str(), size_);
 
+    ImVec2 content = ImGui::GetContentRegionAvail();
+    ImVec2 window_pos = ImGui::GetWindowPos();
+    ImVec2 mouse_pos = ImGui::GetMousePos();
+    auto style = ImGui::GetStyle();
+
+    dimensions_.xpos = window_pos.x;
+    dimensions_.ypos = window_pos.y;
+    dimensions_.width = content.x;
+    dimensions_.height = dimensions_.width;
 
     // Reload the image when it has been loaded
     // We do this because setting the image_ can lead to segfault when not done
@@ -42,19 +51,18 @@ void Rendering::DicomPreview::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensi
                 );
                 ImGui::PopID();
                 ImGui::EndDragDropSource();
-            }}
+            }
+            if (is_disabled_) {
+                ImDrawList* draw_list = ImGui::GetWindowDrawList();
+                draw_list->AddRectFilled(
+                        ImVec2(dimensions_.xpos, dimensions_.ypos),
+                        ImVec2(dimensions_.xpos + 800, dimensions_.ypos + 800),
+                        ImColor(255, 0, 0, 100));
+            }
+        }
         );
     }
 
-    ImVec2 content = ImGui::GetContentRegionAvail();
-    ImVec2 window_pos = ImGui::GetWindowPos();
-    ImVec2 mouse_pos = ImGui::GetMousePos();
-    auto style = ImGui::GetStyle();
-
-    dimensions_.xpos = window_pos.x;
-    dimensions_.ypos = window_pos.y;
-    dimensions_.width = content.x;
-    dimensions_.height = dimensions_.width;
 
     if (allow_scroll_ && Widgets::check_hitbox(mouse_pos, dimensions_)) {
         setCase((mouse_pos.x - dimensions_.xpos)/dimensions_.width);
@@ -68,9 +76,33 @@ void Rendering::DicomPreview::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensi
     }
 
     if (ImGui::BeginPopupContextItem(identifier_.c_str())) {
+        if (!series_node_->is_active) {
+            if (ImGui::Selectable("Include series")) {
+                series_node_->is_active = true;
+            }
+        }
+        else {
+            if (ImGui::Selectable("Exclude series")) {
+                series_node_->is_active = false;
+            }
+        }
+        ImGui::SameLine();
+        Widgets::HelpMarker("If the parent study or case ID is excluded,\n"
+                            " the series will still be excluded.");
+
         if (ImGui::Selectable((std::string("Open file in DICOM viewer###") + identifier_).c_str())) {
             EventQueue::getInstance().post(Event_ptr(new ::core::dataset::SelectSeriesEvent(series_payload_)));
         }
+        ImGui::Separator();
+        ImGui::Text("Cropping:");
+        ImGui::DragFloatRange2("Crop in x", &crop_x_.x, &crop_x_.y, 1.f, 0.0f, 100.0f, "Left: %.1f %%", "Right: %.1f %%");
+        ImGui::DragFloatRange2("Crop in y", &crop_y_.x, &crop_y_.y, 1.f, 0.0f, 100.0f, "Top: %.1f %%", "Bottom: %.1f %%");
+        set_crop(crop_x_, crop_y_, true);
+        ImGui::Separator();
+        ImGui::Text("Windowing: ");
+        ImGui::SliderInt("Window center###dicom_preview_wc", &window_center_, -2000, 3000, "%d HU");
+        ImGui::SliderInt("Window width###dicom_preview_ww", &window_width_, 1, 3000, "%d HU");
+        set_window(window_width_, window_center_, true);
         ImGui::EndPopup();
     }
 
@@ -83,16 +115,30 @@ void Rendering::DicomPreview::selectCase(const std::string& path) {
         auto dicom_result = std::dynamic_pointer_cast<::core::dataset::DicomResult>(result);
         if (dicom_result->success) {
 
-            // Resize image to not fill the ram
             auto &dicom = dicom_result->data;
-            if (dicom.rows > max_im_size_ || dicom.cols > max_im_size_) {
+            // Crop image if needed
+
+            cv::Rect ROI(0, 0, dicom.rows, dicom.cols);
+            if (crop_x_.x != crop_x_.y && crop_y_.x != crop_y_.y) {
+                ROI = {
+                    (int)((float)dicom.rows*crop_x_.x/100.f),
+                    (int)((float)dicom.cols*crop_y_.x/100.f),
+                    (int)((float)dicom.rows*(crop_x_.y - crop_x_.x)/100.f),
+                    (int)((float)dicom.rows*(crop_y_.y - crop_y_.x)/100.f)
+                };
+            }
+            dicom = dicom(ROI);
+            int rows = ROI.width;
+            int cols = ROI.height;
+            // Resize image to not fill the ram
+            if (rows > max_im_size_ || cols > max_im_size_) {
                 int width, height;
-                if (dicom.rows > dicom.cols) {
+                if (rows > cols) {
                     width = max_im_size_;
-                    height = (int)((float)dicom.cols / (float)dicom.rows  * max_im_size_);
+                    height = (int)(max_im_size_ / (float)rows * (float)cols);
                 }
                 else {
-                    width = (int)((float)dicom.rows / (float)dicom.cols  * max_im_size_);
+                    width = (int)(max_im_size_ / (float)cols * (float)rows );
                     height = max_im_size_;
                 }
                 cv::resize(dicom, dicom_matrix_, cv::Size(width, height), 0, 0, cv::INTER_AREA);
@@ -114,10 +160,11 @@ void Rendering::DicomPreview::dicom_to_image() {
     image_widget_.setImage(image_);
 }
 
-void Rendering::DicomPreview::loadSeries(const ::core::dataset::SeriesPayload& payload) {
+void Rendering::DicomPreview::loadSeries(::core::dataset::SeriesNode* series_node, const ::core::dataset::Case& case_) {
     series_.clear();
-    series_payload_ = payload;
-    for (auto &image : payload.series.images) {
+    series_payload_ = ::core::dataset::SeriesPayload{*series_node, case_};
+    series_node_ = series_node;
+    for (auto &image : series_node->images) {
         series_.push_back(image.path);
     }
     if (!series_.empty()) {
@@ -133,7 +180,42 @@ void Rendering::DicomPreview::setCase(float percentage) {
     }
 }
 
-void Rendering::DicomPreview::setCrop(float crop) {
-    crop_ = crop;
-    selectCase(series_[0]);
+void Rendering::DicomPreview::setCrop(ImVec2 crop_x, ImVec2 crop_y, bool force) {
+    if (!force && is_crop_locked)
+        return;
+    set_crop(crop_x, crop_y);
+}
+
+void Rendering::DicomPreview::setIsDisabled(bool disabled) {
+    is_disabled_ = disabled;
+}
+
+void Rendering::DicomPreview::setWindowing(int width, int center, bool force) {
+    if (!force && is_window_locked)
+        return;
+    set_window(width, center);
+}
+
+void Rendering::DicomPreview::set_crop(ImVec2 crop_x, ImVec2 crop_y, bool lock) {
+    if (crop_x.x != prev_crop_x_.x || crop_x.y != prev_crop_x_.y || crop_y.x != prev_crop_y_.x || crop_y.y != prev_crop_y_.y) {
+        crop_x_ = crop_x;
+        crop_y_ = crop_y;
+        prev_crop_x_ = crop_x;
+        prev_crop_y_ = crop_y;
+        if (lock)
+            is_crop_locked = true;
+        selectCase(series_[0]);
+    }
+}
+
+void Rendering::DicomPreview::set_window(int width, int center, bool lock) {
+    if (width != prev_ww_ || center != prev_wc_) {
+        window_width_ = width;
+        window_center_ = center;
+        prev_ww_ = width;
+        prev_wc_ = center;
+        reset_image_ = true;
+        if (lock)
+            is_window_locked = true;
+    }
 }

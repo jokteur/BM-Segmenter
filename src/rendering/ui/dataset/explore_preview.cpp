@@ -1,13 +1,14 @@
 #include "explore_preview.h"
 #include "ui/widgets/util.h"
+#include "settings.h"
 
 Rendering::ExplorerPreview::ExplorerPreview(ImVec2 init_size) : init_size_(init_size) {
     build_tree_listener_.callback = [=](Event_ptr &event) {
         auto explorer = reinterpret_cast<::core::dataset::ExplorerBuildEvent*>(event.get());
-        cases_.clear();
-        dicom_previews_.clear();
         cases_ = explorer->getCases();
-        for (auto &patient : cases_) {
+        is_cases_set_ = true;
+        dicom_previews_.clear();
+        for (auto &patient : *cases_) {
             for (auto &study : patient.study) {
                 for (auto &series : study.series) {
                     auto ret = dicom_previews_.emplace(std::make_pair(&series, DicomPreview()));
@@ -19,7 +20,7 @@ Rendering::ExplorerPreview::ExplorerPreview(ImVec2 init_size) : init_size_(init_
                             series.number,      // Number that identifies the series in the study
                             series.modality,    // Modality of the series (CT, MR, etc.)
                     };
-                    (*ret.first).second.loadSeries(::core::dataset::SeriesPayload{series, case_});
+                    (*ret.first).second.loadSeries(&series, case_);
                 }
             }
         }
@@ -47,7 +48,7 @@ void Rendering::ExplorerPreview::ImGuiDraw(GLFWwindow *window, Rect &parent_dime
         just_opened_ = false;
         ImGui::SetWindowSize(init_size_);
     }
-    if (!cases_.empty()) {
+    if (is_cases_set_) {
         if (dicom_previews_.size() < num_cols_) {
             num_cols_ = dicom_previews_.size();
         }
@@ -62,6 +63,41 @@ void Rendering::ExplorerPreview::ImGuiDraw(GLFWwindow *window, Rect &parent_dime
             if (num_cols_ < 5)
                 num_cols_++;
         }
+        if (ImGui::CollapsingHeader("Edit all images###explore_preview_edit")) {
+            ImGui::SameLine();
+            Widgets::HelpMarker("Edit all images from the dataset at the same time.\n"
+                                "These are non-destructive actions, you can change the parameters"
+                                " even after the data has been imported.");
+            ImGui::Text("Cropping");
+            ImGui::DragFloatRange2("Crop in x", &crop_x_.x, &crop_x_.y, 1.f, 0.0f, 100.0f, "Left: %.1f %%", "Right: %.1f %%");
+            ImGui::DragFloatRange2("Crop in y", &crop_y_.x, &crop_y_.y, 1.f, 0.0f, 100.0f, "Top: %.1f %%", "Bottom: %.1f %%");
+            if (ImGui::Button("Apply crop###explore_apply_crop")) {
+                for (auto& preview : dicom_previews_) {
+                    preview.second.setCrop(crop_x_, crop_y_, false);
+                }
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Force crop on all images")) {
+                for (auto& preview : dicom_previews_) {
+                    preview.second.setCrop(crop_x_, crop_y_, true);
+                }
+            }
+            ImGui::Separator();
+            ImGui::Text("Windowing: ");
+            ImGui::SliderInt("Window center###dicom_preview_wc", &window_center_, -2000, 3000, "%d HU");
+            ImGui::SliderInt("Window width###dicom_preview_ww", &window_width_, 1, 3000, "%d HU");
+            if (ImGui::Button("Apply window###explore_apply_window")) {
+                for (auto& preview : dicom_previews_) {
+                    preview.second.setWindowing(window_width_, window_center_, false);
+                }
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Force window on all images")) {
+                for (auto& preview : dicom_previews_) {
+                    preview.second.setWindowing(window_width_, window_center_, true);
+                }
+            }
+        }
         ImGui::Separator();
 
         ImGui::BeginChild("explore_preview_scroll");
@@ -74,7 +110,8 @@ void Rendering::ExplorerPreview::ImGuiDraw(GLFWwindow *window, Rect &parent_dime
 
         ImGui::Columns(num_cols_);
         float width = ImGui::GetContentRegionAvailWidth();
-        for (auto &patient : cases_) {
+        auto disabled_color = Settings::getInstance().getColors().disabled_text;
+        for (auto &patient : *cases_) {
             if (patient.tree_count < 4)
                 continue;
             for (auto &study : patient.study) {
@@ -83,10 +120,26 @@ void Rendering::ExplorerPreview::ImGuiDraw(GLFWwindow *window, Rect &parent_dime
                 for (auto &series : study.series) {
                     if (series.tree_count < 2)
                         continue;
-                    ImGui::Text("%s", patient.ID.c_str());
+                    bool is_active = patient.is_active && study.is_active && series.is_active;
+                    if (!is_active) {
+                        ImGui::PushStyleColor(ImGuiCol_Text, disabled_color);
+                        dicom_previews_[&series].setIsDisabled(true);
+                    }
+                    else {
+                        dicom_previews_[&series].setIsDisabled(false);
+                    }
+
+                    if (dicom_previews_[&series].isLocked()) {
+                        ImGui::Text("%s *", patient.ID.c_str());
+                    }
+                    else {
+                        ImGui::Text("%s", patient.ID.c_str());
+                    }
+
                     if (ImGui::IsItemHovered()) {
                         ImGui::SetTooltip("Study: %s\nSeries: %s\nModality: %s", study.description.c_str(), series.number.c_str(), series.modality.c_str());
                     }
+
                     dicom_previews_[&series].setSize(ImVec2(width, width));
                     if (Widgets::check_hitbox(mouse_pos, sub_window_dim)) {
                         dicom_previews_[&series].setAllowScroll(true);
@@ -95,6 +148,10 @@ void Rendering::ExplorerPreview::ImGuiDraw(GLFWwindow *window, Rect &parent_dime
                         dicom_previews_[&series].setAllowScroll(false);
                     }
                     dicom_previews_[&series].ImGuiDraw(window, parent_dimension);
+
+                    if (!is_active) {
+                        ImGui::PopStyleColor();
+                    }
                     ImGui::NextColumn();
                 }
             }
