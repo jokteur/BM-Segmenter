@@ -31,7 +31,6 @@ void Rendering::ExploreFolder::ImGuiDraw(GLFWwindow *window, Rect &parent_dimens
     if (explorer_.getStatus() == ::core::dataset::Explore::EXPLORE_WORKING) {
         if (ImGui::Button("Cancel")) {
             JobScheduler::getInstance().stopJob(explorer_.getJobReference());
-            std::cout << explorer_.getJobReference().getJob()->exception.what() << std::endl;
         }
         ImGui::SameLine();
         Widgets::HelpMarker("Cancel the current on-going search.\n"

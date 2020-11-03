@@ -104,6 +104,7 @@ void JobScheduler::worker_fct(JobScheduler::Worker &worker) {
                         current_job->state = Job::JOB_STATE_FINISHED;
                         current_job->success = result->success;
                     }
+                    result->id = current_job->id;
                     current_job->result = result;
                     finalize_jobs_list_.push_back(current_job);
                 }
@@ -123,7 +124,7 @@ void JobScheduler::worker_fct(JobScheduler::Worker &worker) {
     }
 }
 
-JobReference JobScheduler::addJob(std::string name, jobFct &function, jobResultFct &result_fct, Job::jobPriority priority) {
+std::shared_ptr<Job> & JobScheduler::addJob(std::string name, jobFct &function, jobResultFct &result_fct, Job::jobPriority priority) {
     Job job;
     job.name = name;
     job.id = job_counter_++;
@@ -139,12 +140,17 @@ JobReference JobScheduler::addJob(std::string name, jobFct &function, jobResultF
 
     priority_queue_.push(jobReference);
     semaphore_.post();
-    return jobReference;
+    return *--(jobs_list_.end());
 }
 
-void JobScheduler::stopJob(JobReference& jobReference) {
+void JobScheduler::stopJob(jobId jobId) {
     std::lock_guard<std::mutex> guard(jobs_mutex_);
-    (*jobReference.it)->abort = true;
+    for (auto &job : jobs_list_) {
+        if (job->id == jobId) {
+            job->abort = true;
+            return;
+        }
+    }
 }
 
 void JobScheduler::clean() {

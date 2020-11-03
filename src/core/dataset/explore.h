@@ -131,7 +131,7 @@
 
              EventQueue& event_queue_;
              status status_;
-             JobReference jobRef_;
+             jobId jobRef_;
          public:
 
              /**
@@ -172,7 +172,7 @@
               * Whenever findDicoms is called, a new job is launched.
               * @return the job reference created in the findDicoms function
               */
-             JobReference& getJobReference() {return jobRef_; }
+             jobId& getJobReference() { return jobRef_; }
          };
      }
  }

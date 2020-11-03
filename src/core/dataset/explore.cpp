@@ -93,7 +93,7 @@ namespace core {
             };
 
             if (status_ != EXPLORE_WORKING)
-                jobRef_ = JobScheduler::getInstance().addJob(STRING(JOB_EXPLORE_NAME), job);
+                jobRef_ = JobScheduler::getInstance().addJob(STRING(JOB_EXPLORE_NAME), job)->id;
         }
 
         void build_tree(std::shared_ptr<std::vector<PatientNode>> tree, const ImGuiTextFilter& case_filter, const ImGuiTextFilter& study_filter, const ImGuiTextFilter& series_filter) {

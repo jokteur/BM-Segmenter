@@ -84,8 +84,8 @@ void Rendering::ExplorerPreview::ImGuiDraw(GLFWwindow *window, Rect &parent_dime
             }
             ImGui::Separator();
             ImGui::Text("Windowing: ");
-            ImGui::SliderInt("Window center###dicom_preview_wc", &window_center_, -2000, 3000, "%d HU");
-            ImGui::SliderInt("Window width###dicom_preview_ww", &window_width_, 1, 3000, "%d HU");
+            ImGui::DragInt("Window center###explore_preview_wc", &window_center_, 0.5, -1000, 3000, "%d HU");
+            ImGui::DragInt("Window width###explore_preview_ww", &window_width_, 0.5, 1, 3000, "%d HU");
             if (ImGui::Button("Apply window###explore_apply_window")) {
                 for (auto& preview : dicom_previews_) {
                     preview.second.setWindowing(window_width_, window_center_, false);

@@ -7,7 +7,11 @@
 int Rendering::SimpleImage::instance_number = 0;
 
 void Rendering::SimpleImage::ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) {
-    ImGui::BeginChild((std::string("Image") + identifier_).c_str(), size_, border_, flags_);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0,0));
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(0,0));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1);
+    int num_pop = 3;
+    ImGui::BeginChild((std::string("Image") + identifier_).c_str(), size_, true, flags_);
 
     // Calculate the available pixels in viewport for drawing the image
     ImVec2 content = ImGui::GetContentRegionAvail();
@@ -42,7 +46,7 @@ void Rendering::SimpleImage::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
 
 
     if (image_.isImageSet()) {
-        ImGui::BeginGroup();
+//        ImGui::BeginGroup();
         // Center the image
         float x_difference = 0;
         if (scaled_sizes_.x < content.x) {
@@ -126,7 +130,7 @@ void Rendering::SimpleImage::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
         ImGui::PushID(identifier_.c_str());
         ImGui::Image(
                 image_.texture(),
-                ImVec2(scaled_sizes_.x*0.98f, scaled_sizes_.y*0.98f),
+                ImVec2(scaled_sizes_.x, scaled_sizes_.y),
                 ImVec2(crop_.x0,crop_.y0),
                 ImVec2(crop_.x1,crop_.y1)
         );
@@ -135,7 +139,8 @@ void Rendering::SimpleImage::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
         }
         drag_source_fct_();
         ImGui::PopID();
-        ImGui::EndGroup();
+//        ImGui::EndGroup();
     }
     ImGui::EndChild();
+    ImGui::PopStyleVar(num_pop);
 }

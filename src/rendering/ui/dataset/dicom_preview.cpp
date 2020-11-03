@@ -91,20 +91,22 @@ void Rendering::DicomPreview::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensi
         Widgets::HelpMarker("If the parent study or case ID is excluded,\n"
                             " the series will still be excluded.");
 
-        if (ImGui::Selectable((std::string("Open file in DICOM viewer###") + identifier_).c_str())) {
-            auto series_payload = ::core::dataset::SeriesPayload{*series_node_, case_, crop_x_, crop_y_, window_width_, window_center_};
-            EventQueue::getInstance().post(Event_ptr(new ::core::dataset::SelectSeriesEvent(series_payload)));
+        if (series_node_->is_active) {
+            if (ImGui::Selectable((std::string("Open file in DICOM viewer###") + identifier_).c_str())) {
+                auto series_payload = ::core::dataset::SeriesPayload{*series_node_, case_, crop_x_, crop_y_, window_width_, window_center_};
+                EventQueue::getInstance().post(Event_ptr(new ::core::dataset::SelectSeriesEvent(series_payload)));
+            }
+            ImGui::Separator();
+            ImGui::Text("Cropping:");
+            ImGui::DragFloatRange2("Crop in x", &crop_x_.x, &crop_x_.y, 1.f, 0.0f, 100.0f, "Left: %.1f %%", "Right: %.1f %%");
+            ImGui::DragFloatRange2("Crop in y", &crop_y_.x, &crop_y_.y, 1.f, 0.0f, 100.0f, "Top: %.1f %%", "Bottom: %.1f %%");
+            set_crop(crop_x_, crop_y_, true);
+            ImGui::Separator();
+            ImGui::Text("Windowing: ");
+            ImGui::DragInt("Window center###dicom_preview_wc", &window_center_, 0.5, -1000, 3000, "%d HU");
+            ImGui::DragInt("Window width###dicom_preview_ww", &window_width_, 0.5, 1, 3000, "%d HU");
+            set_window(window_width_, window_center_, true);
         }
-        ImGui::Separator();
-        ImGui::Text("Cropping:");
-        ImGui::DragFloatRange2("Crop in x", &crop_x_.x, &crop_x_.y, 1.f, 0.0f, 100.0f, "Left: %.1f %%", "Right: %.1f %%");
-        ImGui::DragFloatRange2("Crop in y", &crop_y_.x, &crop_y_.y, 1.f, 0.0f, 100.0f, "Top: %.1f %%", "Bottom: %.1f %%");
-        set_crop(crop_x_, crop_y_, true);
-        ImGui::Separator();
-        ImGui::Text("Windowing: ");
-        ImGui::SliderInt("Window center###dicom_preview_wc", &window_center_, -2000, 3000, "%d HU");
-        ImGui::SliderInt("Window width###dicom_preview_ww", &window_width_, 1, 3000, "%d HU");
-        set_window(window_width_, window_center_, true);
         ImGui::EndPopup();
     }
 

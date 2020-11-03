@@ -1,6 +1,6 @@
 #include "core/dataset/dicom_to_image.h"
 
-void core::dataset::dicom_to_matrix(const std::string &path, jobResultFct result_fct) {
+std::shared_ptr<Job> core::dataset::dicom_to_matrix(const std::string &path, jobResultFct result_fct) {
     static int num_instances = 0;
 
     jobFct job = [=](float &progress, bool &abort) -> std::shared_ptr<JobResult> {
@@ -35,5 +35,5 @@ void core::dataset::dicom_to_matrix(const std::string &path, jobResultFct result
         PyGILState_Release(state);
         return dicom_result;
     };
-    JobScheduler::getInstance().addJob("dicom_to_image", job, result_fct);
+    return JobScheduler::getInstance().addJob("dicom_to_image", job, result_fct);
 }

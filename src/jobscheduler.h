@@ -38,6 +38,9 @@ public:
     }
 };
 
+typedef uint64_t jobId;
+typedef uint64_t workerId;
+
 /**
  * Struct for processing the results of a job after it
  * has been executed.
@@ -46,6 +49,7 @@ public:
  */
 struct JobResult {
     bool success = false;
+    jobId id;
     JobResult() = default;
     virtual ~JobResult() = default;
 };
@@ -61,8 +65,6 @@ struct JobResult {
  */
 typedef std::function<std::shared_ptr<JobResult> (float &, bool &)> jobFct;
 typedef std::function<void (std::shared_ptr<JobResult>)> jobResultFct;
-typedef uint64_t jobId;
-typedef uint64_t workerId;
 
 /*
  * Job description
@@ -215,7 +217,7 @@ private:
     static jobResultFct no_op_fct;
 
     JobScheduler() : event_queue_(EventQueue::getInstance()) {
-        setWorkerPoolSize(2);
+        setWorkerPoolSize(4);
     }
 
 
@@ -261,13 +263,13 @@ public:
      * retires automatically
      * @return id of the given job
      */
-    JobReference addJob(std::string name, jobFct &function, jobResultFct &result_fct = no_op_fct, Job::jobPriority priority = Job::JOB_PRIORITY_NORMAL);
+    std::shared_ptr<Job> & addJob(std::string name, jobFct &function, jobResultFct &result_fct = no_op_fct, Job::jobPriority priority = Job::JOB_PRIORITY_NORMAL);
 
     /**
      * Stops the job with the given JobReference (if the jobs has implemented bool &abort of the lambda function)
      * @param id id of the job
      */
-    void stopJob(JobReference &jobReference);
+    void stopJob(jobId jobId);
 
     void finalizeJobs();
 

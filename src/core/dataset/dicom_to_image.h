@@ -33,6 +33,6 @@ namespace core {
          * will be named "dataset/dicom/<event_name>"
          * @param path path to the dicom image
          */
-        void dicom_to_matrix(const std::string &path, jobResultFct result_fct);
+        std::shared_ptr<Job> dicom_to_matrix(const std::string &path, jobResultFct result_fct);
     }
 }

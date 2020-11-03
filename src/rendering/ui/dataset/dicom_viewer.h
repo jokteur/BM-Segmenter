@@ -25,14 +25,29 @@ namespace Rendering {
         std::string identifier_;
         bool is_open_ = true;
 
-        SimpleImage image_widget_;
-        ImageButton windowing_button_;
         ::core::Image image_;
+        SimpleImage image_widget_;
+
+        ::core::Image sagittal_image_;
+        SimpleImage sagittal_widget_;
+
+        ::core::Image coronal_image_;
+        SimpleImage coronal_widget_;
+
+        ImageButton windowing_button_;
+        ImageButton point_select_button_;
         Listener listener_;
         Listener job_listener_;
         Listener log_listener_;
 
-        cv::Mat dicom_matrix_;
+        std::vector<cv::Mat> dicom_matrix_;
+        cv::Mat sagittal_matrix_;
+        cv::Mat coronal_matrix_;
+
+        bool load_finish_ = false;
+        bool sagittal_ready_ = false;
+        bool coronal_ready_ = false;
+
         bool reset_image_ = false;
         bool active_dragging_ = false;
         ImVec2 drag_delta_;
@@ -42,16 +57,23 @@ namespace Rendering {
         ImVec2 crop_x_ = ImVec2(0, 100);
         ImVec2 crop_y_ = ImVec2(0, 100);
 
+        float sagittal_x_ = 0.5f;
+        float coronal_x_ = 0.5f;
+
         std::string error_message_;
+        std::set<jobId> pending_jobs_;
 
         std::vector<std::string> series_;
         ::core::dataset::Case case_;
         int case_select_ = 1;
         int previous_select_ = 0;
+        int image_size_ = 0;
 
         void loadSeries(const ::core::dataset::SeriesPayload& data);
-        void selectCase(std::string &path);
+        void loadCase(const std::string &path);
         void dicom_to_image();
+
+        void build_views(bool no_reset=false);
 
     public:
         DicomViewer();
