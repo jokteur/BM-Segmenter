@@ -41,7 +41,7 @@ namespace Rendering {
 
         std::vector<std::string> series_;
         ::core::dataset::SeriesNode* series_node_;
-        ::core::dataset::SeriesPayload series_payload_;
+        ::core::dataset::Case case_;
         bool is_subscribed_ = false;
 
         int max_im_size_ = 512;

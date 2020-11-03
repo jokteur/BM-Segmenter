@@ -67,6 +67,10 @@
          struct SeriesPayload {
              SeriesNode series;
              Case case_;
+             ImVec2 crop_x;
+             ImVec2 crop_y;
+             int window_width;
+             int window_center;
          };
 
          class ExplorerBuildEvent : public Event {

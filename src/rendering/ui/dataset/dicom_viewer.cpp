@@ -49,19 +49,14 @@ void Rendering::DicomViewer::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
         reset_image_ = false;
     }
 
-    auto aCase = case_;
-    if (!series_.empty()) {
-        aCase = series_[0];
-    }
-
-    if (!aCase.patientID.empty()) {
-        ImGui::Text("Patient ID %s /", aCase.patientID.c_str());
+    if (!case_.patientID.empty()) {
+        ImGui::Text("Patient ID %s /", case_.patientID.c_str());
         ImGui::SameLine();
-        ImGui::Text("Study %s /", aCase.studyDescription.c_str());
+        ImGui::Text("Study %s /", case_.studyDescription.c_str());
         ImGui::SameLine();
-        ImGui::Text("Series %s ", aCase.seriesNumber.c_str());
+        ImGui::Text("Series %s ", case_.seriesNumber.c_str());
         ImGui::SameLine();
-        ImGui::Text("with modality %s ", aCase.modality.c_str());
+        ImGui::Text("with modality %s ", case_.modality.c_str());
     }
     else {
         ImGui::Text("Drag Series or double click on Series to show DICOM");
@@ -77,10 +72,10 @@ void Rendering::DicomViewer::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
         ImGui::SameLine();
         Widgets::HelpMarker("Ctrl+click to input manually the number");
     }
-    else if(!aCase.path.empty()) {
-        ImGui::SameLine();
-        ImGui::Text("/ Image number %s", aCase.instanceNumber.c_str());
-    }
+//    else if(!case_.path.empty()) {
+//        ImGui::SameLine();
+//        ImGui::Text("/ Image number %s", case_.instanceNumber.c_str());
+//    }
     windowing_button_.ImGuiDraw(window, parent_dimension);
     ImGui::SameLine();
     ImGui::Text("Window Center: %d, Window Width: %d", window_center_, window_width_);
@@ -152,19 +147,29 @@ void Rendering::DicomViewer::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
     ImGui::End();
 }
 
-void Rendering::DicomViewer::selectCase(dataset::Case& aCase) {
+void Rendering::DicomViewer::selectCase(std::string &path) {
     error_message_.clear();
     jobResultFct fct = [=] (const std::shared_ptr<JobResult> &result) {
         auto dicom_result = std::dynamic_pointer_cast<::core::dataset::DicomResult>(result);
         if (dicom_result->success) {
-            dicom_matrix_ = dicom_result->data;
+            auto& dicom = dicom_result->data;
+            cv::Rect ROI(0, 0, dicom.rows, dicom.cols);
+            if (crop_x_.x != crop_x_.y && crop_y_.x != crop_y_.y) {
+                ROI = {
+                        (int)((float)dicom.rows*crop_x_.x/100.f),
+                        (int)((float)dicom.cols*crop_y_.x/100.f),
+                        (int)((float)dicom.rows*(crop_x_.y - crop_x_.x)/100.f),
+                        (int)((float)dicom.rows*(crop_y_.y - crop_y_.x)/100.f)
+                };
+            }
+            dicom_matrix_ = dicom(ROI);
             reset_image_ = true;
         }
         else {
             error_message_ = dicom_result->error_msg;
         }
     };
-    dataset::dicom_to_matrix(aCase.path, fct);
+    dataset::dicom_to_matrix(path, fct);
 }
 
 void Rendering::DicomViewer::dicom_to_image() {
@@ -176,18 +181,14 @@ void Rendering::DicomViewer::loadSeries(const dataset::SeriesPayload &data) {
     series_.clear();
     windowing_button_.setState(false);
     case_select_ = 1;
+    case_ = data.case_;
+    window_center_ = data.window_center;
+    window_width_ = data.window_width;
+    crop_x_ = data.crop_x;
+    crop_y_ = data.crop_y;
+
     for (auto &image : data.series.images) {
-        auto Case = dataset::Case {
-                std::string(data.case_.patientID),
-                std::string(data.case_.studyDate),
-                std::string(data.case_.studyTime),
-                std::string(data.case_.studyDescription),
-                std::string(data.series.number),
-                std::string(data.series.modality),
-                std::string(image.path),
-                std::string(image.number)
-        };
-        series_.push_back(Case);
+        series_.push_back(image.path);
     }
     if (!series_.empty())
         selectCase(series_[0]);

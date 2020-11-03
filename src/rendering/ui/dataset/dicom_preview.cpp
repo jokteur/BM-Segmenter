@@ -39,11 +39,12 @@ void Rendering::DicomPreview::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensi
         image_widget_.setDragSourceFunction([this] {
             if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
                 auto &drag_and_drop = DragAndDrop<dataset::SeriesPayload>::getInstance();
-                drag_and_drop.giveData(series_payload_);
+                auto series_payload = ::core::dataset::SeriesPayload{*series_node_, case_, crop_x_, crop_y_, window_width_, window_center_};
+                drag_and_drop.giveData(series_payload);
 
                 int a = 0; // Dummy int
                 ImGui::SetDragDropPayload("_DICOM_VIEW", &a, sizeof(a));
-                ImGui::Text("Drag Series %s to viewer to visualize", series_payload_.series.number.c_str());
+                ImGui::Text("Drag Series %s to viewer to visualize", series_node_->number.c_str());
                 ImGui::PushID("Image_Drag_Drop");
                 ImGui::Image(
                         image_.texture(),
@@ -56,7 +57,7 @@ void Rendering::DicomPreview::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensi
                 ImDrawList* draw_list = ImGui::GetWindowDrawList();
                 draw_list->AddRectFilled(
                         ImVec2(dimensions_.xpos, dimensions_.ypos),
-                        ImVec2(dimensions_.xpos + 800, dimensions_.ypos + 800),
+                        ImVec2(dimensions_.xpos + dimensions_.width, dimensions_.ypos + dimensions_.height),
                         ImColor(255, 0, 0, 100));
             }
         }
@@ -91,7 +92,8 @@ void Rendering::DicomPreview::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensi
                             " the series will still be excluded.");
 
         if (ImGui::Selectable((std::string("Open file in DICOM viewer###") + identifier_).c_str())) {
-            EventQueue::getInstance().post(Event_ptr(new ::core::dataset::SelectSeriesEvent(series_payload_)));
+            auto series_payload = ::core::dataset::SeriesPayload{*series_node_, case_, crop_x_, crop_y_, window_width_, window_center_};
+            EventQueue::getInstance().post(Event_ptr(new ::core::dataset::SelectSeriesEvent(series_payload)));
         }
         ImGui::Separator();
         ImGui::Text("Cropping:");
@@ -160,9 +162,9 @@ void Rendering::DicomPreview::dicom_to_image() {
     image_widget_.setImage(image_);
 }
 
-void Rendering::DicomPreview::loadSeries(::core::dataset::SeriesNode* series_node, const ::core::dataset::Case& case_) {
+void Rendering::DicomPreview::loadSeries(::core::dataset::SeriesNode* series_node, const ::core::dataset::Case& aCase) {
     series_.clear();
-    series_payload_ = ::core::dataset::SeriesPayload{*series_node, case_};
+    case_ = aCase;
     series_node_ = series_node;
     for (auto &image : series_node->images) {
         series_.push_back(image.path);
@@ -183,6 +185,8 @@ void Rendering::DicomPreview::setCase(float percentage) {
 void Rendering::DicomPreview::setCrop(ImVec2 crop_x, ImVec2 crop_y, bool force) {
     if (!force && is_crop_locked)
         return;
+    if (force)
+        is_crop_locked = false;
     set_crop(crop_x, crop_y);
 }
 
@@ -193,6 +197,8 @@ void Rendering::DicomPreview::setIsDisabled(bool disabled) {
 void Rendering::DicomPreview::setWindowing(int width, int center, bool force) {
     if (!force && is_window_locked)
         return;
+    if (is_window_locked)
+        is_window_locked = false;
     set_window(width, center);
 }
 

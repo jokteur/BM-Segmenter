@@ -27,7 +27,6 @@ namespace Rendering {
 
         SimpleImage image_widget_;
         ImageButton windowing_button_;
-        ::core::dataset::Case case_;
         ::core::Image image_;
         Listener listener_;
         Listener job_listener_;
@@ -37,17 +36,21 @@ namespace Rendering {
         bool reset_image_ = false;
         bool active_dragging_ = false;
         ImVec2 drag_delta_;
+
         int window_width_ = 400;
         int window_center_ = 40;
+        ImVec2 crop_x_ = ImVec2(0, 100);
+        ImVec2 crop_y_ = ImVec2(0, 100);
 
         std::string error_message_;
 
-        std::vector<::core::dataset::Case> series_;
+        std::vector<std::string> series_;
+        ::core::dataset::Case case_;
         int case_select_ = 1;
         int previous_select_ = 0;
 
         void loadSeries(const ::core::dataset::SeriesPayload& data);
-        void selectCase(::core::dataset::Case& aCase);
+        void selectCase(std::string &path);
         void dicom_to_image();
 
     public:
