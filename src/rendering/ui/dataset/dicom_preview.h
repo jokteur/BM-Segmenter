@@ -9,6 +9,7 @@
 
 #include "core/image.h"
 #include "core/dataset/explore.h"
+#include "core/dicom.h"
 #include "events.h"
 #include "rendering/drawables.h"
 #include "rendering/ui/widgets/image_simple.h"
@@ -27,7 +28,7 @@ namespace Rendering {
         ::core::Image image_;
         Listener job_listener_;
 
-        cv::Mat dicom_matrix_;
+        ::core::Dicom dicom_matrix_;
         bool reset_image_ = false;
 
         int window_width_ = 400;

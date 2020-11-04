@@ -22,8 +22,14 @@ std::shared_ptr<Job> core::dataset::dicom_to_matrix(const std::string &path, job
                 int cols = info.shape[1];
 
                 auto array = static_cast<short int*>(info.ptr);
-                dicom_result->data.create(rows, cols, CV_16S);
-                memcpy(dicom_result->data.data, array, sizeof(short int)*rows*cols);
+                dicom_result->image.data.create(rows, cols, CV_16S);
+                memcpy(dicom_result->image.data.data, array, sizeof(short int)*rows*cols);
+
+//                py::print(return_tuple[1]);
+                auto pixel_spacing = return_tuple[1].cast<py::tuple>();
+                dicom_result->image.pixel_spacing = ImVec2(pixel_spacing[0].cast<float>(), pixel_spacing[1].cast<float>());
+                dicom_result->image.slice_thickness = return_tuple[2].cast<float>();
+                dicom_result->image.slice_position = return_tuple[3].cast<float>();
                 dicom_result->success = true;
             }
         }

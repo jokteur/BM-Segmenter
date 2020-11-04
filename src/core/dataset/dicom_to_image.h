@@ -9,6 +9,7 @@
 
 #include "core/image.h"
 #include "core/dataset/explore.h"
+#include "core/dicom.h"
 #include "jobscheduler.h"
 #include "log.h"
 #include "util.h"
@@ -18,7 +19,7 @@ namespace core {
         namespace py = pybind11;
 
         struct DicomResult : public JobResult {
-            cv::Mat data;
+            Dicom image;
             std::string error_msg;
         };
 

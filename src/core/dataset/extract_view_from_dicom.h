@@ -2,6 +2,8 @@
 
 #include <vector>
 
+#include "core/dicom.h"
+
 #include "opencv2/opencv.hpp"
 #include "jobscheduler.h"
 
@@ -11,7 +13,7 @@ namespace core {
          *
          */
         struct DicomViewResult : public JobResult {
-            cv::Mat data;
+            Dicom image;
         };
 
         /**
@@ -22,7 +24,7 @@ namespace core {
          * @param horizontal
          * @return
          */
-        std::shared_ptr<Job> extract_view(const std::vector<cv::Mat>& matrices,
+        std::shared_ptr<Job> extract_view(const std::vector<Dicom> &matrices,
                                           jobResultFct result_fct,
                                           float position = 0.5,
                                           bool horizontal = true);

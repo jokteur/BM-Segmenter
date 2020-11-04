@@ -347,19 +347,20 @@ void Rendering::DicomViewer::loadCase(const std::string &path) {
     jobResultFct fct = [=] (const std::shared_ptr<JobResult> &result) {
         auto dicom_result = std::dynamic_pointer_cast<::core::dataset::DicomResult>(result);
         if (dicom_result->success) {
-            auto& dicom = dicom_result->data;
-            cv::Rect ROI(0, 0, dicom.rows, dicom.cols);
+            auto& dicom = dicom_result->image;
+            cv::Rect ROI(0, 0, dicom.data.rows, dicom.data.cols);
             if (crop_x_.x != crop_x_.y && crop_y_.x != crop_y_.y) {
                 ROI = {
-                        (int)((float)dicom.rows*crop_x_.x/100.f),
-                        (int)((float)dicom.cols*crop_y_.x/100.f),
-                        (int)((float)dicom.rows*(crop_x_.y - crop_x_.x)/100.f),
-                        (int)((float)dicom.rows*(crop_y_.y - crop_y_.x)/100.f)
+                        (int)((float)dicom.data.rows*crop_x_.x/100.f),
+                        (int)((float)dicom.data.cols*crop_y_.x/100.f),
+                        (int)((float)dicom.data.rows*(crop_x_.y - crop_x_.x)/100.f),
+                        (int)((float)dicom.data.rows*(crop_y_.y - crop_y_.x)/100.f)
                 };
             }
             cv::Mat mat;
-            dicom(ROI).copyTo(mat);
-            dicom_matrix_.emplace_back(mat);
+            dicom.data(ROI).copyTo(mat);
+            dicom.data = mat;
+            dicom_matrix_.emplace_back(dicom);
             if (dicom_matrix_.size() == 1) {
                 reset_image_ = true;
             }
@@ -385,14 +386,40 @@ void Rendering::DicomViewer::build_views() {
     // Sagittal
     jobResultFct fct = [=] (const std::shared_ptr<JobResult> &result) {
         auto view_result = std::dynamic_pointer_cast<::core::dataset::DicomViewResult>(result);
-        sagittal_matrix_ = view_result->data;
+        sagittal_matrix_ = view_result->image;
+
+        // Resize to correct aspect ratio
+        float sag_aspect = sagittal_matrix_.pixel_spacing.y / sagittal_matrix_.slice_thickness;
+        cv::Mat mat;
+        cv::resize(
+                sagittal_matrix_.data,
+                mat,
+                cv::Size((int)((float)sagittal_matrix_.data.rows*sag_aspect), sagittal_matrix_.data.cols),
+                0,
+                0,
+                cv::INTER_CUBIC);
+        sagittal_matrix_.data = mat;
+
         sagittal_ready_ = true;
     };
     dataset::extract_view(dicom_matrix_, fct, sagittal_x_, false);
     // Coronal
     jobResultFct fct2 = [=] (const std::shared_ptr<JobResult> &result) {
         auto view_result = std::dynamic_pointer_cast<::core::dataset::DicomViewResult>(result);
-        coronal_matrix_ = view_result->data;
+        coronal_matrix_ = view_result->image;
+
+        // Resize to correct aspect ratio
+        float cor_aspect = coronal_matrix_.slice_thickness / coronal_matrix_.pixel_spacing.x;
+        cv::Mat mat;
+        cv::resize(
+                coronal_matrix_.data,
+                mat,
+                cv::Size(coronal_matrix_.data.rows, (int)((float)coronal_matrix_.data.cols*cor_aspect)),
+                0,
+                0,
+                cv::INTER_CUBIC);
+
+        coronal_matrix_.data = mat;
         coronal_ready_ = true;
     };
     dataset::extract_view(dicom_matrix_, fct2, coronal_x_, true);
@@ -400,15 +427,15 @@ void Rendering::DicomViewer::build_views() {
 
 void Rendering::DicomViewer::set_image() {
     if (case_select_ <= dicom_matrix_.size() && case_select_ > 0) {
-        image_.setImageFromHU(dicom_matrix_[case_select_ - 1], (float)window_width_, (float)window_center_);
+        image_.setImageFromHU(dicom_matrix_[case_select_ - 1].data, (float)window_width_, (float)window_center_);
         image_widget_.setImage(image_);
     }
 }
 
 void Rendering::DicomViewer::set_views() {
     if (sagittal_ready_ && coronal_ready_) {
-        sagittal_image_.setImageFromHU(sagittal_matrix_, (float)window_width_, (float)window_center_);
-        coronal_image_.setImageFromHU(coronal_matrix_, (float)window_width_, (float)window_center_);
+        sagittal_image_.setImageFromHU(sagittal_matrix_.data, (float)window_width_, (float)window_center_);
+        coronal_image_.setImageFromHU(coronal_matrix_.data, (float)window_width_, (float)window_center_);
         sagittal_widget_.setImage(sagittal_image_);
         coronal_widget_.setImage(coronal_image_);
     }

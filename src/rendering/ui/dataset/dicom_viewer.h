@@ -8,6 +8,7 @@
 
 #include "core/image.h"
 #include "core/dataset/explore.h"
+#include "core/dicom.h"
 #include "events.h"
 #include "rendering/drawables.h"
 #include "rendering/ui/widgets/image_simple.h"
@@ -45,9 +46,9 @@ namespace Rendering {
         Listener listener_;
         Listener job_listener_;
 
-        std::vector<cv::Mat> dicom_matrix_;
-        cv::Mat sagittal_matrix_;
-        cv::Mat coronal_matrix_;
+        std::vector<::core::Dicom> dicom_matrix_;
+        ::core::Dicom sagittal_matrix_;
+        ::core::Dicom coronal_matrix_;
 
         bool load_finish_ = false;
         bool sagittal_ready_ = false;

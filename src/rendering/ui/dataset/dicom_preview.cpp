@@ -130,22 +130,22 @@ void Rendering::DicomPreview::selectCase(const std::string& path) {
         auto dicom_result = std::dynamic_pointer_cast<::core::dataset::DicomResult>(result);
         if (dicom_result->success) {
 
-            auto &dicom = dicom_result->data;
+            auto &dicom = dicom_result->image;
             // Crop image if needed
 
-            cv::Rect ROI(0, 0, dicom.rows, dicom.cols);
+            cv::Rect ROI(0, 0, dicom.data.rows, dicom.data.cols);
             if (crop_x_.x < crop_x_.y && crop_y_.x < crop_y_.y
                 && crop_x_.x >= 0.f && crop_x_.x <= 100.f
                 && crop_x_.y >= 0.f && crop_x_.y <= 100.f) {
                 ROI = {
-                    (int)((float)dicom.rows*crop_x_.x/100.f),
-                    (int)((float)dicom.cols*crop_y_.x/100.f),
-                    (int)((float)dicom.rows*(crop_x_.y - crop_x_.x)/100.f),
-                    (int)((float)dicom.rows*(crop_y_.y - crop_y_.x)/100.f)
+                    (int)((float)dicom.data.rows*crop_x_.x/100.f),
+                    (int)((float)dicom.data.cols*crop_y_.x/100.f),
+                    (int)((float)dicom.data.rows*(crop_x_.y - crop_x_.x)/100.f),
+                    (int)((float)dicom.data.rows*(crop_y_.y - crop_y_.x)/100.f)
                 };
             }
 
-            dicom = dicom(ROI);
+            dicom.data = dicom.data(ROI);
             int rows = ROI.width;
             int cols = ROI.height;
             // Resize image to not fill the ram
@@ -153,16 +153,16 @@ void Rendering::DicomPreview::selectCase(const std::string& path) {
                 int width, height;
                 if (rows > cols) {
                     width = max_im_size_;
-                    height = (int)(max_im_size_ / (float)rows * (float)cols);
+                    height = (int)((float)max_im_size_ / (float)rows * (float)cols);
                 }
                 else {
-                    width = (int)(max_im_size_ / (float)cols * (float)rows );
+                    width = (int)((float)max_im_size_ / (float)cols * (float)rows );
                     height = max_im_size_;
                 }
-                cv::resize(dicom, dicom_matrix_, cv::Size(width, height), 0, 0, cv::INTER_AREA);
+                cv::resize(dicom.data, dicom_matrix_.data, cv::Size(width, height), 0, 0, cv::INTER_AREA);
             }
             else {
-                dicom_matrix_ = dicom_result->data;
+                dicom_matrix_.data = dicom_result->image.data;
             }
             reset_image_ = true;
         }
@@ -174,7 +174,7 @@ void Rendering::DicomPreview::selectCase(const std::string& path) {
 }
 
 void Rendering::DicomPreview::dicom_to_image() {
-    image_.setImageFromHU(dicom_matrix_, (float)window_width_, (float)window_center_);
+    image_.setImageFromHU(dicom_matrix_.data, (float)window_width_, (float)window_center_);
     image_widget_.setImage(image_);
 }
 

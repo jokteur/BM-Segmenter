@@ -233,13 +233,29 @@ def load_scan_from_dicom(path):
     except AttributeError:
         return False, "Attribute error when reading the DICOM file."
 
+    slice_thickness = 1
+    slice_location = 1
+    pixel_spacing = (1, 1)
     try:
         ds.pixel_array
-        ds["PixelSpacing"]
+        pixel_spacing = (float(ds["PixelSpacing"][0]), float(ds["PixelSpacing"][0]))
     except:
-        return False, "Problem when opening the image in the DICOM file."
+        return (
+            False,
+            "Problem when opening the image in the DICOM file.\n The image should contain pixels and PixelSpacing.",
+        )
 
-    return get_pixels_hu(ds)
+    if hasattr(ds, "SliceLocation"):
+        slice_location = float(ds["SliceLocation"].value)
+    if hasattr(ds, "SliceThickness"):
+        slice_thickness = float(ds["SliceThickness"].value)
+
+    return (
+        get_pixels_hu(ds),
+        pixel_spacing,
+        slice_thickness,
+        slice_location,
+    )
 
 
 def get_pixels_hu(scan):
@@ -265,4 +281,4 @@ def get_pixels_hu(scan):
 
     image += np.int16(intercept)
 
-    return np.array(image, dtype=np.int16), scan["PixelSpacing"]
+    return np.array(image, dtype=np.int16)
