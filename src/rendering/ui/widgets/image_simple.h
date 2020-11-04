@@ -39,25 +39,26 @@ namespace Rendering {
 
         static int instance_number;
         Crop crop_;
-        bool fixed_size_ = false;
         ImVec2 size_;
 
         const char* tooltip_;
+
         bool border_ = false;
+        bool center_x_ = false;
+        bool center_y_ = false;
         ImGuiWindowFlags flags_ = 0;
 
-        ImageInteraction interactive_zoom_;
 
+        // Image interaction variables
+        ImageInteraction interactive_zoom_;
         ImageInteraction image_drag_;
         bool is_moving_ = false;
         ImVec2 initial_drag_;
         ImVec2 current_drag_;
 
-        bool redraw_image_ = false;
         bool scale_to_viewport_ = false;
         float rescale_factor_ = 1.f;
-        ImVec2 scaled_sizes_;
-        ImVec2 content_size_;
+        ImVec2 scaled_sizes_; // True size of the image (in px) taken in the viewport
 
         std::string identifier_;
 
@@ -103,12 +104,6 @@ namespace Rendering {
          */
         void setSize(ImVec2 size) {
             size_ = size;
-
-            if (size.x == 0 && size.y == 0)
-                fixed_size_ = false;
-            else
-                fixed_size_ = true;
-            redraw_image_ = true;
         }
 
         /**
@@ -145,6 +140,18 @@ namespace Rendering {
         }
 
         /**
+         * Set if the image will be centered in the x direction
+         * @param center_x
+         */
+        void setCenterX(bool center_x) { center_x_ = center_x; }
+
+        /**
+         * Set if the image will be centered in the y direction
+         * @param center_x
+         */
+        void setCenterY(bool center_y) { center_y_ = center_y; }
+
+        /**
          * Sets the ImGui window flags for the child
          * @param flags
          */
@@ -161,7 +168,6 @@ namespace Rendering {
          * @param image image object that contains the OpenGL data for the image
          */
         void setImage(core::Image& image) {
-            redraw_image_ = true;
             image_ = image;
         }
 

@@ -13,22 +13,32 @@ Rendering::DicomPreview::DicomPreview() {
     identifier_ = std::to_string(instance_number) + std::string("DicomPreview");
     image_widget_.setInteractiveZoom(SimpleImage::IMAGE_NO_INTERACT);
     image_widget_.setImageDrag(SimpleImage::IMAGE_NO_INTERACT);
+    image_widget_.setCenterX(true);
+    image_widget_.setCenterY(true);
 }
 
 void Rendering::DicomPreview::ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) {
     auto &io = ImGui::GetIO();
     io.ConfigWindowsMoveFromTitleBarOnly = true;
-    ImGui::BeginChild(identifier_.c_str(), size_);
+    // Remove all padding for the child window
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0,0));
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(0,0));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1);
+    int num_pop = 3;
+
+    ImGui::BeginChild(identifier_.c_str(), size_, true);
+    ImGui::PopStyleVar(num_pop);
 
     ImVec2 content = ImGui::GetContentRegionAvail();
     ImVec2 window_pos = ImGui::GetWindowPos();
     ImVec2 mouse_pos = ImGui::GetMousePos();
-    auto style = ImGui::GetStyle();
 
     dimensions_.xpos = window_pos.x;
     dimensions_.ypos = window_pos.y;
     dimensions_.width = content.x;
-    dimensions_.height = dimensions_.width;
+    dimensions_.height = content.y;
+
+    Rect image_dimensions = image_widget_.getDimensions();
 
     // Reload the image when it has been loaded
     // We do this because setting the image_ can lead to segfault when not done
@@ -64,18 +74,17 @@ void Rendering::DicomPreview::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensi
         );
     }
 
-
-    if (allow_scroll_ && Widgets::check_hitbox(mouse_pos, dimensions_)) {
-        setCase((mouse_pos.x - dimensions_.xpos)/dimensions_.width);
+    if (allow_scroll_ && Widgets::check_hitbox(mouse_pos, image_dimensions)) {
+        float percentage = (mouse_pos.x - image_dimensions.xpos) / image_dimensions.width;
+        if (percentage >= 0.f && percentage <= 1.f)
+            setCase(percentage);
     }
     else {
         setCase(0.f);
     }
     if (image_.isImageSet()) {
-        Rect dimensions = image_widget_.getDimensions();
-//        std::cout << dimensions.width << " " << dimensions.height << std::endl;
         image_widget_.setAutoScale(true);
-        image_widget_.ImGuiDraw(window, parent_dimension);
+        image_widget_.ImGuiDraw(window, dimensions_);
     }
 
     if (ImGui::BeginPopupContextItem(identifier_.c_str())) {
@@ -125,7 +134,9 @@ void Rendering::DicomPreview::selectCase(const std::string& path) {
             // Crop image if needed
 
             cv::Rect ROI(0, 0, dicom.rows, dicom.cols);
-            if (crop_x_.x != crop_x_.y && crop_y_.x != crop_y_.y) {
+            if (crop_x_.x < crop_x_.y && crop_y_.x < crop_y_.y
+                && crop_x_.x >= 0.f && crop_x_.x <= 100.f
+                && crop_x_.y >= 0.f && crop_x_.y <= 100.f) {
                 ROI = {
                     (int)((float)dicom.rows*crop_x_.x/100.f),
                     (int)((float)dicom.cols*crop_y_.x/100.f),
@@ -133,6 +144,7 @@ void Rendering::DicomPreview::selectCase(const std::string& path) {
                     (int)((float)dicom.rows*(crop_y_.y - crop_y_.x)/100.f)
                 };
             }
+
             dicom = dicom(ROI);
             int rows = ROI.width;
             int cols = ROI.height;

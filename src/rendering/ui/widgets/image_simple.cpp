@@ -7,6 +7,12 @@
 int Rendering::SimpleImage::instance_number = 0;
 
 void Rendering::SimpleImage::ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) {
+    // Remove all padding for the child window
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0,0));
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(0,0));
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0,0));
+    int num_pop = 3;
+
     // Calculate the available pixels in viewport for drawing the image
     // The image will take a certain amount of this available content.
     // The precise x and y amount that will be taken by the image depends
@@ -39,32 +45,35 @@ void Rendering::SimpleImage::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
     // will be the size that the image will take
     ImVec2 child_size;
     float available_width;
+    float available_height;
     if (size_.x == 0.f && size_.y == 0.f) {
         dimensions_.width = scaled_sizes_.x;
         dimensions_.height = scaled_sizes_.y;
         child_size = scaled_sizes_;
         available_width = content.x;
+        available_height = content.y;
     }
     else {
         child_size = size_;
         dimensions_.width = size_.x;
         dimensions_.height = size_.y;
         available_width = size_.x;
+        available_height = size_.y;
     }
 
     // Center the image if there is content left
-    if (scaled_sizes_.x < available_width) {
+    if (center_x_ && scaled_sizes_.x < available_width) {
         float x_difference = 0.5f*(available_width - scaled_sizes_.x);
+
         ImGui::Dummy(ImVec2(x_difference, scaled_sizes_.y));
         ImGui::SameLine();
     }
+    if (center_y_ && scaled_sizes_.y < available_height) {
+        float y_difference = 0.5f*(available_height - scaled_sizes_.y);
+        ImGui::Dummy(ImVec2(scaled_sizes_.x, y_difference));
+    }
 
-    // Remove all padding for the child window
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0,0));
-    ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(0,0));
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1);
-    int num_pop = 3;
-    ImGui::BeginChild((std::string("Image") + identifier_).c_str(), child_size, true, flags_);
+    ImGui::BeginChild((std::string("Image") + identifier_).c_str(), child_size, border_, flags_);
 
     ImVec2 window_pos = ImGui::GetWindowPos();
     dimensions_.xpos = window_pos.x;
