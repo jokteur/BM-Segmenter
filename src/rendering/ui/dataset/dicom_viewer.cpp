@@ -34,12 +34,12 @@ Rendering::DicomViewer::DicomViewer()
 
     sagittal_widget_.setInteractiveZoom(SimpleImage::IMAGE_NORMAL_INTERACT);
     sagittal_widget_.setImageDrag(SimpleImage::IMAGE_NORMAL_INTERACT);
-    sagittal_widget_.setCenterY(true);
+//    sagittal_widget_.setCenterY(true);
     sagittal_widget_.setCenterX(true);
 
     coronal_widget_.setInteractiveZoom(SimpleImage::IMAGE_NORMAL_INTERACT);
     coronal_widget_.setImageDrag(SimpleImage::IMAGE_NORMAL_INTERACT);
-    coronal_widget_.setCenterY(true);
+//    coronal_widget_.setCenterY(true);
     coronal_widget_.setCenterX(true);
 
     // Listen to selection in the Dicom explorer
@@ -297,6 +297,9 @@ void Rendering::DicomViewer::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
         coronal_widget_.setDrawFunction([] (ImVec2 size, Crop crop){});
         sagittal_widget_.setDrawFunction([] (ImVec2 size, Crop crop){});
     }
+    ImGui::End();
+
+    ImGui::Begin("Axial");
 
     ImVec2 content = ImGui::GetContentRegionAvail();
     ImVec2 window_pos = ImGui::GetWindowPos();
@@ -306,13 +309,6 @@ void Rendering::DicomViewer::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
     dimensions_.ypos = window_pos.y;
     dimensions_.width = content.x + 2 * style.WindowPadding.x;
     dimensions_.height = content.y + 2 * style.WindowPadding.y;
-
-    // If they are more than 4 images in the series, show the reconstructed views
-    // Left column: current image, right column: sagittal and coronal views
-    if (dicom_matrix_.size() > 4) {
-        ImGui::Columns(2);
-    }
-    auto col_content = ImGui::GetContentRegionAvail();
 
     if (image_.isImageSet()) {
         image_widget_.setAutoScale(true);
@@ -330,27 +326,20 @@ void Rendering::DicomViewer::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
         }
         ImGui::EndDragDropTarget();
     }
+    ImGui::End();
 
     if (image_.isImageSet() && dicom_matrix_.size() > 4) {
-        ImGui::NextColumn();
-        Rect dimension = dimensions_;
-        dimension.width = col_content.x;
-        dimension.height = col_content.y/2.f;
+        ImGui::Begin("Sagittal");
 
-        ImGui::BeginChild((identifier_ + std::string("sagittal")).c_str(), ImVec2(dimension.width, dimension.height));
         sagittal_widget_.setAutoScale(true);
-        sagittal_widget_.ImGuiDraw(window, dimension);
-        ImGui::EndChild();
+        sagittal_widget_.ImGuiDraw(window, dimensions_);
+        ImGui::End();
 
-        ImGui::BeginChild((identifier_ + std::string("coronal")).c_str(), ImVec2(dimension.width, dimension.height));
+        ImGui::Begin("Coronal");
         coronal_widget_.setAutoScale(true);
-        coronal_widget_.ImGuiDraw(window, dimension);
-        ImGui::EndChild();
+        coronal_widget_.ImGuiDraw(window, dimensions_);
+        ImGui::End();
     }
-    if (dicom_matrix_.size() > 4) {
-        ImGui::Columns(1);
-    }
-    ImGui::End();
 }
 
 void Rendering::DicomViewer::loadCase(const std::string &path) {

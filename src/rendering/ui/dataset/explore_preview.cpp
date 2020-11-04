@@ -111,6 +111,7 @@ void Rendering::ExplorerPreview::ImGuiDraw(GLFWwindow *window, Rect &parent_dime
         ImGui::Columns(num_cols_);
         float width = ImGui::GetContentRegionAvailWidth();
         auto disabled_color = Settings::getInstance().getColors().disabled_text;
+        float y_cursor;
         for (auto &patient : *cases_) {
             if (patient.tree_count < 4)
                 continue;
@@ -120,6 +121,8 @@ void Rendering::ExplorerPreview::ImGuiDraw(GLFWwindow *window, Rect &parent_dime
                 for (auto &series : study.series) {
                     if (series.tree_count < 2)
                         continue;
+                    dicom_previews_[&series].setSize(ImVec2(width, width));
+
                     bool is_active = patient.is_active && study.is_active && series.is_active;
                     if (!is_active) {
                         ImGui::PushStyleColor(ImGuiCol_Text, disabled_color);
@@ -140,7 +143,6 @@ void Rendering::ExplorerPreview::ImGuiDraw(GLFWwindow *window, Rect &parent_dime
                         ImGui::SetTooltip("Study: %s\nSeries: %s\nModality: %s", study.description.c_str(), series.number.c_str(), series.modality.c_str());
                     }
 
-                    dicom_previews_[&series].setSize(ImVec2(width, width));
                     if (Widgets::check_hitbox(mouse_pos, sub_window_dim)) {
                         dicom_previews_[&series].setAllowScroll(true);
                     }
