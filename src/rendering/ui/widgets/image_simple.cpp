@@ -7,58 +7,75 @@
 int Rendering::SimpleImage::instance_number = 0;
 
 void Rendering::SimpleImage::ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) {
+    // Calculate the available pixels in viewport for drawing the image
+    // The image will take a certain amount of this available content.
+    // The precise x and y amount that will be taken by the image depends
+    // on the aspect ratio of the image
+
+    // If a certain size of the image is specified, then the image
+    // will be fitted as best as it can in the specified amount
+    ImVec2 content = ImGui::GetContentRegionAvail();
+
+    float rescale_factor_x;
+    float rescale_factor_y;
+
+    auto width = (float)image_.width();
+    auto height = (float)image_.height();
+    if (size_.x == 0.f && size_.y == 0.f) {
+        rescale_factor_x = content.x / (float) image_.width();
+        rescale_factor_y = content.y / (float) image_.height();
+    }
+    else {
+        rescale_factor_x = size_.x / (float) image_.width();
+        rescale_factor_y = size_.y / (float) image_.height();
+    }
+
+    rescale_factor_ = (rescale_factor_x > rescale_factor_y) ? rescale_factor_y : rescale_factor_x;
+    scaled_sizes_.x = width*rescale_factor_;
+    scaled_sizes_.y = height*rescale_factor_;
+
+    // Set the dimensions of the widget
+    // If no size is specified, then the size of the widget
+    // will be the size that the image will take
+    ImVec2 child_size;
+    float available_width;
+    if (size_.x == 0.f && size_.y == 0.f) {
+        dimensions_.width = scaled_sizes_.x;
+        dimensions_.height = scaled_sizes_.y;
+        child_size = scaled_sizes_;
+        available_width = content.x;
+    }
+    else {
+        child_size = size_;
+        dimensions_.width = size_.x;
+        dimensions_.height = size_.y;
+        available_width = size_.x;
+    }
+
+    // Center the image if there is content left
+    if (scaled_sizes_.x < available_width) {
+        float x_difference = 0.5f*(available_width - scaled_sizes_.x);
+        ImGui::Dummy(ImVec2(x_difference, scaled_sizes_.y));
+        ImGui::SameLine();
+    }
+
+    // Remove all padding for the child window
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0,0));
     ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(0,0));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1);
     int num_pop = 3;
-    ImGui::BeginChild((std::string("Image") + identifier_).c_str(), size_, true, flags_);
+    ImGui::BeginChild((std::string("Image") + identifier_).c_str(), child_size, true, flags_);
 
-    // Calculate the available pixels in viewport for drawing the image
-    ImVec2 content = ImGui::GetContentRegionAvail();
     ImVec2 window_pos = ImGui::GetWindowPos();
-
-    auto style = ImGui::GetStyle();
-    // Set the dimensions of the widget
     dimensions_.xpos = window_pos.x;
     dimensions_.ypos = window_pos.y;
-    dimensions_.width = content.x + 2*style.WindowPadding.x;
-    dimensions_.height = content.y + 2*style.WindowPadding.y;
-
-    if ((content.x != content_size_.x || content.y != content_size_.x) && !fixed_size_) {
-        redraw_image_ = true;
-        content_size_ = content;
-    }
-    if (redraw_image_) {
-        float rescale_factor_x = 1.f;
-        float rescale_factor_y = 1.f;
-
-        auto width = (float)image_.width();
-        auto height = (float)image_.height();
-        rescale_factor_x = content.x / (float) image_.width();
-        rescale_factor_y = content.y / (float) image_.height();
-
-        rescale_factor_ = (rescale_factor_x > rescale_factor_y) ? rescale_factor_y : rescale_factor_x;
-        scaled_sizes_.x = width*rescale_factor_;
-        scaled_sizes_.y = height*rescale_factor_;
-
-        redraw_image_ = false;
-    }
-
 
     if (image_.isImageSet()) {
-//        ImGui::BeginGroup();
-        // Center the image
-        float x_difference = 0;
-        if (scaled_sizes_.x < content.x) {
-            x_difference = 0.5f*(content.x - scaled_sizes_.x);
-            ImGui::Dummy(ImVec2(x_difference, scaled_sizes_.y));
-            ImGui::SameLine();
-        }
         ImVec2 mouse_pos =  ImGui::GetMousePos();
         ImGuiIO& io = ImGui::GetIO();
 
-        ImVec2 rel_mouse_pos = ImVec2((mouse_pos.x - window_pos.x - x_difference) / scaled_sizes_.x,
-                                    (mouse_pos.y - window_pos.y) / scaled_sizes_.y);
+        ImVec2 rel_mouse_pos = ImVec2((mouse_pos.x - dimensions_.xpos) / scaled_sizes_.x,
+                                    (mouse_pos.y - dimensions_.ypos) / scaled_sizes_.y);
 
         ImVec2 corrected_rel = ImVec2(crop_.x0 + (crop_.x1 - crop_.x0) * rel_mouse_pos.x,
                                       crop_.y0 + (crop_.y1 - crop_.y0) * rel_mouse_pos.y);
@@ -139,7 +156,6 @@ void Rendering::SimpleImage::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
         }
         drag_source_fct_();
         ImGui::PopID();
-//        ImGui::EndGroup();
     }
     ImGui::EndChild();
     ImGui::PopStyleVar(num_pop);

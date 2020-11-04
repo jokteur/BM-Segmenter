@@ -92,7 +92,7 @@ void Rendering::DicomViewer::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
     windowing_button_.ImGuiDraw(window, dimensions_);
     ImGui::SameLine();
     ImGui::Text("Window Center: %d, Window Width: %d", window_center_, window_width_);
-    point_select_button_.ImGuiDraw(window, dimensions_);
+//    point_select_button_.ImGuiDraw(window, dimensions_);
     ImGui::Separator();
 
     if (!error_message_.empty()) {

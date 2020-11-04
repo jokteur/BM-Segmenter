@@ -72,6 +72,8 @@ void Rendering::DicomPreview::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensi
         setCase(0.f);
     }
     if (image_.isImageSet()) {
+        Rect dimensions = image_widget_.getDimensions();
+//        std::cout << dimensions.width << " " << dimensions.height << std::endl;
         image_widget_.setAutoScale(true);
         image_widget_.ImGuiDraw(window, parent_dimension);
     }
