@@ -40,6 +40,7 @@ namespace Rendering {
 
         bool is_toggle_;
         bool is_pressed_ = false;
+        bool is_just_pressed_ = false;
         bool is_hovering_ = false;
         const char* tooltip_;
 
@@ -86,10 +87,16 @@ namespace Rendering {
         void setStyle(ImageButtonStyle& style) { style_ = style; }
 
         /**
-         * Returns if the button has been pressed lately
+         * Returns if the button is down or up
          * @return
          */
-        bool isPressed() const { return is_pressed_; }
+        bool isActive() const { return is_pressed_; }
+
+        /**
+         * Returns if the button has just been pressed
+         * @return
+         */
+        bool isPressed() const { return is_just_pressed_; }
 
         /**
          * Returns if the button has been pressed for a certain amount of time

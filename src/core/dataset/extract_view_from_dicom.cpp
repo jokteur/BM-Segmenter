@@ -10,6 +10,9 @@ std::shared_ptr<Job> core::dataset::extract_view(const std::vector<cv::Mat>& mat
         if (matrices.size() < 5)
             return view_result;
 
+        if (position < 0.f || position > 1.f)
+            return view_result;
+
         int pos;
         if (horizontal) {
             view_result->data = cv::Mat(matrices.size(), matrices[0].cols, CV_16S);

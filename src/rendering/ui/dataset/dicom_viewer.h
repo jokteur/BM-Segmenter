@@ -14,6 +14,10 @@
 #include "rendering/ui/widgets/image_button.h"
 
 namespace Rendering {
+    struct Line {
+        ImVec2 start;
+        ImVec2 end;
+    };
     /**
      * Little widget class for visualizing DICOM images
      */
@@ -36,9 +40,10 @@ namespace Rendering {
 
         ImageButton windowing_button_;
         ImageButton point_select_button_;
+        ImageButton* active_button_ = nullptr;
+
         Listener listener_;
         Listener job_listener_;
-        Listener log_listener_;
 
         std::vector<cv::Mat> dicom_matrix_;
         cv::Mat sagittal_matrix_;
@@ -49,6 +54,10 @@ namespace Rendering {
         bool coronal_ready_ = false;
 
         bool reset_image_ = false;
+        bool views_set_ = false;
+
+        bool display_reference_lines_ = true;
+
         bool active_dragging_ = false;
         ImVec2 drag_delta_;
 
@@ -71,9 +80,13 @@ namespace Rendering {
 
         void loadSeries(const ::core::dataset::SeriesPayload& data);
         void loadCase(const std::string &path);
-        void dicom_to_image();
 
-        void build_views(bool no_reset=false);
+        void set_views();
+        void set_image();
+
+        void build_views();
+
+        static Line calculate_line_coord(const Rect &dimensions, const Crop &crop, float position, bool horizontal);
 
     public:
         DicomViewer();

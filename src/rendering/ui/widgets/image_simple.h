@@ -63,6 +63,7 @@ namespace Rendering {
         std::string identifier_;
 
         std::function<void ()> drag_source_fct_ = [] {};
+        std::function<void (ImVec2, Crop)> draw_fct_ = [] (ImVec2, Crop) {};
 
     public:
 
@@ -97,6 +98,13 @@ namespace Rendering {
          * @param parent_dimension dimension of the parent layout
          */
         void ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) override;
+
+        /**
+         * @return returns the crop currently set in the image
+         * The values in x and y are between 0, 1, indicating the
+         * start and end of the crop
+         */
+        Crop& getCrop() { return crop_; }
 
         /**
          * Set the size of the image viewport
@@ -172,6 +180,8 @@ namespace Rendering {
         }
 
         void setDragSourceFunction(std::function<void ()> function) { drag_source_fct_ = std::move(function); }
+
+        void setDrawFunction(std::function<void (ImVec2, Crop)> function) { draw_fct_ = std::move(function); }
 
     };
 }

@@ -6,6 +6,7 @@
 int Rendering::ImageButton::instance_number = 0;
 
 void Rendering::ImageButton::ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) {
+    is_just_pressed_ = false;
     // Set the styling for the button
     auto &settings = Settings::getInstance();
     auto theme = settings.getCurrentTheme();
@@ -89,6 +90,7 @@ void Rendering::ImageButton::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
             else
                 is_pressed_ = true;
             click_duration_ = 0.f;
+            is_just_pressed_ = true;
         }
         if (ImGui::IsMouseDown(0)) {
             ImGuiIO& io = ImGui::GetIO();
@@ -102,7 +104,7 @@ void Rendering::ImageButton::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
     if (ImGui::IsMouseReleased(0)) {
         if (!is_toggle_)
             is_pressed_ = false;
-        click_duration_ = 0.f;
+//        click_duration_ = 0.f;
     }
 
 }

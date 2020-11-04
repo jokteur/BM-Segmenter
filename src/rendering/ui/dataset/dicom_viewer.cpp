@@ -24,11 +24,23 @@ Rendering::DicomViewer::DicomViewer()
               true,
               "Point and click in image to set sagittal and coronal view"
               )
-            {
+{
     my_instance_ = instance_number++;
     identifier_ = std::to_string(my_instance_) + std::string("DicomViewer");
     image_widget_.setInteractiveZoom(SimpleImage::IMAGE_NORMAL_INTERACT);
     image_widget_.setImageDrag(SimpleImage::IMAGE_NORMAL_INTERACT);
+    image_widget_.setCenterY(true);
+    image_widget_.setCenterX(true);
+
+    sagittal_widget_.setInteractiveZoom(SimpleImage::IMAGE_NORMAL_INTERACT);
+    sagittal_widget_.setImageDrag(SimpleImage::IMAGE_NORMAL_INTERACT);
+    sagittal_widget_.setCenterY(true);
+    sagittal_widget_.setCenterX(true);
+
+    coronal_widget_.setInteractiveZoom(SimpleImage::IMAGE_NORMAL_INTERACT);
+    coronal_widget_.setImageDrag(SimpleImage::IMAGE_NORMAL_INTERACT);
+    coronal_widget_.setCenterY(true);
+    coronal_widget_.setCenterX(true);
 
     // Listen to selection in the Dicom explorer
     listener_.callback = [=](Event_ptr &event) {
@@ -49,17 +61,18 @@ void Rendering::DicomViewer::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
     io.ConfigWindowsMoveFromTitleBarOnly = true;
     ImGui::Begin((std::string("DICOM viewer###") + identifier_).c_str(), &is_open_);
 
-    if (sagittal_ready_ && coronal_ready_) {
-        reset_image_ = true;
+    // Reload the images when they are ready to be
+    // copied into a GL texture
+    if (!views_set_ && sagittal_ready_ && coronal_ready_) {
+        set_views();
+        views_set_ = true;
     }
-    // Reload the image when it has been loaded
-    // We do this because setting the image_ can lead to segfault when not done
-    // in the main thread
     if (reset_image_) {
-        dicom_to_image();
+        set_image();
         reset_image_ = false;
     }
 
+    // Display info about the DICOM
     if (!case_.patientID.empty()) {
         ImGui::Text("Patient ID %s /", case_.patientID.c_str());
         ImGui::SameLine();
@@ -73,26 +86,34 @@ void Rendering::DicomViewer::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
         ImGui::Text("Drag Series or double click on Series to show DICOM");
     }
 
+    // If there are more than one image in the series
+    // Display a select widget
     if (dicom_matrix_.size() > 1) {
         if (case_select_ != previous_select_) {
             previous_select_ = case_select_;
-            if (case_select_ < 0 || case_select_ >= series_.size())
+            if (case_select_ < 1 || case_select_ > dicom_matrix_.size()) {
                 case_select_ = 1;
+            }
             reset_image_ = true;
         }
         ImGui::SliderInt((std::string("Select image###") + identifier_).c_str(), &case_select_, 1, dicom_matrix_.size(), "image n° %d");
         ImGui::SameLine();
         Widgets::HelpMarker("Ctrl+click to input manually the number");
     }
+
+    // Once all the images of the series are loaded into memory,
+    // build the sagittal and coronal views
     if (dicom_matrix_.size() == image_size_ && !load_finish_) {
         load_finish_ = true;
         build_views();
     }
 
+
+    // Interaction buttons
+    ImGui::Text("Window Center: %d, Window Width: %d", window_center_, window_width_);
     windowing_button_.ImGuiDraw(window, dimensions_);
     ImGui::SameLine();
-    ImGui::Text("Window Center: %d, Window Width: %d", window_center_, window_width_);
-//    point_select_button_.ImGuiDraw(window, dimensions_);
+    point_select_button_.ImGuiDraw(window, dimensions_);
     ImGui::Separator();
 
     if (!error_message_.empty()) {
@@ -100,8 +121,28 @@ void Rendering::DicomViewer::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
         ImGui::Text("When trying to open the DICOM file, the following error appeared:\n\n%s", error_message_.c_str());
     }
 
+    // Button logic
+    if (windowing_button_.isActive() && point_select_button_.isActive()) {
+        if (active_button_ == &windowing_button_) {
+            windowing_button_.setState(false);
+            active_button_ = &point_select_button_;
+        }
+        else {
+            point_select_button_.setState(false);
+            active_button_ = &windowing_button_;
+        }
+    }
+    else {
+        if (windowing_button_.isActive())
+            active_button_ = & windowing_button_;
+        else if (point_select_button_.isActive())
+            active_button_ = &point_select_button_;
+        else
+            active_button_ = nullptr;
+    }
+
     // Windowing tool
-    if (windowing_button_.isPressed()) {
+    if (active_button_ == &windowing_button_) {
         if (ImGui::IsMouseDown(0) && Widgets::check_hitbox(ImGui::GetMousePos(), dimensions_)) {
             active_dragging_ = true;
         }
@@ -122,6 +163,7 @@ void Rendering::DicomViewer::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
                     window_width_ = 1;
                 window_center_ += (int)((drag.y - drag_delta_.y)*attenuation);
                 reset_image_ = true;
+                views_set_ = false;
                 drag_delta_ = drag;
             }
         }
@@ -132,19 +174,128 @@ void Rendering::DicomViewer::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
     if (!active_dragging_) {
         image_widget_.setImageDrag(SimpleImage::IMAGE_NORMAL_INTERACT);
     }
-    if (point_select_button_.isPressed()) {
+
+    // Point select widget
+    Rect image_dimensions = image_widget_.getDimensions();
+    Rect sagittal_dimensions = sagittal_widget_.getDimensions();
+    Rect coronal_dimensions = coronal_widget_.getDimensions();
+    if (active_button_ == &point_select_button_) {
         image_widget_.setImageDrag(SimpleImage::IMAGE_NO_INTERACT);
-        Rect dimensions = image_widget_.getDimensions();
+        sagittal_widget_.setImageDrag(SimpleImage::IMAGE_NO_INTERACT);
+        coronal_widget_.setImageDrag(SimpleImage::IMAGE_NO_INTERACT);
+
         ImVec2 mouse_pos = ImGui::GetMousePos();
-        if (ImGui::IsMouseClicked(0) && Widgets::check_hitbox(mouse_pos, dimensions)) {
-            sagittal_x_ = (mouse_pos.x - dimensions.xpos) / dimensions.width;
-            coronal_x_ = (mouse_pos.y - dimensions.ypos) / dimensions.height;
-            std::cout << sagittal_x_ << " " << coronal_x_ << std::endl;
-            build_views(true);
+
+        if (Widgets::check_hitbox(mouse_pos, image_dimensions)) {
+            if (ImGui::IsMouseClicked(0)) {
+                Crop& crop = image_widget_.getCrop();
+                sagittal_x_ = (mouse_pos.x - image_dimensions.xpos) / image_dimensions.width;
+                coronal_x_ = (mouse_pos.y - image_dimensions.ypos) / image_dimensions.height;
+
+                // Correct the click corresponding to the zoom level
+                sagittal_x_ = crop.x0 + sagittal_x_ * (crop.x1 - crop.x0);
+                coronal_x_ = crop.y0 + coronal_x_  * (crop.y1 - crop.y0);
+                build_views();
+            }
+        }
+        else if (Widgets::check_hitbox(mouse_pos, sagittal_dimensions)) {
+            if (ImGui::IsMouseClicked(0)) {
+                Crop &crop = sagittal_widget_.getCrop();
+                float pos_y = (mouse_pos.y - sagittal_dimensions.ypos) / sagittal_dimensions.height;
+                coronal_x_ = (mouse_pos.x - sagittal_dimensions.xpos) / sagittal_dimensions.width;
+
+                // Correct the click corresponding to the zoom level
+                pos_y = crop.y0 + pos_y * (crop.y1 - crop.y0);
+                coronal_x_ = crop.x0 + coronal_x_ * (crop.x1 - crop.x0);
+
+                if (pos_y >= 0.f && pos_y <= 1.f) {
+                    case_select_ = (int) (pos_y * ((float) dicom_matrix_.size() - 1)) + 1;
+                }
+                build_views();
+            }
+        }
+        else if (Widgets::check_hitbox(mouse_pos, coronal_dimensions)) {
+            if (ImGui::IsMouseClicked(0)) {
+                Crop &crop = coronal_widget_.getCrop();
+                float pos_y = (mouse_pos.y - coronal_dimensions.ypos) / coronal_dimensions.height;
+                sagittal_x_ = (mouse_pos.x - coronal_dimensions.xpos) / coronal_dimensions.width;
+
+                // Correct the click corresponding to the zoom level
+                pos_y = crop.y0 + pos_y * (crop.y1 - crop.y0);
+                sagittal_x_ = crop.x0 + sagittal_x_ * (crop.x1 - crop.x0);
+
+                if (pos_y >= 0.f && pos_y <= 1.f) {
+                    case_select_ = (int) (pos_y * ((float) dicom_matrix_.size() - 1)) + 1;
+                }
+                build_views();
+            }
         }
     }
     else {
         image_widget_.setImageDrag(SimpleImage::IMAGE_NORMAL_INTERACT);
+        sagittal_widget_.setImageDrag(SimpleImage::IMAGE_NORMAL_INTERACT);
+        coronal_widget_.setImageDrag(SimpleImage::IMAGE_NORMAL_INTERACT);
+    }
+
+    // Display reference lines
+    if (dicom_matrix_.size() > 4 && display_reference_lines_) {
+        float vertical_pos = ((float)case_select_ - 1)/((float)dicom_matrix_.size() - 1);
+        image_widget_.setDrawFunction([=] (ImVec2 size, Crop crop) {
+            ImDrawList* draw_list = ImGui::GetWindowDrawList();
+            // Coronal line
+            Line line1 = calculate_line_coord(image_dimensions, crop, coronal_x_, true);
+            draw_list->AddLine(
+                    line1.start,
+                    line1.end,
+                    ImColor(255, 0, 0, 100),
+                    4);
+            // Sagittal line
+            Line line2 = calculate_line_coord(image_dimensions, crop, sagittal_x_, false);
+            draw_list->AddLine(
+                    line2.start,
+                    line2.end,
+                    ImColor(0, 255, 0, 100),
+                    4);
+        });
+        sagittal_widget_.setDrawFunction([=] (ImVec2 size, Crop crop) {
+            ImDrawList* draw_list = ImGui::GetWindowDrawList();
+            // Sagittal line
+            Line line1 = calculate_line_coord(sagittal_dimensions, crop, coronal_x_, false);
+            draw_list->AddLine(
+                    line1.start,
+                    line1.end,
+                    ImColor(255, 0, 0, 100),
+                    4);
+            // Sagittal line
+            Line line2 = calculate_line_coord(sagittal_dimensions, crop, vertical_pos, true);
+            draw_list->AddLine(
+                    line2.start,
+                    line2.end,
+                    ImColor(0, 0, 255, 100),
+                    4);
+        });
+        coronal_widget_.setDrawFunction([=] (ImVec2 size, Crop crop) {
+            ImDrawList* draw_list = ImGui::GetWindowDrawList();
+            // Sagittal line
+            Line line1 = calculate_line_coord(coronal_dimensions, crop, sagittal_x_, false);
+            draw_list->AddLine(
+                    line1.start,
+                    line1.end,
+                    ImColor(0, 255, 0, 100),
+                    4);
+            // Horizontal line
+            Line line2 = calculate_line_coord(coronal_dimensions, crop, vertical_pos, true);
+            draw_list->AddLine(
+                    line2.start,
+                    line2.end,
+                    ImColor(0, 0, 255, 100),
+                    4);
+        });
+    }
+    else {
+        image_widget_.setDrawFunction([] (ImVec2 size, Crop crop){});
+        coronal_widget_.setDrawFunction([] (ImVec2 size, Crop crop){});
+        sagittal_widget_.setDrawFunction([] (ImVec2 size, Crop crop){});
     }
 
     ImVec2 content = ImGui::GetContentRegionAvail();
@@ -156,28 +307,23 @@ void Rendering::DicomViewer::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
     dimensions_.width = content.x + 2 * style.WindowPadding.x;
     dimensions_.height = content.y + 2 * style.WindowPadding.y;
 
+    // If they are more than 4 images in the series, show the reconstructed views
+    // Left column: current image, right column: sagittal and coronal views
     if (dicom_matrix_.size() > 4) {
         ImGui::Columns(2);
     }
     auto col_content = ImGui::GetContentRegionAvail();
 
     if (image_.isImageSet()) {
-        float x = col_content.x;
-        float y = content.y;
-        if (x < y) {
-            image_widget_.setSize(ImVec2(0, x));
-        }
-        else {
-            image_widget_.setSize(ImVec2(y, 0));
-        }
         image_widget_.setAutoScale(true);
         image_widget_.ImGuiDraw(window, parent_dimension);
     }
     else
         ImGui::Dummy(ImVec2(content.x, content.y - 3 * ImGui::GetItemRectSize().y));
+
     // Accept drag and drop from dicom explorer
     if (ImGui::BeginDragDropTarget()) {
-        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("_DICOM_VIEW")) {
+        if (ImGui::AcceptDragDropPayload("_DICOM_VIEW")) {
             auto &drag_and_drop = DragAndDrop<dataset::SeriesPayload>::getInstance();
             auto data = drag_and_drop.returnData();
             loadSeries(data);
@@ -185,7 +331,7 @@ void Rendering::DicomViewer::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
         ImGui::EndDragDropTarget();
     }
 
-    if (sagittal_ready_ && coronal_ready_) {
+    if (image_.isImageSet() && dicom_matrix_.size() > 4) {
         ImGui::NextColumn();
         Rect dimension = dimensions_;
         dimension.width = col_content.x;
@@ -225,7 +371,9 @@ void Rendering::DicomViewer::loadCase(const std::string &path) {
             cv::Mat mat;
             dicom(ROI).copyTo(mat);
             dicom_matrix_.emplace_back(mat);
-            reset_image_ = true;
+            if (dicom_matrix_.size() == 1) {
+                reset_image_ = true;
+            }
         }
         else {
             error_message_ = dicom_result->error_msg;
@@ -236,11 +384,39 @@ void Rendering::DicomViewer::loadCase(const std::string &path) {
     pending_jobs_.insert(job->id);
 }
 
-void Rendering::DicomViewer::dicom_to_image() {
-    if (case_select_ < dicom_matrix_.size() && case_select_ > 0) {
+void Rendering::DicomViewer::build_views() {
+    if (dicom_matrix_.size() < 5) {
+        return;
+    }
+    views_set_ = false;
+
+    sagittal_ready_ = false;
+    coronal_ready_ = false;
+
+    // Sagittal
+    jobResultFct fct = [=] (const std::shared_ptr<JobResult> &result) {
+        auto view_result = std::dynamic_pointer_cast<::core::dataset::DicomViewResult>(result);
+        sagittal_matrix_ = view_result->data;
+        sagittal_ready_ = true;
+    };
+    dataset::extract_view(dicom_matrix_, fct, sagittal_x_, false);
+    // Coronal
+    jobResultFct fct2 = [=] (const std::shared_ptr<JobResult> &result) {
+        auto view_result = std::dynamic_pointer_cast<::core::dataset::DicomViewResult>(result);
+        coronal_matrix_ = view_result->data;
+        coronal_ready_ = true;
+    };
+    dataset::extract_view(dicom_matrix_, fct2, coronal_x_, true);
+}
+
+void Rendering::DicomViewer::set_image() {
+    if (case_select_ <= dicom_matrix_.size() && case_select_ > 0) {
         image_.setImageFromHU(dicom_matrix_[case_select_ - 1], (float)window_width_, (float)window_center_);
         image_widget_.setImage(image_);
     }
+}
+
+void Rendering::DicomViewer::set_views() {
     if (sagittal_ready_ && coronal_ready_) {
         sagittal_image_.setImageFromHU(sagittal_matrix_, (float)window_width_, (float)window_center_);
         coronal_image_.setImageFromHU(coronal_matrix_, (float)window_width_, (float)window_center_);
@@ -275,27 +451,26 @@ void Rendering::DicomViewer::loadSeries(const dataset::SeriesPayload &data) {
     }
 }
 
-void Rendering::DicomViewer::build_views(bool no_reset) {
-    if (dicom_matrix_.size() < 5) {
-        return;
-    }
+Rendering::Line
+Rendering::DicomViewer::calculate_line_coord(const Rect &dimensions, const Crop &crop, float position, bool horizontal) {
+    Line line;
+    if (horizontal) {
+        float corrected_pos = (position - crop.y0)/(crop.y1 - crop.y0);
 
-    if (!no_reset) {
-        sagittal_ready_ = false;
-        coronal_ready_ = false;
+        if (corrected_pos < 0.f || corrected_pos > 1.f)
+            return line;
+
+        line.start = ImVec2(dimensions.xpos, dimensions.ypos + dimensions.height * corrected_pos);
+        line.end = ImVec2(dimensions.xpos + dimensions.width, dimensions.ypos + dimensions.height * corrected_pos);
     }
-    // Sagittal
-    jobResultFct fct = [=] (const std::shared_ptr<JobResult> &result) {
-        auto view_result = std::dynamic_pointer_cast<::core::dataset::DicomViewResult>(result);
-        sagittal_matrix_ = view_result->data;
-        sagittal_ready_ = true;
-    };
-    dataset::extract_view(dicom_matrix_, fct, sagittal_x_, false);
-    // Coronal
-    jobResultFct fct2 = [=] (const std::shared_ptr<JobResult> &result) {
-        auto view_result = std::dynamic_pointer_cast<::core::dataset::DicomViewResult>(result);
-        coronal_matrix_ = view_result->data;
-        coronal_ready_ = true;
-    };
-    dataset::extract_view(dicom_matrix_, fct2, coronal_x_, true);
+    else {
+        float corrected_pos = (position - crop.x0)/(crop.x1 - crop.x0);
+
+        if (corrected_pos < 0.f || corrected_pos > 1.f)
+            return line;
+
+        line.start = ImVec2(dimensions.xpos + dimensions.width * corrected_pos, dimensions.ypos);
+        line.end = ImVec2(dimensions.xpos + dimensions.width * corrected_pos, dimensions.ypos + dimensions.width);
+    }
+    return line;
 }

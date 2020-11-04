@@ -164,6 +164,7 @@ void Rendering::SimpleImage::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
             ImGui::SetTooltip("%s", tooltip_);
         }
         drag_source_fct_();
+        draw_fct_(scaled_sizes_, crop_);
         ImGui::PopID();
     }
     ImGui::EndChild();
