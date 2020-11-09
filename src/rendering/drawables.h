@@ -4,9 +4,10 @@
 // gl3w.h HAS to be included before glfw3.h
 // As drawables.h is included very often, I put both includes
 // here to avoid conflict.
-#include <GL/gl3w.h>
-#include <GLFW/glfw3.h>
+#include "first_include.h"
+#include "imgui.h"
 
+#include <iostream>
 struct Dimension {
     int width = 0;
     int height = 0;
@@ -31,16 +32,21 @@ namespace Rendering {
     class AbstractDrawable {
     protected:
         Rect dimensions_;
+        ImGuiID docking_id_;
+
+        bool first_draw_ = false;
     public:
         /**
          * Default constructor, does nothing
          */
-        AbstractDrawable() = default;;
+        explicit AbstractDrawable(ImGuiID docking_id = 0) : docking_id_(docking_id) {}
 
 
         virtual ~AbstractDrawable() = default;
 
         Rect& getDimensions() { return dimensions_; }
+
+        void setDockID(ImGuiID id) { docking_id_ = id; }
 
         /**
          * Updates the class, before any ImGui::NewFrame() is called
@@ -61,7 +67,7 @@ namespace Rendering {
     class AbstractLayout : public AbstractDrawable {
     protected:
     public:
-        AbstractLayout() = default;
+        AbstractLayout(ImGuiID docking_id = 0) : AbstractDrawable(docking_id) {}
 
         ~AbstractLayout() override = default;
 

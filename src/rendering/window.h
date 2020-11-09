@@ -24,7 +24,7 @@ namespace Rendering {
         int ui_size = 100;
 
         Rect dimensions;
-        std::vector<AbstractDrawable*> drawables_;
+        std::vector<std::shared_ptr<AbstractDrawable>> drawables_;
 
         bool error_ = false;
 
@@ -41,7 +41,7 @@ namespace Rendering {
          * @param title title of the window
          * @param z_index of the window (lower will ge on background)
          */
-        Window(const int width, const int height, const std::string &title, int z_index=0);
+        Window(int width, int height, const std::string &title, int z_index=0);
 
         /**
          * Move constructor which hands the pointer of the GLFW window to the other Window object
@@ -74,7 +74,7 @@ namespace Rendering {
          * Adds a drawable to the list of drawables to be drawn to the window
          * @param drawable pointer
          */
-        void addDrawable(AbstractDrawable* drawable);
+        void addDrawable(std::shared_ptr<AbstractDrawable> drawable);
 
         /**
          * Pops the last drawable on the end of the drawing list
@@ -86,7 +86,7 @@ namespace Rendering {
          * Removes a specific drawable from drawing list
          * @param drawable pointer
          */
-        void removeDrawable(AbstractDrawable* drawable);
+        void removeDrawable(std::shared_ptr<AbstractDrawable> drawable);
 
         /**
          * If something failed while initializing the window, this function will return true

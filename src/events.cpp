@@ -25,7 +25,7 @@ public:
  * Implementations of EventQueue
  */
 void EventQueue::subscribe(Listener *listener) {
-    std::lock_guard<std::mutex> guard(listeners_mutex_);
+    std::lock_guard<std::recursive_mutex> guard(listeners_mutex_);
     if (listeners_.find(listener) == listeners_.end())
         listeners_.insert(listener);
 }
@@ -33,7 +33,7 @@ void EventQueue::subscribe(Listener *listener) {
 void EventQueue::unsubscribe(Listener *listener) {
     bool has_found = false;
     {
-        std::lock_guard<std::mutex> guard(listeners_mutex_);
+        std::lock_guard<std::recursive_mutex> guard(listeners_mutex_);
         for (auto it : listeners_) {
             if (it == listener) {
                 has_found = true;
@@ -78,7 +78,7 @@ void EventQueue::pollEvents() {
         while (!event_queue_.empty()) {
             std::shared_ptr<Event> event = event_queue_.front();
 
-            std::lock_guard<std::mutex> listener_guard(listeners_mutex_);
+            std::lock_guard<std::recursive_mutex> listener_guard(listeners_mutex_);
             for (const auto &listener : listeners_) {
                 bool filter_ok = isListener(listener->filter, event->getName());
 
@@ -90,7 +90,7 @@ void EventQueue::pollEvents() {
         }
     }
     {
-        std::lock_guard<std::mutex> guard(listeners_mutex_);
+        std::lock_guard<std::recursive_mutex> guard(listeners_mutex_);
         // Check if there are listeners that need to be unsubscribed after a poll
         for(auto listener : to_remove_) {
             listeners_.erase((listener));
@@ -105,7 +105,7 @@ void EventQueue::pollEvents() {
 
 int EventQueue::getNumSubscribers(const std::vector<std::string>& event_names) {
     std::set<Listener*> listener_set;
-    std::lock_guard<std::mutex> listener_guard(listeners_mutex_);
+    std::lock_guard<std::recursive_mutex> listener_guard(listeners_mutex_);
     for(const auto &event_name : event_names) {
         for(const auto listener : listeners_) {
             if (isListener(listener->filter, event_name)) {

@@ -67,6 +67,7 @@ namespace Rendering {
         ImVec2 crop_x_ = ImVec2(0, 100);
         ImVec2 crop_y_ = ImVec2(0, 100);
 
+        ::core::DicomCoordinate coordinate;
         float sagittal_x_ = 0.5f;
         float coronal_x_ = 0.5f;
 
@@ -88,6 +89,8 @@ namespace Rendering {
         void build_views();
 
         static Line calculate_line_coord(const Rect &dimensions, const Crop &crop, float position, bool horizontal);
+
+        void accept_drag_and_drop();
 
     public:
         DicomViewer();

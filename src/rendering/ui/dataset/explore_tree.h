@@ -55,7 +55,7 @@ namespace Rendering {
         /**
          * Initializes the listener and subscribes to the queue
          */
-        ExploreFolder();
+        explicit ExploreFolder(ImGuiID docking_id = 0);
 
         /**
          * Destructor

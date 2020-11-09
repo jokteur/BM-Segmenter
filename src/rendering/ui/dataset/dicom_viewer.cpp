@@ -59,7 +59,7 @@ Rendering::DicomViewer::~DicomViewer() {
 void Rendering::DicomViewer::ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) {
     auto &io = ImGui::GetIO();
     io.ConfigWindowsMoveFromTitleBarOnly = true;
-    ImGui::Begin((std::string("DICOM viewer###") + identifier_).c_str(), &is_open_);
+    ImGui::Begin("DICOM viewer", &is_open_); // TODO: unique ID
 
     // Reload the images when they are ready to be
     // copied into a GL texture
@@ -112,8 +112,11 @@ void Rendering::DicomViewer::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
     // Interaction buttons
     ImGui::Text("Window Center: %d, Window Width: %d", window_center_, window_width_);
     windowing_button_.ImGuiDraw(window, dimensions_);
-    ImGui::SameLine();
-    point_select_button_.ImGuiDraw(window, dimensions_);
+    if (image_.isImageSet() && dicom_matrix_.size() > 4) {
+        ImGui::SameLine();
+        point_select_button_.ImGuiDraw(window, dimensions_);
+    }
+    ImGui::Dummy(ImVec2(1,1));
     ImGui::Separator();
 
     if (!error_message_.empty()) {
@@ -299,8 +302,8 @@ void Rendering::DicomViewer::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
     }
     ImGui::End();
 
-    ImGui::Begin("Axial");
-
+    // Axial window
+    ImGui::Begin("Axial view"); // TODO: unique ID
     ImVec2 content = ImGui::GetContentRegionAvail();
     ImVec2 window_pos = ImGui::GetWindowPos();
     auto style = ImGui::GetStyle();
@@ -318,24 +321,19 @@ void Rendering::DicomViewer::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
         ImGui::Dummy(ImVec2(content.x, content.y - 3 * ImGui::GetItemRectSize().y));
 
     // Accept drag and drop from dicom explorer
-    if (ImGui::BeginDragDropTarget()) {
-        if (ImGui::AcceptDragDropPayload("_DICOM_VIEW")) {
-            auto &drag_and_drop = DragAndDrop<dataset::SeriesPayload>::getInstance();
-            auto data = drag_and_drop.returnData();
-            loadSeries(data);
-        }
-        ImGui::EndDragDropTarget();
-    }
+    accept_drag_and_drop();
     ImGui::End();
 
     if (image_.isImageSet() && dicom_matrix_.size() > 4) {
-        ImGui::Begin("Sagittal");
+        // Sagittal window
+        ImGui::Begin("Sagittal"); // TODO: unique ID for dockspace
 
         sagittal_widget_.setAutoScale(true);
         sagittal_widget_.ImGuiDraw(window, dimensions_);
         ImGui::End();
 
-        ImGui::Begin("Coronal");
+        // Coronal window
+        ImGui::Begin("Coronal"); // TODO: unique ID for dockspace
         coronal_widget_.setAutoScale(true);
         coronal_widget_.ImGuiDraw(window, dimensions_);
         ImGui::End();
@@ -489,4 +487,15 @@ Rendering::DicomViewer::calculate_line_coord(const Rect &dimensions, const Crop 
         line.end = ImVec2(dimensions.xpos + dimensions.width * corrected_pos, dimensions.ypos + dimensions.width);
     }
     return line;
+}
+
+void Rendering::DicomViewer::accept_drag_and_drop() {
+    if (ImGui::BeginDragDropTarget()) {
+        if (ImGui::AcceptDragDropPayload("_DICOM_VIEW")) {
+            auto &drag_and_drop = DragAndDrop<dataset::SeriesPayload>::getInstance();
+            auto data = drag_and_drop.returnData();
+            loadSeries(data);
+        }
+        ImGui::EndDragDropTarget();
+    }
 }

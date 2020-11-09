@@ -5,7 +5,7 @@
 
 namespace dataset = ::core::dataset;
 
-Rendering::ExploreFolder::ExploreFolder() {
+Rendering::ExploreFolder::ExploreFolder(ImGuiID docking_id) : AbstractLayout(docking_id) {
     log_listener_.callback = [=](Event_ptr &event) {
         auto log = LOGEVENT_PTRCAST(event.get());
         std::string message = log->getMessage() + "\n";
@@ -27,6 +27,12 @@ Rendering::ExploreFolder::ExploreFolder() {
 
 void Rendering::ExploreFolder::ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) {
     // Open, and cancel a new folder
+
+    // TODO: correct docking
+//    if (docking_id_) {
+//        std::cout << docking_id_ << std::endl;
+//        ImGui::SetNextWindowDockID(docking_id_);
+//    }
     ImGui::Begin("Find dicoms in folder");
     if (explorer_.getStatus() == ::core::dataset::Explore::EXPLORE_WORKING) {
         if (ImGui::Button("Cancel")) {

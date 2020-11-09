@@ -43,7 +43,7 @@ Rendering::ExplorerPreview::~ExplorerPreview() {
 }
 
 void Rendering::ExplorerPreview::ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) {
-    ImGui::Begin("Exploration preview", &open_);
+    ImGui::Begin("Exploration preview", &open_); // TODO: unique ID
     if (just_opened_) {
         just_opened_ = false;
         ImGui::SetWindowSize(init_size_);

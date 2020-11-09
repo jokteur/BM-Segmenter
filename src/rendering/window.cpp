@@ -68,7 +68,7 @@ Rendering::Window::~Window() {
     }
 }
 
-void Rendering::Window::addDrawable(Rendering::AbstractDrawable* drawable) {
+void Rendering::Window::addDrawable(std::shared_ptr<AbstractDrawable> drawable) {
     if(std::find(drawables_.begin(), drawables_.end(), drawable) == drawables_.end())
         drawables_.push_back(drawable);
 }
@@ -79,14 +79,16 @@ bool Rendering::Window::popDrawable() {
     return !drawables_.empty();
 }
 
-// TODO
-void Rendering::Window::removeDrawable(Rendering::AbstractDrawable* drawable) {
-
+void Rendering::Window::removeDrawable(std::shared_ptr<AbstractDrawable> drawable) {
+    auto search = std::find(drawables_.begin(), drawables_.end(), drawable);
+    if(search != drawables_.end()) {
+        drawables_.erase(search);
+    }
 }
 
 void Rendering::Window::draw() {
     // Take possession of the GLFWwindow pointer
-    GLFWwindow* window = *window_.get();
+    GLFWwindow* window = *window_;
 
     for(auto &drawable : drawables_)
         drawable->ImGuiDraw(window, dimensions);
@@ -96,7 +98,7 @@ void Rendering::Window::update() {
     ImGuiIO& io = ImGui::GetIO(); (void)io;
 
     // Take possession of the GLFWwindow pointer
-    GLFWwindow* window = *window_.get();
+    GLFWwindow* window = *window_;
 
     //Make the window DPI aware of the current monitor
     GLFWmonitor* monitor = Rendering::getCurrentMonitor(window);

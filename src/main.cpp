@@ -5,13 +5,6 @@
 #include "rendering/gui.h"
 #include "GLFWwindow_handler.h"
 
-
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
-    const char* keyName = glfwGetKeyName(key, 0);
-    std::cout << "KEY : " << keyName << std::endl;
-}
-
 int main(int, char**)
 {
     PyAPI::Handler::getInstance();
@@ -19,7 +12,7 @@ int main(int, char**)
     GLFWwindowHandler::focus_all = true;
 
     // Test a simple initialization with an empty window
-    Rendering::Application app("TestApp", 1280, 720);
+    Rendering::Application app("ML image segmentation", 1280, 720);
 
     app.addImGuiFlags(ImGuiConfigFlags_ViewportsEnable
     | ImGuiConfigFlags_DockingEnable
@@ -27,7 +20,7 @@ int main(int, char**)
 
     app.init();
 
-    Rendering::GUI gui(app);
+    Rendering::GUI::getInstance().init(app);
 
     app.loop();
     return 0;

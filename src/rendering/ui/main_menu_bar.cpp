@@ -2,6 +2,10 @@
 
 #include "rendering/ui/modales/modals.h"
 #include "rendering/ui/shortcuts_list.h"
+#include "gui.h"
+#include "views/explore_view.h"
+
+namespace project = ::core::project;
 
 void Rendering::MainMenuBar::ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) {
     if (ImGui::BeginMainMenuBar()) {
@@ -25,8 +29,8 @@ void Rendering::MainMenuBar::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
             ImGui::EndMenu();
         }
 
-        Project* project = project_manager_.getCurrentProject();
-        if (project != NULL) {
+        std::shared_ptr<project::Project> project = project_manager_.getCurrentProject();
+        if (project != nullptr) {
             // Try to align a Text element to the right
             const float item_spacing = ImGui::GetStyle().ItemSpacing.x;
             static float text_width = 200.0f;
@@ -35,7 +39,7 @@ void Rendering::MainMenuBar::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
 
             std::string str = "Current project: ";
             str += project->isSaved() ? project->getName() : project->getName() + "*";
-            ImGui::Text(str.c_str());
+            ImGui::Text("%s", str.c_str());
             if (ImGui::IsItemHovered())
             {
                 ImGui::BeginTooltip();
@@ -53,21 +57,10 @@ void Rendering::MainMenuBar::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
 }
 
 void Rendering::MainMenuBar::file_menu()  {
-    bool is_project_active = project_manager_.getCurrentProject() != NULL;
+    bool is_project_active = project_manager_.getCurrentProject() != nullptr;
 
     if (ImGui::MenuItem("New project", Shortcuts::new_project_shortcut.description)) {
         new_project_modal_.showModal();
-    }
-    if (ImGui::MenuItem("WOW", "Baby")) {
-        jobFct job = [=](float &progress, bool &abort) -> std::shared_ptr<JobResult> {
-            std::cout << "Executing job" << std::endl;
-            return std::make_shared<DummyResult>("lol");
-        };
-        jobResultFct result_fct = [=] (const std::shared_ptr<JobResult>& result) {
-            auto res = std::dynamic_pointer_cast<DummyResult>(result);
-            std::cout << "Hello from result " << res->data.str << std::endl;
-        };
-        JobScheduler::getInstance().addJob("test", job, result_fct);
     }
     if (ImGui::MenuItem("Open project", Shortcuts::open_project_shortcut.description)) {
         open_file();
@@ -76,7 +69,7 @@ void Rendering::MainMenuBar::file_menu()  {
     {
         auto recent_projects = Settings::getInstance().getRecentFiles();
         if (recent_projects.empty()) {
-            ImGui::MenuItem("No recent projects", NULL, false, false);
+            ImGui::MenuItem("No recent projects", nullptr, false, false);
         }
         else {
             for(auto &filename : recent_projects) {
@@ -137,8 +130,8 @@ void Rendering::MainMenuBar::settings_menu(){
                 Settings::getInstance().saveSettings();
                 show = false;
             }
-            }
-            , ImGuiWindowFlags_AlwaysAutoResize);
+        },
+        ImGuiWindowFlags_AlwaysAutoResize);
     }
 }
 
@@ -146,7 +139,7 @@ void Rendering::MainMenuBar::open_file(std::string filename) {
     if (filename.empty()) {
         nfdchar_t *outPath;
         nfdfilteritem_t filterItem[1] = { { "Project", STRING(PROJECT_EXTENSION) } };
-        nfdresult_t result = NFD_OpenDialog(&outPath, filterItem, 1, NULL);
+        nfdresult_t result = NFD_OpenDialog(&outPath, filterItem, 1, nullptr);
         if (result == NFD_ERROR) {
             show_error_modal("Load project error",
                              "Could not open project");
@@ -158,8 +151,10 @@ void Rendering::MainMenuBar::open_file(std::string filename) {
         filename = outPath;
     }
     try {
-        project_manager_.openProjectFromFile(filename);
+        auto project = project_manager_.openProjectFromFile(filename);
+        project_manager_.setCurrentProject(project);
         Settings::getInstance().addRecentFile(filename);
+
     }
     catch (std::exception &e) {
         show_error_modal("Load project error",
@@ -169,9 +164,8 @@ void Rendering::MainMenuBar::open_file(std::string filename) {
 }
 
 void Rendering::MainMenuBar::init_listeners() {
-    auto shortcuts_listener = new Listener;
-    shortcuts_listener->filter = "shortcuts/global/*";
-    shortcuts_listener->callback = [this] (Event_ptr &event) {
+    shortcuts_listener_.filter = "shortcuts/global/*";
+    shortcuts_listener_.callback = [this] (Event_ptr &event) {
         std::string name = event->getName();
 
         if (name == "shortcuts/global/new project") {
@@ -188,26 +182,22 @@ void Rendering::MainMenuBar::init_listeners() {
         }
     };
 
-    event_queue_.subscribe(shortcuts_listener);
-    listeners_.push_back(shortcuts_listener);
+    event_queue_.subscribe(&shortcuts_listener_);
 }
 
 void Rendering::MainMenuBar::destroy_listeners() {
-    for (auto & listener : listeners_) {
-        event_queue_.unsubscribe(listener);
-        delete listener;
-    }
+    event_queue_.unsubscribe(&shortcuts_listener_);
 }
 
 void Rendering::MainMenuBar::save_project() {
     auto project = project_manager_.getCurrentProject();
-    if (project != NULL) {
+    if (project != nullptr) {
         std::string out_path;
-        nfdchar_t *outPath = NULL;
+        nfdchar_t *outPath = nullptr;
         nfdfilteritem_t filterItem[1] = { { "Project", STRING(PROJECT_EXTENSION) } };
         bool proceed = false;
         if (project->getSaveFile().empty()) {
-            nfdresult_t result = NFD_SaveDialog(&outPath, filterItem, 1, NULL, NULL);
+            nfdresult_t result = NFD_SaveDialog(&outPath, filterItem, 1, nullptr, nullptr);
             if (result == NFD_OKAY) {
                 out_path = outPath;
                 out_path += ".ml_proj";
@@ -226,18 +216,18 @@ void Rendering::MainMenuBar::save_project() {
 }
 void Rendering::MainMenuBar::save_project_under() {
     auto project = project_manager_.getCurrentProject();
-    if (project != NULL) {
-        nfdchar_t *outPath = NULL;
-        nfdfilteritem_t filterItem[1] = { { "Project", STRING(PROJECT_EXTENSION) } };
-        nfdresult_t result = NFD_SaveDialog(&outPath, filterItem, 1, NULL, NULL);
+    if (project != nullptr) {
+        nfdchar_t *outPath = nullptr;
+        nfdfilteritem_t filterItem[1] = { { "Project"} };
+        nfdresult_t result = NFD_SaveDialog(&outPath, filterItem, 1, nullptr, nullptr);
         if (result == NFD_OKAY) {
             project = project_manager_.duplicateCurrentProject();
-            save(project, std::string(outPath) + STRING(PROJECT_EXTENSION));
+            save(project, std::string(outPath));
         }
     }
 }
 
-void Rendering::MainMenuBar::save(Project *project, std::string filename) {
+void Rendering::MainMenuBar::save(const std::shared_ptr<project::Project>& project, const std::string& filename) {
     bool result = project_manager_.saveProjectToFile(project, filename);
     if (!result) {
         error_msg = "Error when saving '" + project->getName() + "', please try again";

@@ -49,7 +49,7 @@ public:
      */
     const std::chrono::system_clock::time_point &getTime() const { return time_; }
 
-    ~Event() = default;
+    virtual ~Event() = default;
 };
 typedef std::shared_ptr<Event> Event_ptr;
 
@@ -118,7 +118,7 @@ private:
     std::queue<Event_ptr> event_queue_;
     std::mutex event_mutex_;
     std::set<Listener*> listeners_;
-    std::mutex listeners_mutex_;
+    std::recursive_mutex listeners_mutex_;
 
     std::set<Listener*> to_remove_;
     std::vector<std::string> pending_acknowledged_events_;

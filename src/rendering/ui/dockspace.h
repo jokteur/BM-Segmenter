@@ -1,61 +1,54 @@
-#ifndef BM_SEGMENTER_DOCKSPACE_H
-#define BM_SEGMENTER_DOCKSPACE_H
+#pragma once
+
+#include <functional>
+#include <utility>
 
 #include "nfd.h"
 
-#include "../drawables.h"
-#include <GLFW/glfw3.h>
+#include "first_include.h"
 #include "imgui.h"
 
+#include "rendering/drawables.h"
 #include "main_menu_bar.h"
 
+#include "events.h"
+
 namespace Rendering {
+    typedef std::function<void (ImGuiID* dock_id)> set_dock_fct;
+
+    class SetDockSpaceFctEvent : public Event {
+    private:
+        set_dock_fct fct_;
+    public:
+        explicit SetDockSpaceFctEvent(set_dock_fct fct) : fct_(std::move(fct)), Event("set_dock_fct") {}
+
+        set_dock_fct getFct() { return fct_; }
+    };
+
     class Dockspace : public AbstractLayout {
     private:
-        int counter_ = 0;
         bool open_ = true;
         MainMenuBar menu_bar_;
         ImGuiDockNodeFlags dockspace_flags_;
         ImGuiWindowFlags window_flags_;
+        ImGuiID dockspace_id_;
+
+        bool rebuild_ = false;
+
+        Listener listener_;
+        std::function<void (ImGuiID* dock_id)> build_dock_fct_ = [] (ImGuiID*) {};
+
     public:
-        Dockspace() {
-            dockspace_flags_ = ImGuiDockNodeFlags_None;
-            window_flags_ = ImGuiWindowFlags_NoDocking;
 
-            window_flags_ |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
-            window_flags_ |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
-            // ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar;
-        }
+        /**
+         * @return instance of the Singleton of the Job Scheduler
+         */
+        Dockspace();
 
-        void ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) override {
+        ~Dockspace() override;
 
-            // We are using the ImGuiWindowFlags_NoDocking flag to make the parent window not dockable into
-            ImGuiViewport* viewport = ImGui::GetMainViewport();
-            ImGui::SetNextWindowPos(viewport->GetWorkPos());
-            ImGui::SetNextWindowSize(viewport->GetWorkSize());
-            ImGui::SetNextWindowViewport(viewport->ID);
-            ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-            ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-            // window_flags |= ImGuiWindowFlags_NoBackground;
+        void ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) override;
 
-            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-            ImGui::Begin("DockSpace Demo", &open_, window_flags_);
-            ImGui::PopStyleVar();
-
-            ImGui::PopStyleVar(2);
-
-            // DockSpace
-            ImGuiIO& io = ImGui::GetIO();
-            if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
-            {
-                ImGuiID dockspace_id = ImGui::GetID("Dockspace");
-                ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags_);
-            }
-
-            menu_bar_.ImGuiDraw(window, parent_dimension);
-            ImGui::End();
-        }
+        ImGuiID& getDockSpaceID() { return dockspace_id_; }
     };
 }
-
-#endif //BM_SEGMENTER_DOCKSPACE_H

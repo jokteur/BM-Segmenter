@@ -1,20 +1,23 @@
 #pragma once
 
-#include "rendering/drawables.h"
-#include "rendering/ui/modales/modals.h"
-#include "rendering/ui/modales/error_message.h"
-
-#include "core/project/project_manager.h"
 #include <GLFW/glfw3.h>
 #include "imgui.h"
 #include "imgui_stdlib.h"
 
+#include "rendering/drawables.h"
+#include "rendering/ui/modales/modals.h"
+#include "rendering/ui/modales/error_message.h"
 #include "rendering/keyboard_shortcuts.h"
+#include "rendering/views/explore_view.h"
+
+#include "core/project/project_manager.h"
+#include "events.h"
+
 
 namespace Rendering {
     class NewProjectModal {
     private:
-        ProjectManager &project_manager_;
+        ::core::project::ProjectManager &project_manager_;
         std::string name_;
         std::string description_;
 
@@ -45,6 +48,9 @@ namespace Rendering {
                 else {
                     auto project = project_manager_.newProject(name_, description_);
                     project_manager_.setCurrentProject(project);
+
+                    // Set explore view
+                    EventQueue::getInstance().post(Event_ptr(new SetViewEvent(std::make_unique<ExploreView>())));
                     name_ = "";
                     description_ = "";
                     show = false;
@@ -60,7 +66,7 @@ namespace Rendering {
         };
 
     public:
-        NewProjectModal() : project_manager_(ProjectManager::getInstance()) {}
+        NewProjectModal() : project_manager_(::core::project::ProjectManager::getInstance()) {}
 
         /**
          * Returns if the modal is finished (canceled or ok)

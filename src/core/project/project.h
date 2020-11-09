@@ -1,76 +1,88 @@
-#ifndef BM_SEGMENTER_PROJECT_H
-#define BM_SEGMENTER_PROJECT_H
+#pragma once
 
+#include <vector>
+#include <set>
 #include <string>
 
-class Project {
-private:
-    std::string name_;
-    std::string description_;
-    std::string save_file_;
+#include "core/dicom.h"
 
-    bool is_saved_ = false;
-public:
-    Project(const std::string &name, const std::string &description);
+namespace core {
+    namespace project {
+        class Project {
+        private:
+            std::string name_;
+            std::string description_;
+            std::string save_file_;
 
-    /**
-     * Compares two projects and looks if they are identical (name, description, datasets, ...)
-     * @param project project to compare to
-     * @return true if identical, false if not
-     */
-    bool operator==(Project& project);
+            bool is_saved_ = false;
+            std::set<DicomMarker> markers;
 
-    /**
-     * Returns the current name of the project
-     * @return name of project
-     */
-    std::string& getName() { return name_; }
+        public:
+            Project(const std::string &name, const std::string &description);
 
-    /**
-     * Returns the current description of the project
-     * @return description of project
-     */
-    std::string& getDescription() { return description_; }
+            /**
+             * Compares two projects and looks if they are identical (name, description, datasets, ...)
+             * @param project project to compare to
+             * @return true if identical, false if not
+             */
+            bool operator==(Project& project);
 
-    /**
-     * Returns the save file if it has been precised
-     * @return
-     */
-    std::string& getSaveFile() { return save_file_; }
+            /**
+             * Returns the current name of the project
+             * @return name of project
+             */
+            std::string& getName() { return name_; }
 
-    /**
-     * Sets the current save file for this project
-     * @param save_file path of the file
-     */
-    void setSaveFile(const std::string& save_file) {
-        save_file_ = save_file;
+            /**
+             * Returns the current description of the project
+             * @return description of project
+             */
+            std::string& getDescription() { return description_; }
+
+            /**
+             * Returns the save file if it has been precised
+             * @return
+             */
+            std::string& getSaveFile() { return save_file_; }
+
+            /**
+             * Returns the set of markers (for 3D dicom file) in the project
+             * @return
+             */
+            std::set<DicomMarker>& getMarkers() { return markers; }
+
+            /**
+             * Sets the current save file for this project
+             * @param save_file path of the file
+             */
+            void setSaveFile(const std::string& save_file) {
+                save_file_ = save_file;
+            }
+
+            /**
+             * Sets the saved variable to true
+             * If the project is modified, then the variable is again set to false
+             */
+            void setSavedState() {
+                is_saved_ = true;
+            }
+
+            /**
+             * Returns if the project is in a saved state
+             * @return true for saved state, false for non saved state
+             */
+            bool isSaved() const {
+                return is_saved_;
+            }
+
+            /**
+             * Sets the name of the projects
+             * @param name name of project
+             */
+            void setName(const std::string& name) {
+                name_ = name;
+                is_saved_ = false;
+            }
+        };
     }
-
-    /**
-     * Sets the saved variable to true
-     * If the project is modified, then the variable is again set to false
-     */
-    void setSavedState() {
-        is_saved_ = true;
-    }
-
-    /**
-     * Returns if the project is in a saved state
-     * @return true for saved state, false for non saved state
-     */
-    bool isSaved() {
-        return is_saved_;
-    }
-
-    /**
-     * Sets the name of the projects
-     * @param name name of project
-     */
-    void setName(std::string name) {
-        name_ = name;
-        is_saved_ = false;
-    }
-};
-
-
-#endif //BM_SEGMENTER_PROJECT_H
+}
