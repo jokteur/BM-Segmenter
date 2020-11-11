@@ -3,9 +3,11 @@
 #include <vector>
 #include <functional>
 #include <string>
+#include <set>
 
 #include "opencv2/opencv.hpp"
 #include "imgui.h"
+#include "jobscheduler.h"
 
 namespace core {
     /**
@@ -33,6 +35,7 @@ namespace core {
         float sagittal = 0.5f;
         float coronal = 0.5f;
         float axial = 0.f;
+        std::string name;
     };
 
     /**
@@ -41,13 +44,65 @@ namespace core {
     struct Dicom {
         cv::Mat data;
         ImVec2 pixel_spacing = ImVec2(1,1);
+        std::string error_message;
         float slice_thickness = 1.f;
         float slice_position = 1.f;
-        int window_width = 400; // Window width
-        int window_center = 40; // WIndow center
+        bool is_set = false;
     };
 
-    struct DicomSeries {
-        std::vector<Dicom> series;
+    class DicomSeries {
+    private:
+        std::vector<Dicom> data_;
+        std::vector<std::string> images_path_;
+        std::vector<DicomCoordinate> coordinates_;
+        ImVec2 crop_x_ = ImVec2(0, 100);
+        ImVec2 crop_y_ = ImVec2(0, 100);
+        int window_width_ = 400; // Window width
+        int window_center_ = 40; // Window center
+
+        DicomCoordinate current_coordinate_;
+
+        std::set<jobId> pending_jobs_;
+        int selected_index_ = 0;
+        int num_jobs_ = 0;
+        bool load_all_ = false;
+
+        void free_memory(int index);
+        void reload();
+
+        void init();
+    public:
+        DicomSeries() = default;
+        explicit DicomSeries(std::vector<std::string> paths);
+        ~DicomSeries();
+
+        void setPaths(const std::vector<std::string> &paths);
+
+        void loadAll(bool force_load = false);
+        void loadCase(float percentage, bool force_replace = false, const std::function<void(const Dicom&)>& when_finished_fct = [](const Dicom&) {});
+        void loadCase(int index, bool force_replace = false, const std::function<void(const Dicom&)>& when_finished_fct = [](const Dicom&) {});
+        void unloadData(bool keep_current = false);
+        void cleanData();
+        void cancelPendingJobs();
+
+        ImVec2 getCropX() { return crop_x_; }
+        ImVec2 getCropY() { return crop_y_; }
+        int& getWW() { return window_width_; }
+        int& getWC() { return window_center_; }
+        int size() { return images_path_.size(); }
+
+        std::vector<Dicom>& getData() { return data_; }
+        int getCurrentIndex() const { return selected_index_; }
+        Dicom& getCurrentDicom();
+        void eraseCurrent();
+
+        DicomCoordinate& getCurrentCoordinate() { return current_coordinate_; }
+        std::vector<DicomCoordinate>& getAllCoordinates() { return coordinates_; }
+
+        void setCrops(ImVec2 crop_x, ImVec2 crop_y);
+        void setCropX(ImVec2 crop_x);
+        void setCropY(ImVec2 crop_y);
+
+        bool isReady();
     };
 }

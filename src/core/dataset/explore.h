@@ -6,6 +6,7 @@
 
 #include "imgui.h"
 
+#include "core/dicom.h"
 #include "events.h"
 #include "jobscheduler.h"
 
@@ -23,16 +24,13 @@
              std::string studyDate;         // Date of study
              std::string studyTime;         // Time of study
              std::string studyDescription;  // Description of the study
-             std::string seriesNumber;              // Number that identifies the series in the study
+             std::string seriesNumber;      // Number that identifies the series in the study
              std::string modality;          // Modality of the series (CT, MR, etc.)
              std::string path;              // Path to the DICOMDIR of dicom image
-             std::string instanceNumber;            // Image instance number in the series
+             std::string instanceNumber;    // Image instance number in the series
              bool is_active = true;
          };
 
-         struct SeriesNode;
-         struct StudyNode;
-         struct PatientNode;
          /**
           * A tree representation of a medical cases
           */
@@ -46,6 +44,7 @@
              std::string modality;
              std::string number;
              std::vector<ImageNode> images;
+             DicomSeries data;
              int tree_count;
              bool is_active = true;
          };
@@ -53,7 +52,7 @@
              std::string date;
              std::string time;
              std::string description;
-             std::vector<SeriesNode> series;
+             std::vector<std::shared_ptr<SeriesNode>> series; // SeriesNode is shared between multiple widgets
              int tree_count;
              bool is_active = true;
          };
@@ -65,12 +64,8 @@
          };
 
          struct SeriesPayload {
-             SeriesNode series;
+             std::shared_ptr<SeriesNode> series;
              Case case_;
-             ImVec2 crop_x;
-             ImVec2 crop_y;
-             int window_width;
-             int window_center;
          };
 
          class ExplorerBuildEvent : public Event {

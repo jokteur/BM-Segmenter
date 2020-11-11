@@ -1,5 +1,7 @@
 #include "gui.h"
 
+#include <utility>
+
 #include "rendering/ui/shortcuts_list.h"
 #include "rendering/ui/modales/error_message.h"
 #include "settings.h"
@@ -45,7 +47,7 @@ void Rendering::GUI::setView(std::shared_ptr<View> view) {
     if (!initialized)
         return;
 
-    view_draw_ = std::dynamic_pointer_cast<AbstractDrawable>(view);
+//    view_draw_ = std::dynamic_pointer_cast<AbstractDrawable>(view);
 
     app_->getMainWindow().removeDrawable(view_draw_);
     if (view_ != nullptr) {
@@ -54,8 +56,8 @@ void Rendering::GUI::setView(std::shared_ptr<View> view) {
         }
     }
 
-    app_->getMainWindow().addDrawable(view_draw_);
-    view_ = view;
+//    app_->getMainWindow().addDrawable(view_draw_);
+    view_ = std::move(view);
 
     for (auto &drawable : view_->getDrawables()) {
         app_->getMainWindow().addDrawable(drawable);

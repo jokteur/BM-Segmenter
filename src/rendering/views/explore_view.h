@@ -9,7 +9,7 @@
 #include "ui/dataset/dicom_viewer.h"
 
 namespace Rendering {
-    class ExploreView : public View, public AbstractDrawable {
+    class ExploreView : public View {
     private:
         std::shared_ptr<ExploreFolder> explore_ = std::make_shared<ExploreFolder>();
         std::shared_ptr<DicomViewer> dicom_ = std::make_shared<DicomViewer>();
@@ -17,7 +17,5 @@ namespace Rendering {
 
     public:
         ExploreView();
-
-        void ImGuiDraw(GLFWwindow *window, Rect &parent_dimension);
     };
 }

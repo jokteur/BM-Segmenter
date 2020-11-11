@@ -44,9 +44,8 @@ namespace Rendering {
         ImageButton* active_button_ = nullptr;
 
         Listener listener_;
-        Listener job_listener_;
+        Listener reset_tree_listener_;
 
-        std::vector<::core::Dicom> dicom_matrix_;
         ::core::Dicom sagittal_matrix_;
         ::core::Dicom coronal_matrix_;
 
@@ -62,26 +61,21 @@ namespace Rendering {
         bool active_dragging_ = false;
         ImVec2 drag_delta_;
 
-        int window_width_ = 400;
-        int window_center_ = 40;
-        ImVec2 crop_x_ = ImVec2(0, 100);
-        ImVec2 crop_y_ = ImVec2(0, 100);
-
         ::core::DicomCoordinate coordinate;
         float sagittal_x_ = 0.5f;
         float coronal_x_ = 0.5f;
 
-        std::string error_message_;
-        std::set<jobId> pending_jobs_;
+//        std::string error_message_;
 
         std::vector<std::string> series_;
+        std::shared_ptr<::core::dataset::SeriesNode> series_node_ = nullptr;
         ::core::dataset::Case case_;
         int case_select_ = 1;
         int previous_select_ = 0;
         int image_size_ = 0;
 
         void loadSeries(const ::core::dataset::SeriesPayload& data);
-        void loadCase(const std::string &path);
+        void loadCase(int idx);
 
         void set_views();
         void set_image();
@@ -89,6 +83,7 @@ namespace Rendering {
         void build_views();
 
         static Line calculate_line_coord(const Rect &dimensions, const Crop &crop, float position, bool horizontal);
+        static void marker_context_menu(int button);
 
         void accept_drag_and_drop();
 

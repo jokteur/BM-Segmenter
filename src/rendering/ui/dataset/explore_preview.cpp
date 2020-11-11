@@ -11,16 +11,16 @@ Rendering::ExplorerPreview::ExplorerPreview(ImVec2 init_size) : init_size_(init_
         for (auto &patient : *cases_) {
             for (auto &study : patient.study) {
                 for (auto &series : study.series) {
-                    auto ret = dicom_previews_.emplace(std::make_pair(&series, DicomPreview()));
+                    auto ret = dicom_previews_.emplace(std::move(std::make_pair(series, DicomPreview())));
                     ::core::dataset::Case case_ = {
                             patient.ID,         // Patient ID, can be a number, of some sort
                             study.date,         // Date of study
                             study.time,         // Time of study
                             study.description,  // Description of the study
-                            series.number,      // Number that identifies the series in the study
-                            series.modality,    // Modality of the series (CT, MR, etc.)
+                            series->number,      // Number that identifies the series in the study
+                            series->modality,    // Modality of the series (CT, MR, etc.)
                     };
-                    (*ret.first).second.loadSeries(&series, case_);
+                    (*ret.first).second.loadSeries(series, case_);
                 }
             }
         }
@@ -33,12 +33,19 @@ Rendering::ExplorerPreview::ExplorerPreview(ImVec2 init_size) : init_size_(init_
     };
     filter_tree_listener_.filter = "dataset/explorer/filter";
 
+    reset_tree_listener_.callback = [=](Event_ptr& event) {
+        cases_ = std::make_shared<std::vector<core::dataset::PatientNode>>();
+    };
+    reset_tree_listener_.filter = "dataset/dicom/reset";
+
     EventQueue::getInstance().subscribe(&build_tree_listener_);
+    EventQueue::getInstance().subscribe(&reset_tree_listener_);
     EventQueue::getInstance().subscribe(&filter_tree_listener_);
 }
 
 Rendering::ExplorerPreview::~ExplorerPreview() {
     EventQueue::getInstance().unsubscribe(&build_tree_listener_);
+    EventQueue::getInstance().unsubscribe(&reset_tree_listener_);
     EventQueue::getInstance().unsubscribe(&filter_tree_listener_);
 }
 
@@ -119,20 +126,20 @@ void Rendering::ExplorerPreview::ImGuiDraw(GLFWwindow *window, Rect &parent_dime
                 if (study.tree_count < 3)
                     continue;
                 for (auto &series : study.series) {
-                    if (series.tree_count < 2)
+                    if (series->tree_count < 2)
                         continue;
-                    dicom_previews_[&series].setSize(ImVec2(width, width));
+                    dicom_previews_[series].setSize(ImVec2(width, width));
 
-                    bool is_active = patient.is_active && study.is_active && series.is_active;
+                    bool is_active = patient.is_active && study.is_active && series->is_active;
                     if (!is_active) {
                         ImGui::PushStyleColor(ImGuiCol_Text, disabled_color);
-                        dicom_previews_[&series].setIsDisabled(true);
+                        dicom_previews_[series].setIsDisabled(true);
                     }
                     else {
-                        dicom_previews_[&series].setIsDisabled(false);
+                        dicom_previews_[series].setIsDisabled(false);
                     }
 
-                    if (dicom_previews_[&series].isLocked()) {
+                    if (dicom_previews_[series].isLocked()) {
                         ImGui::Text("%s *", patient.ID.c_str());
                     }
                     else {
@@ -140,16 +147,16 @@ void Rendering::ExplorerPreview::ImGuiDraw(GLFWwindow *window, Rect &parent_dime
                     }
 
                     if (ImGui::IsItemHovered()) {
-                        ImGui::SetTooltip("Study: %s\nSeries: %s\nModality: %s", study.description.c_str(), series.number.c_str(), series.modality.c_str());
+                        ImGui::SetTooltip("Study: %s\nSeries: %s\nModality: %s", study.description.c_str(), series->number.c_str(), series->modality.c_str());
                     }
 
                     if (Widgets::check_hitbox(mouse_pos, sub_window_dim)) {
-                        dicom_previews_[&series].setAllowScroll(true);
+                        dicom_previews_[series].setAllowScroll(true);
                     }
                     else {
-                        dicom_previews_[&series].setAllowScroll(false);
+                        dicom_previews_[series].setAllowScroll(false);
                     }
-                    dicom_previews_[&series].ImGuiDraw(window, parent_dimension);
+                    dicom_previews_[series].ImGuiDraw(window, parent_dimension);
 
                     if (!is_active) {
                         ImGui::PopStyleColor();

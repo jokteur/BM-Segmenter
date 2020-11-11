@@ -10,6 +10,7 @@ namespace core {
 
         void Explore::findDicoms(const std::string &path) {
             path_ = path;
+            //cases_->clear();
             jobFct job = [=](float &progress, bool &abort) -> std::shared_ptr<JobResult> {
                 status_ = EXPLORE_WORKING;
                 auto state = PyGILState_Ensure();
@@ -41,7 +42,6 @@ namespace core {
                     // Once it has finished building the cases, copy the dictionary that represents
                     // all the cases
                     // See load_dicom.py
-                    cases_->clear();
                     py::list data_dict = dicoms.attr("data").attr("get_cases_list")();
                     for (auto &py_patient : data_dict) {
                         auto patient_tuple = py_patient.cast<py::tuple>();
@@ -62,14 +62,17 @@ namespace core {
                                 SeriesNode series {series_tuple[1].cast<std::string>(),
                                                    series_tuple[0].cast<std::string>()};
 
+                                std::vector<std::string> paths;
                                 for (auto &py_image : py_series.second.cast<py::list>()) {
                                     auto image_dict = py_image.cast<py::dict>();
 
                                     ImageNode image {image_dict["path"].cast<std::string>(),
                                                      image_dict["instanceNumber"].cast<std::string>()};
                                     series.images.push_back(image);
+                                    paths.push_back(image.path);
                                 }
-                                study.series.push_back(series);
+                                series.data = DicomSeries(paths);
+                                study.series.push_back(std::make_shared<SeriesNode>(series));
                             }
                             patient.study.push_back(study);
                         }
@@ -114,20 +117,20 @@ namespace core {
                         continue;
                     }
                     for (auto &series : study.series) {
-                        series.tree_count = 0;
-                        if (series_filter.PassFilter(series.modality.c_str())) {
+                        series->tree_count = 0;
+                        if (series_filter.PassFilter(series->modality.c_str())) {
                             patient.tree_count++;
                             study.tree_count++;
-                            series.tree_count++;
+                            series->tree_count++;
                         } else {
                             patient.tree_count--;
                             study.tree_count--;
                             continue;
                         }
-                        for (auto &image : series.images) {
+                        for (auto &image : series->images) {
                             patient.tree_count++;
                             study.tree_count++;
-                            series.tree_count++;
+                            series->tree_count++;
                             image.tree_count = 1;
 
                         }

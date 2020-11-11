@@ -13,13 +13,12 @@ Rendering::ExploreFolder::ExploreFolder(ImGuiID docking_id) : AbstractLayout(doc
     };
     log_listener_.filter = "log/dicom_search";
 
-    error_listener_.callback = [=](Event_ptr &event) {
+    error_listener_.callback = [=](Event_ptr& event) {
         auto log = LOGEVENT_PTRCAST(event.get());
         std::string message = log->getMessage() + "\n";
         error_buffer_.append(message.c_str());
     };
     error_listener_.filter = "log/dicom_error";
-
 
     EventQueue::getInstance().subscribe(&log_listener_);
     EventQueue::getInstance().subscribe(&error_listener_);
@@ -42,7 +41,7 @@ void Rendering::ExploreFolder::ImGuiDraw(GLFWwindow *window, Rect &parent_dimens
         Widgets::HelpMarker("Cancel the current on-going search.\n"
                             "Does not erase the found results.");
     } else {
-        if (ImGui::Button("Open folder")) {
+        if (ImGui::Button("Add folder")) {
             NFD_Init();
             nfdchar_t *outPath;
             nfdresult_t result = NFD_PickFolder(&outPath, nullptr);
@@ -52,6 +51,7 @@ void Rendering::ExploreFolder::ImGuiDraw(GLFWwindow *window, Rect &parent_dimens
                 case_filter_.Clear();
                 study_filter_.Clear();
                 series_filter_.Clear();
+                EventQueue::getInstance().post(Event_ptr(new Event("dataset/dicom/reset")));
                 explorer_.findDicoms(outPath);
                 path_ = outPath;
             } else if (result == NFD_ERROR) {
@@ -75,6 +75,7 @@ void Rendering::ExploreFolder::ImGuiDraw(GLFWwindow *window, Rect &parent_dimens
         case dataset::Explore::EXPLORE_WORKING:
             build_tree_ = true;
             is_new_tree_ = true;
+            set_tree_closed_ = true;
             ImGui::Text("Searching the folder %s...", path_.c_str());
             break;
         case dataset::Explore::EXPLORE_SUCCESS:
@@ -137,7 +138,6 @@ void Rendering::ExploreFolder::ImGuiDraw(GLFWwindow *window, Rect &parent_dimens
             study_filter_str_ = std::string(study_filter_.InputBuf);
             series_filter_str_ = std::string(series_filter_.InputBuf);
             build_tree_ = true;
-            is_new_tree_ = false;
         }
 
         build_tree();
@@ -180,21 +180,24 @@ void Rendering::ExploreFolder::ImGuiDraw(GLFWwindow *window, Rect &parent_dimens
 
                     if (node2) {
                         for (auto &series : study.series) {
-                            if (series.tree_count < 2) {
+                            if (series->tree_count < 2) {
                                 continue;
                             }
 
 
-                            bool series_active = series.is_active && study_active && patient_active;
+                            bool series_active = series->is_active && study_active && patient_active;
                             if (!series_active)
                                 ImGui::PushStyleColor(ImGuiCol_Text, disabled_text_color);
                             // Series node
-                            bool node3 = ImGui::TreeNodeEx((void *) &series, nodeFlags, "Series %s, Modality %s",
-                                                           series.number.c_str(), series.modality.c_str());
-                            exclude_menu(series.is_active, "series");
+                            if (set_tree_closed_) {
+                                ImGui::SetNextTreeNodeOpen(false);
+                            }
+                            bool node3 = ImGui::TreeNodeEx((void *) &series, nodeFlags | ImGuiTreeNodeFlags_Framed, "Series %s, Modality %s",
+                                                           series->number.c_str(), series->modality.c_str());
+                            exclude_menu(series->is_active, "series");
 
                             if (node3) {
-                                for (auto &image : series.images) {
+                                for (auto &image : series->images) {
                                     if (!image.tree_count) {
                                         continue;
                                     }
@@ -230,6 +233,7 @@ void Rendering::ExploreFolder::ImGuiDraw(GLFWwindow *window, Rect &parent_dimens
                 ImGui::PopStyleColor();
         }
         ImGui::EndChild();
+        set_tree_closed_ = false;
     }
     ImGui::End();
 }
@@ -245,8 +249,6 @@ void Rendering::ExploreFolder::build_tree() {
         ::core::dataset::build_tree(explorer_.getCases(), case_filter_, study_filter_, series_filter_);
         if (is_new_tree_)
             EventQueue::getInstance().post(Event_ptr(new ::core::dataset::ExplorerBuildEvent(explorer_.getCases())));
-//        else
-//            EventQueue::getInstance().post(Event_ptr(new ::core::dataset::ExplorerFilterEvent(case_filter_, study_filter_, series_filter_)));
         is_new_tree_ = false;
         build_tree_ = false;
     }

@@ -26,7 +26,7 @@ namespace Rendering {
          */
         Listener log_listener_;
         Listener error_listener_;
-        Listener job_listener_;
+        //Listener job_listener_;
 
         ::core::dataset::Explore explorer_;
 
@@ -35,6 +35,7 @@ namespace Rendering {
 
         bool build_tree_ = true;
         bool is_new_tree_ = true;
+        bool set_tree_closed_ = true;
 
         ImGuiTextFilter case_filter_;
         std::string case_filter_str_;

@@ -17,6 +17,25 @@ Rendering::DicomPreview::DicomPreview() {
     image_widget_.setCenterY(true);
 }
 
+Rendering::DicomPreview::DicomPreview(const DicomPreview& other) {
+    instance_number++;
+    identifier_ = std::to_string(instance_number) + std::string("DicomPreview");
+    image_widget_.setInteractiveZoom(SimpleImage::IMAGE_NO_INTERACT);
+    image_widget_.setImageDrag(SimpleImage::IMAGE_NO_INTERACT);
+    image_widget_.setCenterX(true);
+    image_widget_.setCenterY(true);
+    series_node_ = other.series_node_;
+}
+
+Rendering::DicomPreview::DicomPreview(const DicomPreview&& other) {
+    image_widget_.setInteractiveZoom(SimpleImage::IMAGE_NO_INTERACT);
+    image_widget_.setImageDrag(SimpleImage::IMAGE_NO_INTERACT);
+    image_widget_.setCenterX(true);
+    image_widget_.setCenterY(true);
+    series_node_ = other.series_node_;
+    identifier_ = other.identifier_;
+}
+
 void Rendering::DicomPreview::ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) {
     auto &io = ImGui::GetIO();
     io.ConfigWindowsMoveFromTitleBarOnly = true;
@@ -24,7 +43,7 @@ void Rendering::DicomPreview::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensi
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0,0));
     ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(0,0));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1);
-    int num_pop = 3;
+    const int num_pop = 3;
 
     ImGui::BeginChild(identifier_.c_str(), size_, true);
     ImGui::PopStyleVar(num_pop);
@@ -44,12 +63,11 @@ void Rendering::DicomPreview::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensi
     // We do this because setting the image_ can lead to segfault when not done
     // in the main thread
     if (reset_image_) {
-        dicom_to_image();
         reset_image_ = false;
         image_widget_.setDragSourceFunction([this] {
             if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
                 auto &drag_and_drop = DragAndDrop<dataset::SeriesPayload>::getInstance();
-                auto series_payload = ::core::dataset::SeriesPayload{*series_node_, case_, crop_x_, crop_y_, window_width_, window_center_};
+                auto series_payload = ::core::dataset::SeriesPayload{series_node_, case_};
                 drag_and_drop.giveData(series_payload);
 
                 int a = 0; // Dummy int
@@ -104,7 +122,7 @@ void Rendering::DicomPreview::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensi
 
         if (series_node_->is_active) {
             if (ImGui::Selectable((std::string("Open file in DICOM viewer###") + identifier_).c_str())) {
-                auto series_payload = ::core::dataset::SeriesPayload{*series_node_, case_, crop_x_, crop_y_, window_width_, window_center_};
+                auto series_payload = ::core::dataset::SeriesPayload{series_node_, case_};
                 EventQueue::getInstance().post(Event_ptr(new ::core::dataset::SelectSeriesEvent(series_payload)));
             }
             ImGui::Separator();
@@ -114,9 +132,9 @@ void Rendering::DicomPreview::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensi
             set_crop(crop_x_, crop_y_, true);
             ImGui::Separator();
             ImGui::Text("Windowing: ");
-            ImGui::DragInt("Window center###dicom_preview_wc", &window_center_, 0.5, -1000, 3000, "%d HU");
-            ImGui::DragInt("Window width###dicom_preview_ww", &window_width_, 0.5, 1, 3000, "%d HU");
-            set_window(window_width_, window_center_, true);
+            ImGui::DragInt("Window center###dicom_preview_wc", &series_node_->data.getWC(), 0.5, -1000, 3000, "%d HU");
+            ImGui::DragInt("Window width###dicom_preview_ww", &series_node_->data.getWW(), 0.5, 1, 3000, "%d HU");
+            set_window(series_node_->data.getWW(), series_node_->data.getWC(), true);
         }
         ImGui::EndPopup();
     }
@@ -124,77 +142,30 @@ void Rendering::DicomPreview::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensi
     ImGui::EndChild();
 }
 
-void Rendering::DicomPreview::selectCase(const std::string& path) {
-    error_message_.clear();
-    jobResultFct fct = [=] (const std::shared_ptr<JobResult> &result) {
-        auto dicom_result = std::dynamic_pointer_cast<::core::dataset::DicomResult>(result);
-        if (dicom_result->success) {
-
-            auto &dicom = dicom_result->image;
-            // Crop image if needed
-
-            cv::Rect ROI(0, 0, dicom.data.rows, dicom.data.cols);
-            if (crop_x_.x < crop_x_.y && crop_y_.x < crop_y_.y
-                && crop_x_.x >= 0.f && crop_x_.x <= 100.f
-                && crop_x_.y >= 0.f && crop_x_.y <= 100.f) {
-                ROI = {
-                    (int)((float)dicom.data.rows*crop_x_.x/100.f),
-                    (int)((float)dicom.data.cols*crop_y_.x/100.f),
-                    (int)((float)dicom.data.rows*(crop_x_.y - crop_x_.x)/100.f),
-                    (int)((float)dicom.data.rows*(crop_y_.y - crop_y_.x)/100.f)
-                };
-            }
-
-            dicom.data = dicom.data(ROI);
-            int rows = ROI.width;
-            int cols = ROI.height;
-            // Resize image to not fill the ram
-            if (rows > max_im_size_ || cols > max_im_size_) {
-                int width, height;
-                if (rows > cols) {
-                    width = max_im_size_;
-                    height = (int)((float)max_im_size_ / (float)rows * (float)cols);
-                }
-                else {
-                    width = (int)((float)max_im_size_ / (float)cols * (float)rows );
-                    height = max_im_size_;
-                }
-                cv::resize(dicom.data, dicom_matrix_.data, cv::Size(width, height), 0, 0, cv::INTER_AREA);
-            }
-            else {
-                dicom_matrix_.data = dicom_result->image.data;
-            }
-            reset_image_ = true;
-        }
-        else {
-            error_message_ = dicom_result->error_msg;
-        }
-    };
-    dataset::dicom_to_matrix(path, fct);
+void Rendering::DicomPreview::selectCase(int idx) {
+    series_node_->data.loadCase(idx, false, [=](const core::Dicom& dicom) {
+        image_.setImageFromHU(dicom.data, (float)series_node_->data.getWW(), (float)series_node_->data.getWC());
+        image_widget_.setImage(image_);
+        reset_image_ = true;
+        series_node_->data.cleanData();
+    });
 }
 
-void Rendering::DicomPreview::dicom_to_image() {
-    image_.setImageFromHU(dicom_matrix_.data, (float)window_width_, (float)window_center_);
-    image_widget_.setImage(image_);
-}
-
-void Rendering::DicomPreview::loadSeries(::core::dataset::SeriesNode* series_node, const ::core::dataset::Case& aCase) {
-    series_.clear();
+void Rendering::DicomPreview::loadSeries(std::shared_ptr<::core::dataset::SeriesNode> series_node, const ::core::dataset::Case& aCase) {
     case_ = aCase;
+    if (series_node_ != nullptr) {
+        series_node_->data.unloadData();
+    }
     series_node_ = series_node;
-    for (auto &image : series_node->images) {
-        series_.push_back(image.path);
-    }
-    if (!series_.empty()) {
-        selectCase(series_[0]);
-    }
+    selectCase(0);
 }
 
 void Rendering::DicomPreview::setCase(float percentage) {
-    int idx = (int)(percentage * (float)(series_.size() - 1));
+    int idx = (int)(percentage * (float)(series_node_->data.size() - 1));
     if (idx != case_idx) {
-        selectCase(series_[idx]);
+        selectCase(idx);
         case_idx = idx;
+        reset_image_ = true;
     }
 }
 
@@ -226,18 +197,22 @@ void Rendering::DicomPreview::set_crop(ImVec2 crop_x, ImVec2 crop_y, bool lock) 
         prev_crop_y_ = crop_y;
         if (lock)
             is_crop_locked = true;
-        selectCase(series_[0]);
+
+        series_node_->data.setCrops(crop_x_, crop_y_);
+        selectCase(case_idx);
+        reset_image_ = true;
     }
 }
 
 void Rendering::DicomPreview::set_window(int width, int center, bool lock) {
     if (width != prev_ww_ || center != prev_wc_) {
-        window_width_ = width;
-        window_center_ = center;
+        series_node_->data.getWW() = width;
+        series_node_->data.getWC() = center;
         prev_ww_ = width;
         prev_wc_ = center;
         reset_image_ = true;
         if (lock)
             is_window_locked = true;
+        selectCase(case_idx);
     }
 }

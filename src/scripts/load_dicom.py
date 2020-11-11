@@ -281,4 +281,4 @@ def get_pixels_hu(scan):
 
     image += np.int16(intercept)
 
-    return np.array(image, dtype=np.int16)
+    return image  # np.array(image, dtype=np.int16)

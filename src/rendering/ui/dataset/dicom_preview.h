@@ -26,22 +26,15 @@ namespace Rendering {
 
         SimpleImage image_widget_;
         ::core::Image image_;
-        Listener job_listener_;
 
-        ::core::Dicom dicom_matrix_;
         bool reset_image_ = false;
 
-        int window_width_ = 400;
-        int window_center_ = 40;
         int prev_ww_= 400;
         int prev_wc_ = 40;
 
         ImVec2 size_ = ImVec2(100, 100);
 
-        std::string error_message_;
-
-        std::vector<std::string> series_;
-        ::core::dataset::SeriesNode* series_node_;
+        std::shared_ptr<::core::dataset::SeriesNode> series_node_ = nullptr;
         ::core::dataset::Case case_;
         bool is_subscribed_ = false;
 
@@ -58,13 +51,16 @@ namespace Rendering {
         bool allow_scroll_ = false;
         int case_idx = 0;
 
-        void selectCase(const std::string& path);
-        void dicom_to_image();
+        void selectCase(int idx);
         void set_crop(ImVec2 crop_x, ImVec2 crop_y, bool lock = false);
         void set_window(int width, int center, bool lock = false);
 
     public:
         DicomPreview();
+
+        DicomPreview(const DicomPreview& other);
+
+        DicomPreview(const DicomPreview&& other);
 
         /**
          * Draws the viewer image widget
@@ -93,9 +89,11 @@ namespace Rendering {
 
         void setAllowScroll(bool allow_scroll) { allow_scroll_ = allow_scroll; }
 
-        void loadSeries(::core::dataset::SeriesNode* series_node, const ::core::dataset::Case& case_);
+        void loadSeries(std::shared_ptr<::core::dataset::SeriesNode> series_node, const ::core::dataset::Case& case_);
 
         bool isLocked() const { return is_crop_locked || is_window_locked; }
+
+        ::core::DicomSeries& getDicomSeries() { return series_node_->data; }
 
     };
 }
