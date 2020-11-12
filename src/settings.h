@@ -1,5 +1,4 @@
-#ifndef BM_SEGMENTER_SETTINGS_H
-#define BM_SEGMENTER_SETTINGS_H
+#pragma once
 
 #include "imgui.h"
 #include <string>
@@ -38,6 +37,7 @@ private:
     void defineDarkStyle();
 
     Settings() {
+        loadSettings();
         defineLightStyle();
         defineDarkStyle();
     }
@@ -76,6 +76,8 @@ public:
 
     void addRecentFile(std::string filename);
 
+    void removeRecentFile(std::string filename);
+
     /**
      * Saves all the settings to the current save file
      * Use setFileSave to set the current save file
@@ -88,7 +90,7 @@ public:
      * By default, if there is no file under `filename`, then a settings file is created with default values
      * @param filename
      */
-    void loadSettings(std::string filename);
+    void loadSettings(std::string filename = "settings.toml");
 
     /**
      * @return instance of the Singleton of the Job Scheduler
@@ -118,8 +120,5 @@ public:
     /**
      * @return returns the recent files (projects) saved in the settings
      */
-    std::list<std::string>& getRecentFiles() { return recent_projects_; }
+    std::list<std::string> getRecentFiles() { return recent_projects_; }
 };
-
-
-#endif //BM_SEGMENTER_SETTINGS_H

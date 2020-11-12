@@ -93,7 +93,6 @@ void Settings::loadSettings(std::string filename) {
         filesave_ = filename;
         saveSettings();
         return;
-
     }
     filesave_ = filename;
 
@@ -139,6 +138,16 @@ void Settings::addRecentFile(std::string filename) {
             break;
         }
     }
-    recent_projects_.push_front(filename);
+    recent_projects_.push_back(filename);
     saveSettings();
+}
+
+void Settings::removeRecentFile(std::string filename) {
+    for (auto it = recent_projects_.begin(), end = recent_projects_.end(); it != end; it++) {
+        // If the file already exists, erase it and let it push to the top
+        if (*it == filename) {
+            recent_projects_.erase(it);
+            break;
+        }
+    }
 }

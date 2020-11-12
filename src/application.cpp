@@ -137,8 +137,6 @@ void Rendering::Application::init() {
         style.Colors[ImGuiCol_WindowBg].w = 1.0f;
     }
 
-    Settings::getInstance().setStyle(Settings::SETTINGS_LIGHT_THEME);
-
     app_state_.imgui_init = true;
 }
 

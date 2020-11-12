@@ -1,10 +1,12 @@
 #pragma once
+
+#include <string>
+
+#include "first_include.h"
+
 #include "rendering/drawables.h"
 #include "rendering/ui/modales/modals.h"
 
-#include <string>
-#include <GLFW/glfw3.h>
-#include "imgui.h"
 
 namespace Rendering {
     /**

@@ -10,7 +10,7 @@ namespace core {
         class ProjectManager {
         private:
 
-            std::vector<std::shared_ptr<Project>> projects_;
+            std::set<std::shared_ptr<Project>> projects_;
             std::shared_ptr<Project> current_project_ = nullptr;
 
             ProjectManager() = default;
@@ -39,10 +39,21 @@ namespace core {
             void setCurrentProject(std::shared_ptr<Project> project);
 
             /**
-             * Returns the current active projects in the project manager
+             * Returns the current active project in the project manager
              * @return current active project
              */
             std::shared_ptr<Project> getCurrentProject() { return current_project_; }
+
+            /**
+             * Returns all active projects in the manager
+             * @return all active projects
+            */
+            std::set<std::shared_ptr<Project>>& getProjects() { return projects_; }
+
+            /**
+             * Removes project from manager whenever saved or not 
+            */
+            void removeProject(std::shared_ptr<Project> project);
 
             /**
              * Returns the number of current projects
@@ -61,8 +72,6 @@ namespace core {
              * Duplicates the current project (useful for making a copy of a project)
              */
             std::shared_ptr<Project> duplicateCurrentProject();
-
-            void removeProject(const std::shared_ptr<Project>& project);
 
             /**
              * Creates a project object by opening a file (in toml format)

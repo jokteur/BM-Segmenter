@@ -159,8 +159,10 @@ file (GLOB _project_src RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         src/rendering/ui/dataset/*.cpp
         src/rendering/ui/widgets/*.h
         src/rendering/ui/widgets/*.cpp
-        src/rendering/ui/modales/*.cpp
         src/rendering/ui/widgets/*.h
+        src/rendering/ui/project/*.cpp
+        src/rendering/ui/project/*.h
+        src/rendering/ui/modales/*.cpp
         src/rendering/views/*.cpp
         src/rendering/views/*.h
         src/core/*.cpp

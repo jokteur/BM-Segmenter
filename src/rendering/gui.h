@@ -6,8 +6,6 @@
 #include "ui/dockspace.h"
 
 #include "views.h"
-#include "views/default_view.h"
-#include "rendering/ui/main_menu_bar.h"
 
 #include "application.h"
 #include "events.h"

@@ -1,7 +1,11 @@
 #include "dicom.h"
 #include "dataset/dicom_to_image.h"
 
-core::DicomSeries::DicomSeries(std::vector<std::string> paths) : images_path_(paths) {
+core::DicomSeries::DicomSeries(file_format format) {
+    format_ = format;
+}
+
+core::DicomSeries::DicomSeries(std::vector<std::string> paths, const std::string& id, file_format format) : images_path_(paths), id_(id), format_(format) {
     init();
 }
 

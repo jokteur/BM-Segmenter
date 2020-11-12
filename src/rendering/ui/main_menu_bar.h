@@ -1,17 +1,20 @@
 #pragma once
 
-#include "nfd.h"
 #include "first_include.h"
 
 #include <utility>
 #include "events.h"
 #include "imgui.h"
+#include "nfd.h"
 
 #include "rendering/drawables.h"
-#include "core/project/project_manager.h"
-#include "settings.h"
-#include "rendering/ui/modales/new_project.h"
+#include "rendering/ui/modales/error_message.h"
+#include "rendering/ui/project/new_project.h"
+#include "rendering/ui/project/close_project_modal.h"
 
+#include "core/project/project_manager.h"
+
+#include "settings.h"
 #include "jobscheduler.h"
 
 namespace Rendering {
@@ -24,13 +27,13 @@ namespace Rendering {
 
         std::string error_msg;
 
-        modal_fct error_fct = [this] (bool &show, bool &escape, bool &enter) {
-            ImGui::Text("%s", error_msg.c_str());
-            if(ImGui::Button("Ok") || escape || enter)
-                show = false;
-        };
+        modal_fct error_fct;
 
         NewProjectModal new_project_modal_;
+        int num_projects = 0;
+        bool close_projects_ = false;
+        bool show_modal_ = false;
+        CloseProjectModal close_project_modal_;
 
         void init_listeners();
         void destroy_listeners();
@@ -48,12 +51,7 @@ namespace Rendering {
 
         void open_file(std::string filename = "");
     public:
-        MainMenuBar()
-        : project_manager_(::core::project::ProjectManager::getInstance()),
-            event_queue_(EventQueue::getInstance()),
-            settings_(Settings::getInstance()) {
-            init_listeners();
-        }
+        MainMenuBar();
 
 
         void ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) override;

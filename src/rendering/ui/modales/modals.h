@@ -27,7 +27,7 @@ namespace Rendering {
         bool escape = false;
 
         // Modals can be stacked inside other modals
-        Modal* modal = nullptr;
+        std::shared_ptr<Modal> modal = nullptr;
 
         Shortcut escape_shortcut = {
                 {GLFW_KEY_ESCAPE},
@@ -80,14 +80,11 @@ namespace Rendering {
      */
     class Modals {
     private:
-        Modal modal_;
-        std::vector<Modal*> stacked_modals_;
+        std::shared_ptr<Modal> modal_ = std::make_shared<Modal>();
+        std::vector<std::shared_ptr<Modal>> stacked_modals_;
 
         void free_memory() {
             // Erase all previously stacked modals
-            for(auto &it : stacked_modals_) {
-                delete it;
-            }
             stacked_modals_.clear();
         }
 
@@ -112,7 +109,7 @@ namespace Rendering {
          * @return
          */
         bool isActive() const {
-            return modal_.show;
+            return modal_->show;
         }
 
         /**
@@ -124,13 +121,13 @@ namespace Rendering {
         void setModal(std::string title, modal_fct draw_fct, int flags = 0) {
             free_memory();
 
-            modal_.title = std::move(title);
-            modal_.draw_fct = std::move(draw_fct);
-            modal_.show = true;
-            modal_.modal = nullptr;
-            modal_.enter = false;
-            modal_.escape = false;
-            modal_.flags = flags;
+            modal_->title = std::move(title);
+            modal_->draw_fct = std::move(draw_fct);
+            modal_->show = true;
+            modal_->modal = nullptr;
+            modal_->enter = false;
+            modal_->escape = false;
+            modal_->flags = flags;
         }
 
         /**
@@ -141,30 +138,30 @@ namespace Rendering {
          */
         void stackModal(const std::string& title, const modal_fct& draw_fct, int flags = 0) {
             // Means that no modal is currently showing
-            if (!modal_.show) {
-                modal_.show = true;
-                modal_.flags = flags;
-                modal_.title = title;
-                modal_.draw_fct = draw_fct;
-                modal_.modal = nullptr;
+            if (!modal_->show) {
+                modal_->show = true;
+                modal_->flags = flags;
+                modal_->title = title;
+                modal_->draw_fct = draw_fct;
+                modal_->modal = nullptr;
             }
             else {
-                Modal *tmp_modal = modal_.modal;
+                std::shared_ptr<Modal> tmp_modal = modal_->modal;
                 while (tmp_modal != nullptr)
                     tmp_modal = tmp_modal->modal;
-                auto modal = new Modal;
+                auto modal = std::make_shared<Modal>();
                 modal->title = title;
                 modal->draw_fct = draw_fct;
                 modal->flags = flags;
                 modal->show = true;
 
-                modal_.modal = modal;
+                modal_->modal = modal;
                 stacked_modals_.push_back(modal);
             }
         }
 
         void ImGuiDraw(GLFWwindow *window) {
-            modal_.ImGuiDraw(window);
+            modal_->ImGuiDraw(window);
         }
 
         ~Modals() {

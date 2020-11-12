@@ -2,15 +2,16 @@
 
 #include "views.h"
 
-#include "ui/dataset/explore_tree.h"
-#include "ui/dataset/explore_preview.h"
-#include "ui/dataset/dicom_viewer.h"
+#include "ui/project/welcome.h"
 
 namespace Rendering {
     class DefaultView : public View {
     private:
+        std::shared_ptr<WelcomeView> welcome = std::make_shared<WelcomeView>();
     public:
-        DefaultView() {}
+        DefaultView() {
+            drawables_.push_back(welcome);
+        }
         ~DefaultView() override = default;
 
     };

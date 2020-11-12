@@ -51,14 +51,18 @@ namespace core {
     };
 
     class DicomSeries {
+    public:
+        enum file_format { F_DICOM, F_CV };
     private:
         std::vector<Dicom> data_;
         std::vector<std::string> images_path_;
+        std::string id_;
         std::vector<DicomCoordinate> coordinates_;
         ImVec2 crop_x_ = ImVec2(0, 100);
         ImVec2 crop_y_ = ImVec2(0, 100);
         int window_width_ = 400; // Window width
         int window_center_ = 40; // Window center
+        file_format format_ = F_DICOM;
 
         DicomCoordinate current_coordinate_;
 
@@ -72,11 +76,12 @@ namespace core {
 
         void init();
     public:
-        DicomSeries() = default;
-        explicit DicomSeries(std::vector<std::string> paths);
+        DicomSeries(file_format format = F_DICOM);
+        explicit DicomSeries(std::vector<std::string> paths, const std::string& id = "", file_format format = F_DICOM);
         ~DicomSeries();
 
         void setPaths(const std::vector<std::string> &paths);
+        void setId(const std::string& id) { id_ = id; }
 
         void loadAll(bool force_load = false);
         void loadCase(float percentage, bool force_replace = false, const std::function<void(const Dicom&)>& when_finished_fct = [](const Dicom&) {});
@@ -93,6 +98,7 @@ namespace core {
 
         std::vector<Dicom>& getData() { return data_; }
         int getCurrentIndex() const { return selected_index_; }
+        std::string getId() { return id_; }
         Dicom& getCurrentDicom();
         void eraseCurrent();
 

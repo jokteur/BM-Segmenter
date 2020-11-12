@@ -3,7 +3,8 @@
 #include "rendering/ui/modales/modals.h"
 #include "rendering/ui/shortcuts_list.h"
 #include "gui.h"
-#include "views/explore_view.h"
+#include "views/project_view.h"
+#include "views/default_view.h"
 
 namespace project = ::core::project;
 
@@ -54,6 +55,23 @@ void Rendering::MainMenuBar::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
         }
         ImGui::EndMainMenuBar();
     }
+    if (close_projects_ && project_manager_.getNumProjects() == 0) {
+        EventQueue::getInstance().post(Event_ptr(new SetViewEvent(std::make_unique<DefaultView>())));
+        close_projects_ = false;
+        num_projects = 0;
+    }
+    else if (close_projects_) {
+        if (num_projects != project_manager_.getNumProjects())  {
+            for (auto& prj : project_manager_) {
+                close_project_modal_.setProject(prj);
+                break;
+            }
+            num_projects = project_manager_.getNumProjects();
+        }
+        if (close_projects_) {
+            close_project_modal_.showModal();
+        }
+    }
 }
 
 void Rendering::MainMenuBar::file_menu()  {
@@ -75,11 +93,18 @@ void Rendering::MainMenuBar::file_menu()  {
             for(auto &filename : recent_projects) {
                 if (ImGui::MenuItem(filename.c_str())) {
                     open_file(filename);
+                    EventQueue::getInstance().post(Event_ptr(new SetViewEvent(std::make_unique<ProjectView>())));
                 }
             }
         }
         ImGui::EndMenu();
     }
+    if (project_manager_.getNumProjects() > 0) {
+        if (ImGui::MenuItem("Close all projects")) {
+            close_projects_ = true;
+        }
+    }
+
     if (ImGui::MenuItem("Save", Shortcuts::save_project_shortcut.description, false, is_project_active)) {
         save_project();
     }
@@ -163,6 +188,19 @@ void Rendering::MainMenuBar::open_file(std::string filename) {
     }
 }
 
+Rendering::MainMenuBar::MainMenuBar()
+    : project_manager_(::core::project::ProjectManager::getInstance()),
+    event_queue_(EventQueue::getInstance()),
+    settings_(Settings::getInstance()) {
+
+    error_fct = [this](bool& show, bool& escape, bool& enter) {
+        ImGui::Text("%s", error_msg.c_str());
+        if (ImGui::Button("Ok") || escape || enter)
+            show = false;
+    };
+    init_listeners();
+}
+
 void Rendering::MainMenuBar::init_listeners() {
     shortcuts_listener_.filter = "shortcuts/global/*";
     shortcuts_listener_.callback = [this] (Event_ptr &event) {
@@ -200,7 +238,6 @@ void Rendering::MainMenuBar::save_project() {
             nfdresult_t result = NFD_SaveDialog(&outPath, filterItem, 1, nullptr, nullptr);
             if (result == NFD_OKAY) {
                 out_path = outPath;
-                out_path += ".ml_proj";
                 proceed = true;
             }
         }

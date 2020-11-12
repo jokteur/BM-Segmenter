@@ -4,6 +4,7 @@
 
 #include "rendering/ui/shortcuts_list.h"
 #include "rendering/ui/modales/error_message.h"
+#include "rendering/views/default_view.h"
 #include "settings.h"
 #include "events.h"
 
@@ -34,6 +35,8 @@ void Rendering::GUI::init(Rendering::Application &app) {
         auto view_event = reinterpret_cast<SetViewEvent*>(event.get());
         setView(view_event->getView());
     };
+
+    setView(std::make_shared<DefaultView>());
     EventQueue::getInstance().subscribe(&listener_);
 }
 

@@ -1,5 +1,6 @@
 #include "project_manager.h"
 
+#include "settings.h"
 #include <toml.hpp>
 #include <fstream>
 #include <utility>
@@ -24,26 +25,26 @@ namespace core {
             current_project_ = project;
         }
 
+        void ProjectManager::removeProject(std::shared_ptr<Project> project) {
+            auto it = projects_.find(project);
+            if (it != projects_.end()) {
+                projects_.erase(it);
+            }
+            current_project_ = nullptr;
+            for (auto& prj : projects_) {
+                current_project_ = prj;
+                break;
+            }
+        }
+
         std::shared_ptr<Project> ProjectManager::newProject(const std::string& name, const std::string& description) {
             std::shared_ptr<Project> project = std::make_shared<Project>(name, description);
-            projects_.push_back(project);
+            projects_.insert(project);
 
             if (projects_.size() == 1)
                 current_project_ = project;
 
             return project;
-        }
-
-        void ProjectManager::removeProject(const std::shared_ptr<Project>& project) {
-            for (auto it = projects_.begin(); it != projects_.end(); it++) {
-                if (*it == project) {
-                    projects_.erase(it);
-                    if (current_project_ == project) {
-                        current_project_ = nullptr;
-                    }
-                    break;
-                }
-            }
         }
 
         bool ProjectManager::saveProjectToFile(const std::shared_ptr<Project>& project, const std::string &filename) {
@@ -63,8 +64,10 @@ namespace core {
 
                 project->setSaveFile(filename);
                 project->setSavedState();
+                Settings::getInstance().addRecentFile(filename);
                 return true;
-            } else {
+            } 
+            else {
                 return false;
             }
         }
@@ -100,7 +103,7 @@ namespace core {
             std::shared_ptr<Project> new_project =  std::make_shared<Project>(name, description);
             new_project->setSaveFile(filename);
             new_project->setSavedState();
-            projects_.push_back(new_project);
+            projects_.insert(new_project);
             return new_project;
         }
 
@@ -109,7 +112,7 @@ namespace core {
                 std::shared_ptr<Project> project = std::make_shared<Project>(current_project_->getName(), current_project_->getDescription());
                 *project = *current_project_;
                 current_project_ = project;
-                projects_.push_back(project);
+                projects_.insert(project);
 
                 return project;
             }

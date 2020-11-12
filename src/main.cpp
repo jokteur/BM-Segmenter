@@ -4,6 +4,7 @@
 
 #include "rendering/gui.h"
 #include "GLFWwindow_handler.h"
+#include "settings.h"
 
 int main(int, char**)
 {
