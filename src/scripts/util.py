@@ -1,4 +1,5 @@
 from operator import itemgetter
+import re
 
 
 def special_sort(ids):
@@ -34,3 +35,14 @@ def special_sort(ids):
     sorted_ids += sorted(no_numbers)
 
     return list(map(itemgetter(1), sorted_ids)), list(map(itemgetter(0), sorted_ids))
+
+
+def make_safe_filename(s):
+    def safe_char(c):
+        if c.isalnum():
+            return c
+        else:
+            return "_"
+
+    stripped = "".join(safe_char(c) for c in s).rstrip("_")
+    return re.sub("_{2,}", "_", stripped)

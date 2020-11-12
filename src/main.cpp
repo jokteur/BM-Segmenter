@@ -1,4 +1,5 @@
 #include "python/py_api.h"
+#include "python/init_python.h"
 
 #include <iostream>
 
@@ -20,6 +21,7 @@ int main(int, char**)
     | ImGuiConfigFlags_NavEnableKeyboard);
 
     app.init();
+    PyAPI::init();
 
     Rendering::GUI::getInstance().init(app);
 

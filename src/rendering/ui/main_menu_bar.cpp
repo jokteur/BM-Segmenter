@@ -108,9 +108,9 @@ void Rendering::MainMenuBar::file_menu()  {
     if (ImGui::MenuItem("Save", Shortcuts::save_project_shortcut.description, false, is_project_active)) {
         save_project();
     }
-    if (ImGui::MenuItem("Save As..", Shortcuts::save_project_under_shortcut.description, false, is_project_active)) {
-        save_project_under();
-    }
+    //if (ImGui::MenuItem("Save As..", Shortcuts::save_project_under_shortcut.description, false, is_project_active)) {
+    //    save_project_under();
+    //}
 }
 
 void Rendering::MainMenuBar::projects_menu() {
@@ -213,7 +213,7 @@ void Rendering::MainMenuBar::init_listeners() {
             open_file();
         }
         else if (name == "shortcuts/global/save project under") {
-            save_project_under();
+            //save_project_under();
         }
         else if (name == "shortcuts/global/save project") {
             save_project();
@@ -230,15 +230,15 @@ void Rendering::MainMenuBar::destroy_listeners() {
 void Rendering::MainMenuBar::save_project() {
     auto project = project_manager_.getCurrentProject();
     if (project != nullptr) {
-        std::string out_path;
-        nfdchar_t *outPath = nullptr;
-        nfdfilteritem_t filterItem[1] = { { "Project", STRING(PROJECT_EXTENSION) } };
+        std::string out_path, str_err;
+        NFD_Init();
+        nfdchar_t* outPath;
         bool proceed = false;
         if (project->getSaveFile().empty()) {
-            nfdresult_t result = NFD_SaveDialog(&outPath, filterItem, 1, nullptr, nullptr);
+            nfdresult_t result = NFD_PickFolder(&outPath, nullptr);
             if (result == NFD_OKAY) {
                 out_path = outPath;
-                proceed = true;
+                proceed = project->setUpWorkspace(out_path, project->getName(), STRING(PROJECT_EXTENSION), out_path);
             }
         }
         else {
@@ -247,8 +247,14 @@ void Rendering::MainMenuBar::save_project() {
         }
 
         if (proceed) {
-            save(project, outPath);
+            save(project, out_path);
         }
+        else {
+            show_error_modal("Could not save project",
+                "The program failed to set up the workspace at the given path",
+                str_err);
+        }
+        NFD_Quit();
     }
 }
 void Rendering::MainMenuBar::save_project_under() {

@@ -52,6 +52,14 @@ namespace core {
             std::set<DicomMarker>& getMarkers() { return markers; }
 
             /**
+             * Sets the workspace at the given path up
+             * @param path 
+             * @param out_path  
+             * @return returns if successful. If not, the error message will be in out_path
+            */
+            bool setUpWorkspace(const std::string& path, const std::string& name, const std::string& extension, std::string& out_path);
+
+            /**
              * Sets the current save file for this project
              * @param save_file path of the file
              */

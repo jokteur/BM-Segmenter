@@ -35,7 +35,7 @@ std::shared_ptr<Job> core::dataset::dicom_to_matrix(const std::string &path, job
         }
         catch (const std::exception &e) {
             dicom_result->error_msg = e.what();
-            py::gil_scoped_release release;
+            //py::gil_scoped_release release;
         }
 
         PyGILState_Release(state);
