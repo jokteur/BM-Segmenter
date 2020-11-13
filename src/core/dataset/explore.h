@@ -127,6 +127,8 @@
              EventQueue& event_queue_;
              status status_;
              jobId jobRef_;
+
+             static bool destroy_;
          public:
 
              /**
@@ -139,7 +141,13 @@
              event_queue_(EventQueue::getInstance()),
              status_(EXPLORE_SLEEPING),
              cases_(std::make_shared<std::vector<PatientNode>>())
-             {}
+             {
+                 destroy_ = false;
+             }
+
+             Explore(const Explore& other);
+
+             ~Explore();
 
              /**
               * @brief Opens the Python interpreter and explores all the readable DICOMs present in

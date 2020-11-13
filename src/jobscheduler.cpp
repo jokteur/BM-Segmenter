@@ -143,14 +143,15 @@ std::shared_ptr<Job> & JobScheduler::addJob(std::string name, jobFct &function, 
     return *--(jobs_list_.end());
 }
 
-void JobScheduler::stopJob(jobId jobId) {
+bool JobScheduler::stopJob(jobId jobId) {
     std::lock_guard<std::mutex> guard(jobs_mutex_);
     for (auto &job : jobs_list_) {
         if (job->id == jobId) {
             job->abort = true;
-            return;
+            return false;
         }
     }
+    return true;
 }
 
 void JobScheduler::clean() {

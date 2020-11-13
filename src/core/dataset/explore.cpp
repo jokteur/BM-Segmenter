@@ -8,11 +8,24 @@ namespace core {
     namespace dataset {
         namespace py = pybind11;
 
+        bool Explore::destroy_ = false;
+
+        Explore::Explore(const Explore& other) : event_queue_(EventQueue::getInstance()) {
+            status_ = other.status_;
+            cases_ = other.cases_;
+            destroy_ = false;
+        }
+
+        Explore::~Explore() {
+            destroy_ = true;
+        }
+
         void Explore::findDicoms(const std::string &path) {
             path_ = path;
             //cases_->clear();
             jobFct job = [=](float &progress, bool &abort) -> std::shared_ptr<JobResult> {
                 status_ = EXPLORE_WORKING;
+                auto cases = std::make_shared<std::vector<PatientNode>>();
                 auto state = PyGILState_Ensure();
 
                 Explore::status status = EXPLORE_SUCCESS;
@@ -76,7 +89,7 @@ namespace core {
                             }
                             patient.study.push_back(study);
                         }
-                        cases_->push_back(patient);
+                        cases->push_back(patient);
                     }
                 }
                 catch (const std::exception &e) {
@@ -87,11 +100,17 @@ namespace core {
 
                 PyGILState_Release(state);
 
+                if (destroy_) {
+                    return std::make_shared<JobResult>(job_result);
+                }
+                cases_ = cases;
+
                 status_ = status;
                 if (status == EXPLORE_ERROR)
                     job_result.success = false;
-                else
+                else {
                     job_result.success = true;
+                }
                 return std::make_shared<JobResult>(job_result);
             };
 

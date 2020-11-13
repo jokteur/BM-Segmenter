@@ -268,8 +268,9 @@ public:
     /**
      * Stops the job with the given JobReference (if the jobs has implemented bool &abort of the lambda function)
      * @param id id of the job
+     * @return true if the job is already stopped, false if not
      */
-    void stopJob(jobId jobId);
+    bool stopJob(jobId jobId);
 
     void finalizeJobs();
 

@@ -28,7 +28,7 @@ namespace Rendering {
         Listener error_listener_;
         //Listener job_listener_;
 
-        ::core::dataset::Explore explorer_;
+        std::shared_ptr<::core::dataset::Explore> explorer_ = std::make_shared<::core::dataset::Explore>();
 
         ImGuiTextBuffer log_buffer_;
         ImGuiTextBuffer error_buffer_;
@@ -36,6 +36,8 @@ namespace Rendering {
         bool build_tree_ = true;
         bool is_new_tree_ = true;
         bool set_tree_closed_ = true;
+        bool display_import_button_ = false;
+        bool close_view_ = false;
 
         ImGuiTextFilter case_filter_;
         std::string case_filter_str_;

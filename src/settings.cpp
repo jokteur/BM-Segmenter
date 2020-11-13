@@ -126,7 +126,7 @@ void Settings::loadSettings(std::string filename) {
     const auto recent_files = toml::find(project, "recent");
     const auto file_list = toml::get<std::vector<std::string>>(recent_files);
     for(auto& name : file_list) {
-        recent_projects_.push_front(name);
+        recent_projects_.push_back(name);
     }
 }
 
