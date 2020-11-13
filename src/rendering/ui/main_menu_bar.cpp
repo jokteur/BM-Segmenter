@@ -29,6 +29,10 @@ void Rendering::MainMenuBar::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
             settings_menu();
             ImGui::EndMenu();
         }
+        if (!page_title_.empty()) {
+            ImGui::SameLine((ImGui::GetWindowWidth() - 200.f) / 2);
+            ImGui::TextDisabled(page_title_.c_str());
+        }
 
         std::shared_ptr<project::Project> project = project_manager_.getCurrentProject();
         if (project != nullptr) {
@@ -220,11 +224,18 @@ void Rendering::MainMenuBar::init_listeners() {
         }
     };
 
+    page_title_change_.filter = "menu/change_title/*";
+    page_title_change_.callback = [this](Event_ptr& event) {
+        page_title_ = event->getName().substr(18);
+    };
+
     event_queue_.subscribe(&shortcuts_listener_);
+    event_queue_.subscribe(&page_title_change_);
 }
 
 void Rendering::MainMenuBar::destroy_listeners() {
     event_queue_.unsubscribe(&shortcuts_listener_);
+    event_queue_.unsubscribe(&page_title_change_);
 }
 
 void Rendering::MainMenuBar::save_project() {

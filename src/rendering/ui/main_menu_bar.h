@@ -24,12 +24,15 @@ namespace Rendering {
         EventQueue& event_queue_;
         Settings& settings_;
         Listener shortcuts_listener_;
+        Listener page_title_change_;
 
         std::string error_msg;
+        std::string page_title_ = "Hello world";
 
         modal_fct error_fct;
 
         NewProjectModal new_project_modal_;
+
         int num_projects = 0;
         bool close_projects_ = false;
         bool show_modal_ = false;

@@ -257,7 +257,7 @@ void Rendering::ExploreFolder::ImGuiDraw(GLFWwindow *window, Rect &parent_dimens
         ImGui::SameLine();
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.1f, .8f, 0.f, 1.f));
         if (ImGui::Button("Import data to project")) {
-
+            import_modal_.showModal(explorer_->getCases());
         }
         ImGui::PopStyleColor();
     }

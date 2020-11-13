@@ -10,6 +10,7 @@
 #include "rendering/drawables.h"
 #include "rendering/ui/modales/error_message.h"
 #include "rendering/ui/dataset/dicom_preview.h"
+#include "rendering/ui/dataset/import_modal.h"
 #include "jobscheduler.h"
 #include "log.h"
 #include "util.h"
@@ -32,6 +33,8 @@ namespace Rendering {
 
         ImGuiTextBuffer log_buffer_;
         ImGuiTextBuffer error_buffer_;
+
+        ImportDataModal import_modal_;
 
         bool build_tree_ = true;
         bool is_new_tree_ = true;

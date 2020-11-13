@@ -10,6 +10,7 @@ namespace Rendering {
         std::shared_ptr<ProjectInfo> info = std::make_shared<ProjectInfo>();
     public:
         ProjectView() {
+            EventQueue::getInstance().post(Event_ptr(new Event("menu/change_title/Project page")));
             drawables_.push_back(info);
         }
         ~ProjectView() override = default;

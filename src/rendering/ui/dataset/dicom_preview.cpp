@@ -144,7 +144,6 @@ void Rendering::DicomPreview::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensi
 
 void Rendering::DicomPreview::selectCase(int idx) {
     series_node_->data.loadCase(idx, false, [=](const core::Dicom& dicom) {
-        std::cout << "load " << idx << " current index " << series_node_->data.getCurrentIndex() << std::endl;
         image_.setImageFromHU(dicom.data, (float)series_node_->data.getWW(), (float)series_node_->data.getWC());
         image_widget_.setImage(image_);
         reset_image_ = true;
