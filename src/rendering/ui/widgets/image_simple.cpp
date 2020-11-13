@@ -69,8 +69,10 @@ void Rendering::SimpleImage::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
         ImGui::SameLine();
     }
     if (center_y_ && scaled_sizes_.y < available_height) {
-        float y_difference = 0.5f*(available_height - scaled_sizes_.y);
-        ImGui::Dummy(ImVec2(scaled_sizes_.x, y_difference));
+        float y_difference = int(0.5f*(available_height - scaled_sizes_.y));
+        if (y_difference > 0 && y_difference + scaled_sizes_.x < available_height) {
+            ImGui::Dummy(ImVec2(scaled_sizes_.x, y_difference));
+        }
     }
 
     ImGui::BeginChild((std::string("Image") + identifier_).c_str(), child_size, border_, flags_);

@@ -20,7 +20,14 @@ namespace Rendering {
     private:
         ::core::project::ProjectManager& project_manager_;
 
-        std::shared_ptr<std::vector<::core::dataset::PatientNode>> cases_;
+        std::string group_name_; 
+        std::vector<const char*> group_names_;
+        bool build_names_ = false;
+        bool confirm_ = false;
+        int item_select_ = 0;
+        float progress = 0.f;
+
+        Shortcut enter_shortcut_;
 
         modal_fct draw_fct;
 

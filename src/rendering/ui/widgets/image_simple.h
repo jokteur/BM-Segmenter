@@ -46,7 +46,7 @@ namespace Rendering {
         bool border_ = false;
         bool center_x_ = false;
         bool center_y_ = false;
-        ImGuiWindowFlags flags_ = 0;
+        ImGuiWindowFlags flags_ = ImGuiWindowFlags_NoScrollbar;
 
 
         // Image interaction variables
@@ -163,7 +163,7 @@ namespace Rendering {
          * Sets the ImGui window flags for the child
          * @param flags
          */
-        void setWindowFlags(ImGuiWindowFlags flags) { flags_ = flags; }
+        void setWindowFlags(ImGuiWindowFlags flags) { flags_ |= flags; }
 
         /**
          * Set the border of the viewport

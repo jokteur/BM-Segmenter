@@ -128,7 +128,7 @@ void Rendering::ExplorerPreview::ImGuiDraw(GLFWwindow *window, Rect &parent_dime
                 for (auto &series : study.series) {
                     if (series->tree_count < 2)
                         continue;
-                    dicom_previews_[series].setSize(ImVec2(width, width));
+                    dicom_previews_[series].setSize(ImVec2(width*0.98, width*0.98));
 
                     bool is_active = patient.is_active && study.is_active && series->is_active;
                     if (!is_active) {

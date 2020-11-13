@@ -3,6 +3,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <set>
 
 #include "imgui.h"
 
@@ -15,23 +16,28 @@ namespace core {
         class Group {
         private:
             std::string name_;
-            Dicom 
+            std::set<std::shared_ptr<DicomSeries>> dicoms_;
         public:
-            Group();
-            ~Group();
+            Group(const std::string& name);
+
+
+            const std::string& getName() { return name_; }
+
+            void addDicom(std::shared_ptr<DicomSeries> dicom);
+            void removeDicom(std::shared_ptr<DicomSeries> dicom);
         };
 
         class Dataset {
         private:
             std::vector<Group> groups_;
-            std::vector<DicomSeries> dicoms_;
+            std::vector<std::shared_ptr<DicomSeries>> dicoms_;
+
         public:
-            Dataset();
-            ~Dataset();
+            Dataset() = default;
 
-            load(const std::string& path);
+            void load(const std::string& path);
 
-            void createGroup();
+            Group& createGroup(const std::string& name);
 
             std::vector<Group>& getGroups() { return groups_; }
         };

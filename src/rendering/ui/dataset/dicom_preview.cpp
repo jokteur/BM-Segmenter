@@ -14,7 +14,7 @@ Rendering::DicomPreview::DicomPreview() {
     image_widget_.setInteractiveZoom(SimpleImage::IMAGE_NO_INTERACT);
     image_widget_.setImageDrag(SimpleImage::IMAGE_NO_INTERACT);
     image_widget_.setCenterX(true);
-    image_widget_.setCenterY(true);
+    //image_widget_.setCenterY(true);
 }
 
 Rendering::DicomPreview::DicomPreview(const DicomPreview& other) {
@@ -23,7 +23,7 @@ Rendering::DicomPreview::DicomPreview(const DicomPreview& other) {
     image_widget_.setInteractiveZoom(SimpleImage::IMAGE_NO_INTERACT);
     image_widget_.setImageDrag(SimpleImage::IMAGE_NO_INTERACT);
     image_widget_.setCenterX(true);
-    image_widget_.setCenterY(true);
+    //image_widget_.setCenterY(true);
     series_node_ = other.series_node_;
 }
 
@@ -31,7 +31,7 @@ Rendering::DicomPreview::DicomPreview(const DicomPreview&& other) {
     image_widget_.setInteractiveZoom(SimpleImage::IMAGE_NO_INTERACT);
     image_widget_.setImageDrag(SimpleImage::IMAGE_NO_INTERACT);
     image_widget_.setCenterX(true);
-    image_widget_.setCenterY(true);
+    //image_widget_.setCenterY(true);
     series_node_ = other.series_node_;
     identifier_ = other.identifier_;
 }
@@ -45,7 +45,7 @@ void Rendering::DicomPreview::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensi
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1);
     const int num_pop = 3;
 
-    ImGui::BeginChild(identifier_.c_str(), size_, true);
+    ImGui::BeginChild(identifier_.c_str(), ImVec2(int(size_.x), int(size_.y)), true, ImGuiWindowFlags_NoScrollbar);
     ImGui::PopStyleVar(num_pop);
 
     ImVec2 content = ImGui::GetContentRegionAvail();

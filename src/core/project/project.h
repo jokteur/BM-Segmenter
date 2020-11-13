@@ -4,6 +4,7 @@
 #include <set>
 #include <string>
 
+#include "core/dataset/dataset.h"
 #include "core/dicom.h"
 
 namespace core {
@@ -13,6 +14,8 @@ namespace core {
             std::string name_;
             std::string description_;
             std::string save_file_;
+
+            dataset::Dataset dataset_;
 
             bool is_saved_ = false;
             std::set<DicomMarker> markers;
@@ -50,6 +53,13 @@ namespace core {
              * @return
              */
             std::set<DicomMarker>& getMarkers() { return markers; }
+
+
+            /**
+             * Returns the dataset object contained in the project
+             * @return
+             */
+            dataset::Dataset& getDataset() { return dataset_; }
 
             /**
              * Sets the workspace at the given path up
