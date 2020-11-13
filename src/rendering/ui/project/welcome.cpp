@@ -59,6 +59,12 @@ namespace Rendering {
                         e.what());
                 }
             }
+            if (ImGui::BeginPopupContextItem(filename.c_str())) {
+                if (ImGui::Selectable("Remove project from recent files")) {
+                    Settings::getInstance().removeRecentFile(filename);
+                }
+                ImGui::EndPopup();
+            }
         }
 
         ImGui::End();

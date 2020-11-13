@@ -76,6 +76,7 @@ namespace core {
             // First look if the project is not already opened
             for (auto &project: projects_) {
                 if (project->getSaveFile() == filename) {
+                    Settings::getInstance().addRecentFile(filename);
                     return project;
                 }
             }
@@ -104,6 +105,7 @@ namespace core {
             new_project->setSaveFile(filename);
             new_project->setSavedState();
             projects_.insert(new_project);
+            Settings::getInstance().addRecentFile(filename);
             return new_project;
         }
 
