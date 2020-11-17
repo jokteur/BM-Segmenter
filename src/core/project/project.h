@@ -17,6 +17,8 @@ namespace core {
 
             dataset::Dataset dataset_;
 
+            std::string root_path_;
+
             bool is_saved_ = false;
             std::set<DicomMarker> markers;
 
@@ -54,6 +56,11 @@ namespace core {
              */
             std::set<DicomMarker>& getMarkers() { return markers; }
 
+            /**
+             * Returns the root path of the project
+            */
+            const std::string& getRoot() { return root_path_; }
+
 
             /**
              * Returns the dataset object contained in the project
@@ -73,9 +80,7 @@ namespace core {
              * Sets the current save file for this project
              * @param save_file path of the file
              */
-            void setSaveFile(const std::string& save_file) {
-                save_file_ = save_file;
-            }
+            void setSaveFile(const std::string& save_file);
 
             /**
              * Sets the saved variable to true

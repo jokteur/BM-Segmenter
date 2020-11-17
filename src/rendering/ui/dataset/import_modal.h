@@ -24,10 +24,17 @@ namespace Rendering {
         std::vector<const char*> group_names_;
         bool build_names_ = false;
         bool confirm_ = false;
+        bool start_work_ = false;
+        bool job_finished_ = false;
+        bool replace_ = false;
+        bool show_import_modal_;
+        jobId job_id_;
         int item_select_ = 0;
         float progress = 0.f;
 
         Shortcut enter_shortcut_;
+
+        std::shared_ptr<::core::dataset::ImportResult> import_result_;
 
         modal_fct draw_fct;
 

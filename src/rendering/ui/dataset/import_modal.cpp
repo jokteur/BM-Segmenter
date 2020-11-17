@@ -1,5 +1,6 @@
 #include "import_modal.h"
 
+#include "rendering/ui/widgets/progress_bar.h"
 #include "rendering/views/project_view.h"
 #include "rendering/ui/modales/error_message.h"
 #include "rendering/keyboard_shortcuts.h"
@@ -50,6 +51,13 @@ namespace Rendering {
 
         auto& dataset = project_manager_.getCurrentProject()->getDataset();
 
+        build_names_ = false;
+        confirm_ = false;
+        start_work_ = false;
+        job_finished_ = false;
+        item_select_ = 0;
+        progress = 0.f;
+
         draw_fct = [=, &dataset](bool& show, bool& enter, bool& escape) {
             if (num_images != num_series) {
                 ImGui::Text("You are about to import %d series, for a total of %d images", num_series, num_images);
@@ -76,6 +84,8 @@ namespace Rendering {
                 }
             }
             ImGui::Separator();
+
+            ImGui::Checkbox("Replace data in project if name conflict.", &replace_);
 
             auto& groups = dataset.getGroups();
             if (groups.empty()) {
@@ -129,9 +139,81 @@ namespace Rendering {
             ImGui::SameLine();
             ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.1f, .8f, 0.f, 1.f));
             if (ImGui::Button("Import")) {
-                show = false;
+                if (groups.empty()) {
+                    show_error_modal("No group selected.", "Before importing the data, you have to create a group.");
+                }
+                else {
+                    start_work_ = true;
+                    job_id_ = dataset.importData(
+                        dataset.getGroups()[item_select_],
+                        cases, 
+                        project_manager_.getCurrentProject()->getRoot(), 
+                        [=](const std::shared_ptr<JobResult>& result) {
+                            import_result_ = std::dynamic_pointer_cast<::core::dataset::ImportResult>(result);
+                            job_finished_ = true;
+                        },
+                        replace_
+                    );
+
+                    Modals::getInstance().stackModal(
+                        "Importing...", 
+                        [=, &dataset, &show](bool& show_, bool& enter_, bool& escape_) {
+                            auto& job_info = JobScheduler::getInstance().getJobInfo(job_id_);
+
+                            const ImU32 col = ImGui::GetColorU32(ImGuiCol_ButtonHovered);
+                            const ImU32 bg = ImGui::GetColorU32(ImGuiCol_Button);
+                            ImGui::Text("Import image %d / %d", (int)(job_info.progress*num_images), num_images);
+                            ImGui::Spinner("##spinner", 15, 6, col);
+                            ImGui::BufferingBar("##buffer_bar", job_info.progress, ImVec2(400, 6), bg, col);
+
+                            if (job_info.name.empty()) {
+                                ImGui::CloseCurrentPopup();
+                            }
+                        }, 
+                        ImGuiWindowFlags_None, 
+                        true
+                    );
+                }
             }
             ImGui::PopStyleColor();
+
+            if (job_finished_) {
+                Modals::getInstance().stackModal(
+                    "Import result",
+                    [=, &dataset, &show](bool& show_, bool& enter_, bool& escape_) {
+                        if (import_result_->success) {
+                            ImGui::Text("%d images successfully imported into the project.", import_result_->save_paths.size());
+                            if (!import_result_->existing.empty()) {
+                                ImGui::Text("The following images have not been imported because they were already in the project.");
+                                ImGui::BeginChild("existing_scroll", ImVec2(0, 400));
+                                for (auto& dicom : import_result_->existing) {
+                                    ImGui::BulletText(dicom.getId().c_str());
+                                }
+                                ImGui::EndChild();
+                            }
+                        }
+                        else {
+                            ImGui::Text("When importing the images, the following error happened:");
+                            ImGui::Separator();
+                            ImGui::Text(import_result_->error_msg.c_str());
+                        }
+
+                        if (ImGui::Button("OK")) {
+                            if (import_result_->success) {
+                                std::string err = dataset.registerFiles(import_result_->save_paths, dataset.getGroups()[item_select_], project_manager_.getCurrentProject()->getRoot());
+                                if (!err.empty()) { // TODO: correct error handling
+                                    std::cout << err << std::endl;
+                                }
+                                EventQueue::getInstance().post(Event_ptr(new SetViewEvent(std::make_unique<ProjectView>())));
+                            }
+                            show = false;
+                            ImGui::CloseCurrentPopup();
+                        }
+                    },
+                    ImGuiWindowFlags_None,
+                    true
+                );
+            }
         };
         Modals::getInstance().setModal("Import data into project", draw_fct, ImGuiWindowFlags_AlwaysAutoResize);
     }

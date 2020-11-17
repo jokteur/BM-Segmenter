@@ -47,5 +47,19 @@ namespace core {
             PyGILState_Release(state);
             return true;
         }
+        void Project::setSaveFile(const std::string& save_file) {
+            save_file_ = save_file;
+            auto state = PyGILState_Ensure();
+            try {
+                py::module scripts = py::module::import("python.scripts.workspace");
+                root_path_ = scripts.attr("get_root")(save_file).cast<std::string>();
+            }
+            catch (const std::exception& e) {
+                PyGILState_Release(state);
+                return;
+            }
+
+            PyGILState_Release(state);
+        }
     }
 }

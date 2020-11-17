@@ -17,8 +17,9 @@ namespace Rendering {
     class ProjectInfo : public AbstractLayout {
     private:
         ::core::project::ProjectManager& project_manager_ = ::core::project::ProjectManager::getInstance();
+        bool is_set_ = false;
     public:
-        ProjectInfo() = default;
+        ProjectInfo();
         ~ProjectInfo() override = default;
 
         void ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) override;

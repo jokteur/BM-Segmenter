@@ -306,6 +306,9 @@ public:
      */
     void worker_fct(Worker &worker);
 
+    /**
+     * Aborts all jobs, whether running or not. 
+    */
     void abortAll();
 
     /**

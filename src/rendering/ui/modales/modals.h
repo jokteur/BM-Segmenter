@@ -25,6 +25,7 @@ namespace Rendering {
         bool show = false;
         bool enter = false;
         bool escape = false;
+        bool no_close = false;
 
         // Modals can be stacked inside other modals
         std::shared_ptr<Modal> modal = nullptr;
@@ -54,21 +55,30 @@ namespace Rendering {
                 }
         };
 
-        void ImGuiDraw(GLFWwindow *window) {
-            if(show) {
-                ImGui::OpenPopup(title.c_str());
-            }
-            if (ImGui::BeginPopupModal(title.c_str(), &show, flags)) {
+        void popup(GLFWwindow* window, bool* open) {
+            if (ImGui::BeginPopupModal(title.c_str(), open, flags)) {
                 // Want that all parent shortcuts are ignored -> flush them
                 KeyboardShortCut::flushTempShortcuts();
                 draw_fct(show, enter, escape);
                 KeyboardShortCut::addTempShortcut(escape_shortcut);
                 KeyboardShortCut::addTempShortcut(enter_shortcut);
                 KeyboardShortCut::addTempShortcut(enter_kp_shortcut);
-                if(modal != nullptr) {
+                if (modal != nullptr) {
                     modal->ImGuiDraw(window);
                 }
                 ImGui::EndPopup();
+            }
+        }
+
+        void ImGuiDraw(GLFWwindow *window) {
+            if(show) {
+                ImGui::OpenPopup(title.c_str());
+            }
+            if (no_close) {
+                popup(window, nullptr);
+            }
+            else {
+                popup(window, &show);
             }
         }
     };
@@ -118,7 +128,7 @@ namespace Rendering {
          * @param draw_fct function to be drawn in the modal
          * @param flags ImGui flags for the modal
          */
-        void setModal(std::string title, modal_fct draw_fct, int flags = 0) {
+        void setModal(std::string title, modal_fct draw_fct, int flags = 0, bool no_close = false) {
             free_memory();
 
             modal_->title = std::move(title);
@@ -128,6 +138,7 @@ namespace Rendering {
             modal_->enter = false;
             modal_->escape = false;
             modal_->flags = flags;
+            modal_-> no_close = no_close;
         }
 
         /**
@@ -136,7 +147,7 @@ namespace Rendering {
          * @param draw_fct function to be drawn in the modal
          * @param flags ImGui flags for the modal
          */
-        void stackModal(const std::string& title, const modal_fct& draw_fct, int flags = 0) {
+        void stackModal(const std::string& title, const modal_fct& draw_fct, int flags = 0, bool no_close = false) {
             // Means that no modal is currently showing
             if (!modal_->show) {
                 modal_->show = true;
@@ -144,6 +155,7 @@ namespace Rendering {
                 modal_->title = title;
                 modal_->draw_fct = draw_fct;
                 modal_->modal = nullptr;
+                modal_->no_close = no_close;
             }
             else {
                 std::shared_ptr<Modal> tmp_modal = modal_->modal;
@@ -154,6 +166,7 @@ namespace Rendering {
                 modal->draw_fct = draw_fct;
                 modal->flags = flags;
                 modal->show = true;
+                modal->no_close = no_close;
 
                 modal_->modal = modal;
                 stacked_modals_.push_back(modal);

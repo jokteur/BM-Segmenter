@@ -52,7 +52,7 @@ namespace core {
 
     class DicomSeries {
     public:
-        enum file_format { F_DICOM, F_CV };
+        enum file_format { F_DICOM, F_NP };
     private:
         std::vector<Dicom> data_;
         std::vector<std::string> images_path_;
@@ -101,6 +101,8 @@ namespace core {
         std::string getId() { return id_; }
         Dicom& getCurrentDicom();
         void eraseCurrent();
+
+        std::vector<std::string>& getPaths() { return images_path_; }
 
         DicomCoordinate& getCurrentCoordinate() { return current_coordinate_; }
         std::vector<DicomCoordinate>& getAllCoordinates() { return coordinates_; }

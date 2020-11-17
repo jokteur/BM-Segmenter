@@ -188,7 +188,7 @@ bool Rendering::Application::loop() {
         glfwSwapBuffers(main_window);
 
         if (glfwWindowShouldClose(main_window)) {
-            scheduler_.cancelAllPendingJobs();
+            scheduler_.abortAll();
         }
 
     } while (!glfwWindowShouldClose(main_window) || scheduler_.isBusy());
