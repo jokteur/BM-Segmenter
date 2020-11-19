@@ -5,11 +5,9 @@
 #include <map>
 #include "imgui.h"
 
-#include "core/dataset/explore.h"
 #include "rendering/drawables.h"
-#include "rendering/ui/dataset/dicom_preview.h"
+#include "core/project/project_manager.h"
 #include "jobscheduler.h"
-#include "util.h"
 
 namespace Rendering {
 
@@ -18,6 +16,8 @@ namespace Rendering {
      */
     class DatasetView : public AbstractLayout {
     private:
+        ::core::project::ProjectManager& project_manager_ = ::core::project::ProjectManager::getInstance();
+        std::vector<std::shared_ptr<::core::DicomSeries>> cases_;
     public:
         /**
          * Initializes the listener and subscribes to the queue
@@ -36,3 +36,4 @@ namespace Rendering {
          */
         void ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) override;
     };
+}

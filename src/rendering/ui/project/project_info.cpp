@@ -34,6 +34,12 @@ void Rendering::ProjectInfo::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
 					ImGui::BulletText("%s: %d dicoms", group.getName().c_str(), group.getDicoms().size());
 				}
 			}
+			if (!project->getDataset().getGroups().empty()) {
+				ImGui::Text("%s sdffd", project->getDataset().getGroups()[0].getName().c_str());
+			}
+			if (ImGui::Button("SDFSDF") && !project->getDataset().getDicoms().empty()) {
+					project->getDataset().getDicoms()[0]->loadCase(0);
+			}
 			if (ImGui::Button("Import data to project")) {
 				if (project->getSaveFile().empty()) {
 					show_error_modal("Error", "You can not import data to a project without saving the project first.\n"

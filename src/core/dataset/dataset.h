@@ -25,6 +25,7 @@ namespace core {
 
             const std::string& getName() const { return name_; }
 
+            std::vector<std::shared_ptr<DicomSeries>> getOrderedDicoms();
             std::set<std::shared_ptr<DicomSeries>>& getDicoms() { return dicoms_; }
 
             void addDicom(std::shared_ptr<DicomSeries> dicom);

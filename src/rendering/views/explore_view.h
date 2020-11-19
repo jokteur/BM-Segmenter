@@ -4,9 +4,9 @@
 
 #include "drawables.h"
 
-#include "ui/dataset/explore_tree.h"
-#include "ui/dataset/explore_preview.h"
-#include "ui/dataset/dicom_viewer.h"
+#include "ui/import/explore_tree.h"
+#include "ui/import/explore_preview.h"
+#include "ui/import/dicom_viewer.h"
 
 namespace Rendering {
     class ExploreView : public View {

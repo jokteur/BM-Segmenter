@@ -90,8 +90,15 @@ void core::DicomSeries::loadCase(int index, bool force_replace, const std::funct
             when_finished_fct(data_[index]);
             pending_jobs_.erase(result->id);
         };
-        auto job = dataset::dicom_to_matrix(images_path_[index], when_finished);
-        pending_jobs_.insert(job->id);
+
+        if (format_ == F_NP) {
+            auto job = dataset::npy_to_matrix(images_path_[index], when_finished);
+            pending_jobs_.insert(job->id);
+        }
+        else {
+            auto job = dataset::dicom_to_matrix(images_path_[index], when_finished);
+            pending_jobs_.insert(job->id);
+        }
     }
 }
 

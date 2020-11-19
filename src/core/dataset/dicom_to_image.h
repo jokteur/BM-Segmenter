@@ -23,6 +23,8 @@ namespace core {
             std::string error_msg;
         };
 
+        std::shared_ptr<Job> npy_to_matrix(const std::string& path, jobResultFct result_fct);
+
         /**
          * Opens the dicom image, converts it into an array of in16
          * and puts the data into the opencv matrix

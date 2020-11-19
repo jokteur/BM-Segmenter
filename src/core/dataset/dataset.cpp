@@ -32,9 +32,16 @@ std::string core::dataset::Dataset::load(const std::string& path) {
     bool skip = false;
     try {
         py::module import_data = py::module::import("python.scripts.dataset");
-        py::dict result = import_data.attr("load_dataset")(path);
+        py::tuple tuple = import_data.attr("load_dataset")(path);
+        py::dict data = tuple[0].cast<py::dict>();
+        auto& groups = tuple[1].cast<std::vector<std::string>>();
+
+        // Create the groups
+        for (auto& group_name : groups) {
+            createGroup(group_name);
+        }
         
-        for (auto& pair : result) {
+        for (auto& pair : data) {
             std::string id = pair.first.cast<std::string>();
             py::dict file_info = pair.second.cast<py::dict>();
             
@@ -44,16 +51,11 @@ std::string core::dataset::Dataset::load(const std::string& path) {
             dicoms_.push_back(dicom);
             for (auto& group : file_info["groups"].cast<py::list>()) {
                 std::string group_name = group.cast<std::string>();
-                bool found = false;
                 for (auto& current_group : groups_) {
                     if (current_group.getName() == group_name) {
-                        found = true;
                         current_group.addDicom(dicom);
                         break;
                     }
-                }
-                if (!found) {
-                    createGroup(group_name).addDicom(dicom);
                 }
             }
         }
@@ -95,7 +97,7 @@ jobId& core::dataset::Dataset::importData(const Group& group, std::shared_ptr<st
                             }
                         }
                         if (!paths.empty()) {
-                            all_cases.emplace_back(DicomSeries(paths, patient.ID + std::string("_") + std::to_string(
+                            all_cases.emplace_back(DicomSeries(paths, patient.ID + std::string("__") + std::to_string(
                                 std::hash<std::string>{}(study.date + study.description + study.time + series->modality + series->number)
                             )));
                         }

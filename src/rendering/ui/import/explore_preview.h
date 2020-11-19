@@ -7,7 +7,7 @@
 
 #include "core/dataset/explore.h"
 #include "rendering/drawables.h"
-#include "rendering/ui/dataset/dicom_preview.h"
+#include "rendering/ui/import/dicom_preview.h"
 #include "jobscheduler.h"
 #include "util.h"
 

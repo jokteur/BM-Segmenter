@@ -30,7 +30,12 @@ def import_dicom(path: str, root_dir: str, id: str, num: int, replace=False):
     filename = os.path.join(id_dir[0], str(num))
     if not os.path.isfile(filename + ".npz") or replace:
         pixels, spacing, thickness, location = load_scan_from_dicom(path)
-        np.savez_compressed(filename, pixels, np.array(spacing), np.array([thickness, location]))
+        np.savez_compressed(
+            filename,
+            matrix=pixels,
+            spacing=np.array(spacing),
+            slice_info=np.array([thickness, location]),
+        )
         return True
     else:
         return False

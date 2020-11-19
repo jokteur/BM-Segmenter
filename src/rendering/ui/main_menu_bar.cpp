@@ -3,8 +3,8 @@
 #include "rendering/ui/modales/modals.h"
 #include "rendering/ui/shortcuts_list.h"
 #include "gui.h"
-#include "views/project_view.h"
-#include "views/default_view.h"
+#include "rendering/views/project_view.h"
+#include "rendering/views/default_view.h"
 
 namespace project = ::core::project;
 
