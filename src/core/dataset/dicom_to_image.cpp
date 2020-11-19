@@ -14,7 +14,7 @@ std::shared_ptr<Job> core::dataset::npy_to_matrix(const std::string& path, jobRe
             auto kwargs = py::dict("allow_pickle"_a = true);
             auto data = numpy.attr("load")(path, **kwargs);
 
-            py::print(data[0]);
+            py::print(data);
             // We await a 2D numpy array
             //auto buffer = return_tuple[0].cast<py::buffer>();
             //py::buffer_info info = buffer.request();

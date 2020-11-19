@@ -9,19 +9,47 @@ def get_root(save_file: str):
     return os.path.dirname(save_file)
 
 
+def _make_folders(root: str):
+    try:
+        os.mkdir(os.path.join(root, "data"))
+    except FileExistsError:
+        pass
+    try:
+        os.mkdir(os.path.join(root, "data", "dicoms"))
+    except FileExistsError:
+        pass
+    try:
+        os.mkdir(os.path.join(root, "data", "masks"))
+    except FileExistsError:
+        pass
+    try:
+        os.mkdir(os.path.join(root, "tmp"))
+    except FileExistsError:
+        pass
+    try:
+        os.mkdir(os.path.join(root, "tmp", "train"))
+    except FileExistsError:
+        pass
+    try:
+        os.mkdir(os.path.join(root, "tmp", "train", "x"))
+    except FileExistsError:
+        pass
+    try:
+        os.mkdir(os.path.join(root, "tmp", "train", "y"))
+    except FileExistsError:
+        pass
+    try:
+        os.mkdir(os.path.join(root, "models"))
+    except FileExistsError:
+        pass
+
+
 def setup_workspace(path: str, name: str, extension):
     if os.path.isdir(path):
         name = make_safe_filename(name)
         try:
             os.mkdir(os.path.join(path, name))
-            os.mkdir(os.path.join(path, name, "data"))
-            os.mkdir(os.path.join(path, name, "data", "dicoms"))
-            os.mkdir(os.path.join(path, name, "data", "masks"))
-            os.mkdir(os.path.join(path, name, "tmp"))
-            os.mkdir(os.path.join(path, name, "tmp", "train"))
-            os.mkdir(os.path.join(path, name, "tmp", "train", "x"))
-            os.mkdir(os.path.join(path, name, "tmp", "train", "y"))
-            os.mkdir(os.path.join(path, name, "models"))
+            _make_folders(os.path.join(path, name))
         except FileExistsError:
             pass
         except OSError as e:
@@ -55,6 +83,7 @@ def get_dirs(path: str):
 
 def create_series_dir(path: str, id: str):
     """Creates a director6'pè^¨$ for a Dicom Series in the data/dicom folder."""
+    _make_folders(path)
     try:
         os.mkdir(os.path.join(path, "data", "dicoms", id))
     except FileExistsError:

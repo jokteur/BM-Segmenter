@@ -46,24 +46,25 @@ def add_to_dataset(paths: list, group_name: str, root_dir: str):
     filename = os.path.join(root_dir, "dataset.toml")
 
     data = {"files": set(), "groups": {group_name: set()}}
+
     if os.path.isfile(filename):
         data = toml.load(os.path.join(root_dir, "dataset.toml"))
 
-        if not "files" in data:
-            data["files"] = set()
+    if not "files" in data:
+        data["files"] = set()
 
-        if not "groups" in data:
-            data["groups"] = {}
+    if not "groups" in data:
+        data["groups"] = {}
 
-        if not group_name in data["groups"]:
-            data["groups"][group_name] = set()
+    if not group_name in data["groups"]:
+        data["groups"][group_name] = set()
 
-        data["groups"][group_name] = set(data["groups"][group_name])
-        data["files"] = set(data["files"])
+    data["groups"][group_name] = set(data["groups"][group_name])
+    data["files"] = set(data["files"])
 
-        for path in paths:
-            path = os.path.basename(path)
-            data["files"].add(path)
-            data["groups"][group_name].add(path)
+    for path in paths:
+        path = os.path.basename(path)
+        data["files"].add(path)
+        data["groups"][group_name].add(path)
 
     toml.dump(data, open(filename, "w"))

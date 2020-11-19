@@ -18,6 +18,8 @@ void Rendering::DatasetView::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
 		}
 		for (auto& case_ : cases_) {
 			ImGui::BulletText("%s", case_->getId().c_str());
+			case_->loadCase(0);
+			break;
 		}
 	}
 	ImGui::End();

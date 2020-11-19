@@ -1,4 +1,5 @@
 #include "close_project_modal.h"
+#include "rendering/ui/modales/error_message.h"
 #include "nfd.h"
 #include "settings.h"
 
@@ -21,27 +22,40 @@ void Rendering::CloseProjectModal::setProject(const std::shared_ptr<::core::proj
         ImGui::Text("The project has not been saved.");
         ImGui::Dummy(ImVec2(30, 30));
         if (ImGui::Button("Close and save")) {
+            std::string out_path, str_err;
+            NFD_Init();
+            nfdchar_t* outPath;
+            bool proceed = false;
             if (project->getSaveFile().empty()) {
-                std::string out_path;
-
-                nfdchar_t* outPath = nullptr;
-                nfdfilteritem_t filterItem[1] = { { "Project", STRING(PROJECT_EXTENSION) } };
-
-                nfdresult_t result = NFD_SaveDialog(&outPath, filterItem, 1, nullptr, nullptr);
+                nfdresult_t result = NFD_PickFolder(&outPath, nullptr);
                 if (result == NFD_OKAY) {
                     out_path = outPath;
-                    project_manager_.saveProjectToFile(project, out_path);
-                    Settings::getInstance().addRecentFile(out_path);
+                    proceed = project->setUpWorkspace(out_path, project->getName(), STRING(PROJECT_EXTENSION), out_path);
+                }
+            }
+            else {
+                proceed = true;
+                out_path = project->getSaveFile();
+            }
+
+            if (proceed) {
+                bool result = project_manager_.saveProjectToFile(project, out_path);
+                if (!result) {
+                    show_error_modal("Error", "Error when saving '" + project->getName() + "', please try again");
+                }
+                else {
+                    Settings::getInstance().addRecentFile(project->getSaveFile());
                     Settings::getInstance().saveSettings();
                     show = false;
                     project_manager_.removeProject(project);
                 }
             }
             else {
-                show = false;
-                project_manager_.saveProjectToFile(project, project->getSaveFile());
-                project_manager_.removeProject(project);
+                show_error_modal("Could not save project",
+                    "The program failed to set up the workspace at the given path",
+                    str_err);
             }
+            NFD_Quit();
         }
         ImGui::SameLine();
         if (ImGui::Button("Close without saving")) {
