@@ -121,4 +121,16 @@ namespace core {
     struct OrderDicom {
         bool operator()(const std::shared_ptr<DicomSeries>& dicom1, const std::shared_ptr <DicomSeries>& dicom2) const;
     };
+
+
+    class DicomSelectEvent : public Event {
+    private:
+        std::shared_ptr<DicomSeries> dicom_;
+    public:
+        explicit DicomSelectEvent(std::shared_ptr<DicomSeries> dicom) : dicom_(dicom), Event("dataset/dicom_edit") {}
+
+        std::shared_ptr<DicomSeries>& getDicom() {
+            return dicom_;
+        }
+    };
 }

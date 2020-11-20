@@ -37,9 +37,10 @@ namespace Rendering {
         ImageButton box_select_b_;
         ImageButton brush_select_b_;
         ImageButton* active_button_ = nullptr;
+        std::vector<ImageButton*> buttons_list_;
 
         Listener listener_;
-        Listener reset_tree_listener_;
+        Listener reset_viewer_listener_;
 
         bool reset_image_ = false;
 
@@ -54,6 +55,8 @@ namespace Rendering {
 
         void loadDicom(const std::shared_ptr<::core::DicomSeries> dicom);
         void loadCase(int idx);
+
+        void button_logic();
 
         void accept_drag_and_drop();
 
