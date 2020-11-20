@@ -19,6 +19,13 @@ struct Position {
 };
 
 struct Rect {
+    Rect() {}
+    Rect(const ImVec2& pos, const ImVec2& size) {
+        xpos = pos.x;
+        ypos = pos.y;
+        width = size.x;
+        height = size.y;
+    }
     float xpos = 0;
     float ypos = 0;
     float width = 0;

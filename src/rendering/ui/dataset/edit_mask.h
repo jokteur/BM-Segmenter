@@ -33,12 +33,25 @@ namespace Rendering {
         ::core::Image image_;
         SimpleImage image_widget_;
 
+        // Buttons
         ImageButton lasso_select_b_;
         ImageButton box_select_b_;
         ImageButton brush_select_b_;
         ImageButton* active_button_ = nullptr;
         std::vector<ImageButton*> buttons_list_;
 
+        // State variables
+        int brush_size_ = 30;
+        int add_sub_option_ = 0;
+        bool threshold_hu_ = false;
+        float hu_min_ = -29;
+        float hu_max_ = 150;
+        ImVec2 last_mouse_pos_;
+        bool begin_action_ = false;
+        ImVec2* raw_path_ = nullptr;
+        int path_size = 0;
+
+        // Listeners
         Listener listener_;
         Listener reset_viewer_listener_;
 
@@ -57,6 +70,10 @@ namespace Rendering {
         void loadCase(int idx);
 
         void button_logic();
+
+        void lasso_widget(ImVec2 size, ImVec2 position);
+        void box_widget(ImVec2 size, ImVec2 position);
+        void brush_widget(ImVec2 size, ImVec2 position);
 
         void accept_drag_and_drop();
 

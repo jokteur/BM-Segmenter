@@ -86,7 +86,7 @@ void Rendering::DatasetView::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
         ImGui::BeginChild("Dataset_child_view");
         ImVec2 content = ImGui::GetContentRegionAvail();
         ImVec2 window_pos = ImGui::GetWindowPos();
-        Rect sub_window_dim = { window_pos.x, window_pos.y, content.x, content.y };
+        Rect sub_window_dim(window_pos, content);
         ImVec2 mouse_pos = ImGui::GetMousePos();
 
         ImGui::Columns(num_cols_);

@@ -1,6 +1,9 @@
+#include <algorithm>
+
 #include "edit_mask.h"
 
 #include "drag_and_drop.h"
+#include "rendering/ui/widgets/util.h"
 
 int Rendering::EditMask::instance_number = 0;
 
@@ -21,31 +24,6 @@ void Rendering::EditMask::loadCase(int idx) {
             reset_image_ = true;
             dicom_->cleanData();
             });
-    }
-}
-
-void Rendering::EditMask::button_logic() {
-    int num_active = 0;
-    ImageButton* next_active = nullptr;
-    ImageButton* active;
-    for (auto button : buttons_list_) {
-        if (button->isActive()) {
-            num_active++;
-            if (button != active_button_) {
-                next_active = button;
-            }
-            active = button;
-        }
-    }
-    if (num_active == 0) {
-        active_button_ = nullptr;
-    }
-    else if (num_active == 1) {
-        active_button_ = active;
-    }
-    else {
-        active_button_->setState(false);
-        active_button_ = next_active;
     }
 }
 
@@ -125,13 +103,36 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
     ImGui::SameLine();
     brush_select_b_.ImGuiDraw(window, dimensions_);
 
-    ImGui::Separator();
+    if (active_button_ != nullptr) {
+        ImGui::Text("Tool options");
+        ImGui::RadioButton("Add", &add_sub_option_, 0); ImGui::SameLine();
+        ImGui::RadioButton("Substract", &add_sub_option_, 1); ImGui::SameLine();
+        ImGui::Checkbox("Threshold HU", &threshold_hu_);
+        if (threshold_hu_) {
+            ImGui::DragFloatRange2("HU threshold", &hu_min_, &hu_max_, 1.f, 0.0f, 100.0f, "Min: %.1f HU", "Max: %.1f HU");
+        }
+        if (active_button_ == &brush_select_b_) {
+            ImGui::SliderInt("Brush size", &brush_size_, 1, 200);
+        }
+    }
 
+    ImGui::Separator();
 
     // Draw the image
     ImGui::BeginChild("Mask_edit");
     ImVec2 content = ImGui::GetContentRegionAvail();
     ImVec2 window_pos = ImGui::GetWindowPos();
+
+    if (active_button_ == &lasso_select_b_) {
+        lasso_widget(content, window_pos);
+    }
+    else if (active_button_ == &box_select_b_) {
+        box_widget(content, window_pos);
+    }
+    else if (active_button_ == &brush_select_b_) {
+        brush_widget(content, window_pos);
+    }
+
     if (image_.isImageSet()) {
         image_widget_.setAutoScale(true);
         image_widget_.ImGuiDraw(window, dimensions_);
@@ -146,8 +147,6 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
     ImGui::End();
 }
 
-
-
 void Rendering::EditMask::accept_drag_and_drop() {
     if (ImGui::BeginDragDropTarget()) {
         if (ImGui::AcceptDragDropPayload("_DICOM_PAYLOAD")) {
@@ -156,5 +155,108 @@ void Rendering::EditMask::accept_drag_and_drop() {
             loadDicom(data);
         }
         ImGui::EndDragDropTarget();
+    }
+}
+
+void Rendering::EditMask::button_logic() {
+    int num_active = 0;
+    ImageButton* next_active = nullptr;
+    ImageButton* active;
+    for (auto button : buttons_list_) {
+        if (button->isActive()) {
+            num_active++;
+            if (button != active_button_) {
+                next_active = button;
+            }
+            active = button;
+        }
+    }
+    if (num_active == 0) {
+        active_button_ = nullptr;
+        image_widget_.setImageDrag(SimpleImage::IMAGE_NORMAL_INTERACT);
+    }
+    else if (num_active == 1) {
+        active_button_ = active;
+        image_widget_.setImageDrag(SimpleImage::IMAGE_MODIFIER_INTERACT);
+    }
+    else {
+        active_button_->setState(false);
+        image_widget_.setImageDrag(SimpleImage::IMAGE_MODIFIER_INTERACT);
+        active_button_ = next_active;
+    }
+}
+
+void Rendering::EditMask::lasso_widget(ImVec2 size, ImVec2 position) {
+    auto mouse_pos = ImGui::GetMousePos();
+    if (ImGui::IsMouseDown(0)) {
+        ImGuiIO& io = ImGui::GetIO();
+        Rect dimensions(position, size);
+        if (Widgets::check_hitbox(mouse_pos, dimensions) && !begin_action_ && !io.KeyCtrl) {
+            begin_action_ = true;
+        }
+        if (begin_action_) {
+            if (mouse_pos.x != last_mouse_pos_.x || mouse_pos.y != last_mouse_pos_.y) {
+                last_mouse_pos_ = mouse_pos;
+                path_size++;
+                ImVec2* tmp_paths = new ImVec2[path_size];
+                if (raw_path_ != nullptr) {
+                    memcpy(tmp_paths, raw_path_, sizeof(ImVec2)*(path_size - 1));
+                    delete[] raw_path_;
+                }
+                raw_path_ = tmp_paths;
+
+                raw_path_[path_size - 1] = mouse_pos;
+            }
+            if (raw_path_ != nullptr)
+                ImGui::GetForegroundDrawList()->AddPolyline(raw_path_, path_size, ImColor(0.7f, 0.7f, 0.7f, 0.5f), true, 4);
+        }
+    }
+    if (ImGui::IsMouseReleased(0)) {
+        if (raw_path_ != nullptr) {
+            delete[] raw_path_;
+            path_size = 0;
+            raw_path_ = nullptr;
+        }
+        begin_action_ = false;
+    }
+}
+
+void Rendering::EditMask::box_widget(ImVec2 size, ImVec2 position) {
+    auto mouse_pos = ImGui::GetMousePos();
+    if (ImGui::IsMouseDown(0)) {
+        ImGuiIO& io = ImGui::GetIO();
+        Rect dimensions(position, size);
+        if (Widgets::check_hitbox(mouse_pos, dimensions) && !begin_action_ && !io.KeyCtrl) {
+            begin_action_ = true;
+            raw_path_ = new ImVec2[1];
+            raw_path_[0] = mouse_pos;
+        }
+        if (begin_action_) {
+            if (raw_path_ != nullptr)
+                ImGui::GetForegroundDrawList()->AddRect(raw_path_[0], mouse_pos, ImColor(0.7f, 0.7f, 0.7f, 0.5f), 0, 0, 4);
+        }
+    }
+    if (ImGui::IsMouseReleased(0)) {
+        if (raw_path_ != nullptr) {
+            delete[] raw_path_;
+            path_size = 0;
+            begin_action_ = false;
+        }
+    }
+}
+
+void Rendering::EditMask::brush_widget(ImVec2 size, ImVec2 position) {
+    auto mouse_pos = ImGui::GetMousePos();
+    Rect dimensions(position, size);
+    if (Widgets::check_hitbox(mouse_pos, dimensions) && !begin_action_) {
+        int num_seg = brush_size_/4 + 12;
+        ImGui::GetForegroundDrawList()->AddCircle(mouse_pos, brush_size_, ImColor(0.7f, 0.7f, 0.7f, 0.5f), num_seg, 4);
+    }
+    if (ImGui::IsMouseDown(0)) {
+        if (mouse_pos.x != last_mouse_pos_.x || mouse_pos.y != last_mouse_pos_.y) {
+            last_mouse_pos_ = mouse_pos;
+        }
+    }
+    if (ImGui::IsMouseReleased(0)) {
     }
 }

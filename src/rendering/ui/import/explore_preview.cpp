@@ -111,7 +111,7 @@ void Rendering::ExplorerPreview::ImGuiDraw(GLFWwindow *window, Rect &parent_dime
 
         ImVec2 content = ImGui::GetContentRegionAvail();
         ImVec2 window_pos = ImGui::GetWindowPos();
-        Rect sub_window_dim = {window_pos.x, window_pos.y, content.x, content.y};
+        Rect sub_window_dim(window_pos, content);
 
         ImVec2 mouse_pos = ImGui::GetMousePos();
 
