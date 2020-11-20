@@ -1,5 +1,6 @@
 #include "project_info.h"
 
+#include "drag_and_drop.h"
 #include "rendering/views/explore_view.h"
 #include "rendering/views/default_view.h"
 
@@ -29,10 +30,57 @@ void Rendering::ProjectInfo::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
 			ImGui::Text("Description:\n%s", project->getDescription().c_str());
 			ImGui::Separator();
 			if (!dataset.getDicoms().empty()) {
-				ImGui::Text("%d dicoms in the project.", dataset.getDicoms().size());
+				ImGui::Text("%d unique dicoms in the project.", dataset.getDicoms().size());
+				ImGui::Text("Groups:");
 				for (auto& group : dataset.getGroups()) {
-					ImGui::BulletText("%s: %d dicoms", group.getName().c_str(), group.getDicoms().size());
+					if (set_tree_closed_) {
+						ImGui::SetNextTreeNodeOpen(false);
+					}
+					bool node = ImGui::TreeNodeEx((void*)&group, ImGuiTreeNodeFlags_Framed, "%s: %d dicoms", group.getName().c_str(), group.getDicoms().size());
+					if (ImGui::BeginDragDropTarget()) {
+						if (ImGui::AcceptDragDropPayload("_DICOM_PAYLOAD")) {
+							auto& drag_and_drop = DragAndDrop<std::shared_ptr<::core::DicomSeries>>::getInstance();
+							auto dicom = drag_and_drop.returnData();
+							group.addDicom(dicom);
+							std::string err = dataset.save(project->getRoot());
+							if (!err.empty()) {
+								show_error_modal("Failed to save dataset", err);
+							}
+						}
+						ImGui::EndDragDropTarget();
+					}
+					if (node) {
+						for (auto& dicom : group.getOrderedDicoms()) {
+							std::string bullet_text;
+							bool leaf;
+							if (dicom->getPaths().size() == 1)
+								leaf = ImGui::TreeNodeEx(&dicom, ImGuiTreeNodeFlags_Bullet, "%s", ::core::parse_dicom_id(dicom->getId()).first.c_str());
+							else
+								leaf = ImGui::TreeNodeEx(&dicom, ImGuiTreeNodeFlags_Bullet, "%s (%d images)", ::core::parse_dicom_id(dicom->getId()).first.c_str(), dicom->getPaths().size());
+
+							if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
+								auto& drag_and_drop = DragAndDrop<std::shared_ptr<::core::DicomSeries>>::getInstance();
+								drag_and_drop.giveData(dicom);
+								int a = 0; // Dummy int
+								ImGui::SetDragDropPayload("_DICOM_PAYLOAD", &a, sizeof(a));
+								ImGui::Text("%s", ::core::parse_dicom_id(dicom->getId()).first.c_str());
+								ImGui::EndDragDropSource();
+							}
+
+							if (ImGui::BeginPopupContextItem()) {
+								if (ImGui::Selectable("Remove dicom from group")) {
+									group.removeDicom(dicom);
+									dataset.save(project->getSaveFile());
+								}
+								ImGui::EndPopup();
+							}
+							if (leaf)
+								ImGui::TreePop();
+						}
+						ImGui::TreePop();
+					}
 				}
+				set_tree_closed_ = false;
 			}
 			ImGui::Separator();
 			if (ImGui::Button("Import data to project")) {

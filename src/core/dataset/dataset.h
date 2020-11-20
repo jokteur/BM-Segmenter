@@ -66,6 +66,8 @@ namespace core {
 
             std::string registerFiles(std::vector<std::string> paths, const Group& group, const std::string& root_path);
 
+            std::string save(const std::string& root_path);
+
             std::vector<Group>& getGroups() { return groups_; }
             dicom_set& getDicoms() { return dicoms_; }
         };

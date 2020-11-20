@@ -83,6 +83,7 @@ void Rendering::DatasetView::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
         }
         ImGui::Separator();
 
+        ImGui::BeginChild("Dataset_child_view");
         ImVec2 content = ImGui::GetContentRegionAvail();
         ImVec2 window_pos = ImGui::GetWindowPos();
         Rect sub_window_dim = { window_pos.x, window_pos.y, content.x, content.y };
@@ -102,6 +103,7 @@ void Rendering::DatasetView::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
             }
         }
         ImGui::Columns(1);
+        ImGui::EndChild();
 	}
 	ImGui::End();
 }
@@ -117,6 +119,13 @@ void Rendering::DatasetView::preview_widget(Preview& preview, float width, ImVec
     else {
         //preview.setAllowScroll(false);
     }
+
+    auto& dim = preview.getDimensions();
+    float margin = 3 * width;
+    if (dim.ypos - sub_window_dim.ypos < sub_window_dim.height + margin && dim.ypos - sub_window_dim.ypos > -margin)
+        preview.reload();
+    else
+        preview.unload();
 
     // Image widget
     preview.setSize(ImVec2(width * 0.98, width * 0.98));

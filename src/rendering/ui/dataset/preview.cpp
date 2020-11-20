@@ -60,7 +60,7 @@ void Rendering::Preview::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) {
 
                 int a = 0; // Dummy int
                 ImGui::SetDragDropPayload("_DICOM_PAYLOAD", &a, sizeof(a));
-                ImGui::Text("Drag %s", ::core::parse_dicom_id(dicom_->getId()).first.c_str());
+                ImGui::Text("%s", ::core::parse_dicom_id(dicom_->getId()).first.c_str());
                 ImGui::PushID("Image_Drag_Drop");
                 ImGui::Image(
                     image_.texture(),
@@ -95,6 +95,16 @@ void Rendering::Preview::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) {
 }
 
 void Rendering::Preview::unload() {
+    image_.reset();
+    reset_image_ = false;
+    is_loaded_ = false;
+}
+
+void Rendering::Preview::reload() {
+    if (!is_loaded_) {
+        is_loaded_ = true;
+        set_case(0);
+    }
 }
 
 void Rendering::Preview::popup_context_menu() {
@@ -118,7 +128,7 @@ void Rendering::Preview::popup_context_menu() {
 }
 
 void Rendering::Preview::setCase(float percentage) {
-    if (!is_valid_)
+    if (!is_valid_ || !is_loaded_)
         return;
 
     int idx = (int)(percentage * (float)(dicom_->size() - 1));
@@ -130,7 +140,7 @@ void Rendering::Preview::setCase(float percentage) {
 }
 
 void Rendering::Preview::set_case(int idx) {
-    if (!is_valid_)
+    if (!is_valid_ || !is_loaded_)
         return;
 
     dicom_->loadCase(idx, false, [this](const core::Dicom& dicom) {

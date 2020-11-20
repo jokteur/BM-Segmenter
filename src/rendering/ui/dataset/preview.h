@@ -22,6 +22,7 @@ namespace Rendering {
     private:
         static int instance_number;
         bool is_valid_ = false;
+        bool is_loaded_ = false;
 
         std::string identifier_;
 
@@ -78,6 +79,11 @@ namespace Rendering {
          * Unloads the image in the widget from the memory
         */
         void unload();
+
+        /**
+         * If the image has been unload before, call reload to show the widget again
+        */
+        void reload();
 
         //void setWindowing(int width, int center, bool force = false);
 

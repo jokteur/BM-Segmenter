@@ -206,6 +206,7 @@ jobId& core::dataset::Dataset::importData(const Group& group, std::shared_ptr<st
 std::string core::dataset::Dataset::registerFiles(std::vector<std::string> paths, const Group& group, const std::string& root_path) {
     auto state = PyGILState_Ensure();
 
+    std::cout << "Save dataset" << std::endl;
     py::module scripts;
     bool skip = false;
     try {
@@ -219,5 +220,19 @@ std::string core::dataset::Dataset::registerFiles(std::vector<std::string> paths
     }
 
     PyGILState_Release(state);
+    return "";
+}
+
+std::string core::dataset::Dataset::save(const std::string& root_path) {
+    for (auto& group : groups_) {
+        std::vector<std::string> ids;
+        for (auto& dicom : group.getDicoms()) {
+            ids.push_back(dicom->getId());
+        }
+        std::string err = registerFiles(ids, group, root_path);
+        if (!err.empty()) {
+            return std::string("Failed to save dataset:\n") + err;
+        }
+    }
     return "";
 }

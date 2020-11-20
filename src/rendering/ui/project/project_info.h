@@ -18,6 +18,7 @@ namespace Rendering {
     private:
         ::core::project::ProjectManager& project_manager_ = ::core::project::ProjectManager::getInstance();
         bool is_set_ = false;
+        bool set_tree_closed_ = true;
     public:
         ProjectInfo();
         ~ProjectInfo() override = default;
