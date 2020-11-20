@@ -121,20 +121,23 @@ core::Dicom &core::DicomSeries::getCurrentDicom() {
     return data_[selected_index_];
 }
 
-void core::DicomSeries::setCrops(ImVec2 crop_x, ImVec2 crop_y) {
+void core::DicomSeries::setCrops(ImVec2 crop_x, ImVec2 crop_y, bool no_reload) {
     crop_x_ = crop_x;
     crop_y_ = crop_y;
-    reload();
+    if (!no_reload)
+        reload();
 }
 
-void core::DicomSeries::setCropX(ImVec2 crop_x) {
+void core::DicomSeries::setCropX(ImVec2 crop_x, bool no_reload) {
     crop_x_ = crop_x;
-    reload();
+    if (!no_reload)
+        reload();
 }
 
-void core::DicomSeries::setCropY(ImVec2 crop_y) {
+void core::DicomSeries::setCropY(ImVec2 crop_y, bool no_reload) {
     crop_y_ = crop_y;
-    reload();
+    if (!no_reload)
+        reload();
 }
 
 bool core::DicomSeries::isReady() {
@@ -155,3 +158,44 @@ void core::DicomSeries::eraseCurrent() {
         free_memory(selected_index_);
     }
 }
+
+std::pair<std::string, std::string> core::parse_dicom_id(const std::string& id) {
+    int pos = id.find("___");
+
+    if (pos == -1) {
+        return std::make_pair<std::string, std::string>(std::string(id), "");
+    }
+    else {
+        return std::make_pair<std::string, std::string>(id.substr(0, pos), id.substr(pos + 3));
+    }
+}
+
+inline int first_non_numeric(const std::string& str) {
+    int i = 0;
+    for (char chr : str) {
+        if (chr < 48 || chr > 57)
+            return i;
+        i++;
+    }
+    return i;
+}
+
+bool core::OrderDicom::operator() (const std::shared_ptr<DicomSeries>& dicom1, const std::shared_ptr<DicomSeries>& dicom2) const {
+    std::string id1 = dicom1->getId();
+    std::string id2 = dicom2->getId();
+
+    std::string name1 = parse_dicom_id(id1).first;
+    std::string name2 = parse_dicom_id(id2).first;
+
+    int i = 0;
+    std::string number1 = name1.substr(0, first_non_numeric(name1));
+    std::string number2 = name2.substr(0, first_non_numeric(name2));
+
+    if (number1.size() == number2.size()) {
+        return id1 < id2;
+    }
+    else {
+        return number1.size() < number2.size();
+    }
+}
+

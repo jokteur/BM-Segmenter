@@ -15,18 +15,22 @@
 
 namespace core {
     namespace dataset {
+        typedef std::set<std::shared_ptr<DicomSeries>, OrderDicom> dicom_set;
+
         class Group {
         private:
             std::string name_;
-            std::set<std::shared_ptr<DicomSeries>> dicoms_;
+            dicom_set dicoms_;
         public:
             Group(const std::string& name);
 
+            bool operator==(const Group& other);
+            bool operator!=(const Group& other);
 
             const std::string& getName() const { return name_; }
 
             std::vector<std::shared_ptr<DicomSeries>> getOrderedDicoms();
-            std::set<std::shared_ptr<DicomSeries>>& getDicoms() { return dicoms_; }
+            dicom_set& getDicoms() { return dicoms_; }
 
             void addDicom(std::shared_ptr<DicomSeries> dicom);
             void removeDicom(std::shared_ptr<DicomSeries> dicom);
@@ -43,7 +47,7 @@ namespace core {
         class Dataset {
         private:
             std::vector<Group> groups_;
-            std::vector<std::shared_ptr<DicomSeries>> dicoms_;
+            dicom_set dicoms_;
 
             bool is_loaded_ = false;
 
@@ -63,7 +67,7 @@ namespace core {
             std::string registerFiles(std::vector<std::string> paths, const Group& group, const std::string& root_path);
 
             std::vector<Group>& getGroups() { return groups_; }
-            std::vector<std::shared_ptr<DicomSeries>>& getDicoms() { return dicoms_; }
+            dicom_set& getDicoms() { return dicoms_; }
         };
     }
 }

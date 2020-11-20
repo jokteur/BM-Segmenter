@@ -4,6 +4,7 @@
 #include <functional>
 #include <string>
 #include <set>
+#include <utility>
 
 #include "opencv2/opencv.hpp"
 #include "imgui.h"
@@ -78,6 +79,7 @@ namespace core {
     public:
         DicomSeries(file_format format = F_DICOM);
         explicit DicomSeries(std::vector<std::string> paths, const std::string& id = "", file_format format = F_DICOM);
+
         ~DicomSeries();
 
         void setPaths(const std::vector<std::string> &paths);
@@ -107,10 +109,16 @@ namespace core {
         DicomCoordinate& getCurrentCoordinate() { return current_coordinate_; }
         std::vector<DicomCoordinate>& getAllCoordinates() { return coordinates_; }
 
-        void setCrops(ImVec2 crop_x, ImVec2 crop_y);
-        void setCropX(ImVec2 crop_x);
-        void setCropY(ImVec2 crop_y);
+        void setCrops(ImVec2 crop_x, ImVec2 crop_y, bool no_reload = false);
+        void setCropX(ImVec2 crop_x, bool no_reload = false);
+        void setCropY(ImVec2 crop_y, bool no_reload = false);
 
         bool isReady();
+    };
+
+    std::pair<std::string, std::string> parse_dicom_id(const std::string& id);
+
+    struct OrderDicom {
+        bool operator()(const std::shared_ptr<DicomSeries>& dicom1, const std::shared_ptr <DicomSeries>& dicom2) const;
     };
 }

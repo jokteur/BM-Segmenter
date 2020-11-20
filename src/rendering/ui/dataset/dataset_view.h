@@ -6,6 +6,7 @@
 #include "imgui.h"
 
 #include "rendering/drawables.h"
+#include "rendering/ui/dataset/preview.h"
 #include "core/project/project_manager.h"
 #include "jobscheduler.h"
 
@@ -17,7 +18,17 @@ namespace Rendering {
     class DatasetView : public AbstractLayout {
     private:
         ::core::project::ProjectManager& project_manager_ = ::core::project::ProjectManager::getInstance();
-        std::vector<std::shared_ptr<::core::DicomSeries>> cases_;
+        core::dataset::dicom_set dicoms_;
+
+        std::map<std::shared_ptr<::core::DicomSeries>, Preview> dicom_previews_;
+
+        std::vector<const char*> group_names_ = { "Show all" };
+        std::vector<::core::dataset::Group> groups_;
+        int item_select_ = 0;
+        int num_cols_ = 3;
+        static void drag_and_drop(std::shared_ptr<::core::DicomSeries> case_);
+
+        void preview_widget(Preview& preview, float width, ImVec2 mouse_pos, Rect sub_window_dim, std::shared_ptr<::core::DicomSeries> dicom, GLFWwindow* window, Rect& parent_dimension);
     public:
         /**
          * Initializes the listener and subscribes to the queue

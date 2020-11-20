@@ -14,23 +14,22 @@ std::shared_ptr<Job> core::dataset::npy_to_matrix(const std::string& path, jobRe
             auto kwargs = py::dict("allow_pickle"_a = true);
             auto data = numpy.attr("load")(path, **kwargs);
 
-            py::print(data);
             // We await a 2D numpy array
-            //auto buffer = return_tuple[0].cast<py::buffer>();
-            //py::buffer_info info = buffer.request();
-            //int rows = info.shape[0];
-            //int cols = info.shape[1];
+            auto buffer = data["matrix"].cast<py::buffer>();
+            py::buffer_info info = buffer.request();
+            int rows = info.shape[0];
+            int cols = info.shape[1];
 
-            //auto array = static_cast<short int*>(info.ptr);
-            //dicom_result->image.data.create(rows, cols, CV_16S);
-            //memcpy(dicom_result->image.data.data, array, sizeof(short int) * rows * cols);
+            auto array = static_cast<short int*>(info.ptr);
+            dicom_result->image.data.create(rows, cols, CV_16S);
+            memcpy(dicom_result->image.data.data, array, sizeof(short int) * rows * cols);
 
-            ////                py::print(return_tuple[1]);
-            //auto pixel_spacing = return_tuple[1].cast<py::tuple>();
-            //dicom_result->image.pixel_spacing = ImVec2(pixel_spacing[0].cast<float>(), pixel_spacing[1].cast<float>());
-            //dicom_result->image.slice_thickness = return_tuple[2].cast<float>();
-            //dicom_result->image.slice_position = return_tuple[3].cast<float>();
-            //dicom_result->success = true;
+            auto pixel_spacing = data["spacing"].cast<py::list>();
+            dicom_result->image.pixel_spacing = ImVec2(pixel_spacing[0].cast<float>(), pixel_spacing[1].cast<float>());
+            auto slice_info = data["slice_info"].cast<py::list>();
+            dicom_result->image.slice_thickness = slice_info[0].cast<float>();
+            dicom_result->image.slice_position = slice_info[1].cast<float>();
+            dicom_result->success = true;
         }
         catch (const std::exception& e) {
             dicom_result->error_msg = e.what();

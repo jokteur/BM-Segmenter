@@ -6,7 +6,9 @@ from .workspace import get_dirs, create_series_dir
 from .load_dicom import load_scan_from_dicom
 
 
-def import_dicom(path: str, root_dir: str, id: str, num: int, replace=False):
+def import_dicom(
+    path: str, root_dir: str, id: str, num: int, ww: int, wc: int, crop_x, crop_y, replace=False
+):
     """Imports dicom as a numpy matrix in the project folder
 
     Arguments
@@ -34,6 +36,9 @@ def import_dicom(path: str, root_dir: str, id: str, num: int, replace=False):
             filename,
             matrix=pixels,
             spacing=np.array(spacing),
+            windowing=np.array([ww, wc]),
+            crop_x=crop_x,
+            crop_y=crop_y,
             slice_info=np.array([thickness, location]),
         )
         return True

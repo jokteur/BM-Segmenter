@@ -14,6 +14,22 @@ core::dataset::Group::Group(const std::string& name) : name_(name) {
 
 }
 
+bool core::dataset::Group::operator==(const Group& other) {
+    return other.name_ == name_;
+}
+
+bool core::dataset::Group::operator!=(const Group& other) {
+    return other.name_ != name_;
+}
+
+std::vector<std::shared_ptr<core::DicomSeries>> core::dataset::Group::getOrderedDicoms() {
+    std::vector<std::shared_ptr<DicomSeries>> vector;
+    for (auto& series : dicoms_) {
+        vector.push_back(series);
+    }
+    return vector;
+}
+
 void core::dataset::Group::addDicom(std::shared_ptr<DicomSeries> dicom) {
 	dicoms_.insert(dicom);
 }
@@ -48,7 +64,7 @@ std::string core::dataset::Dataset::load(const std::string& path) {
             auto file = file_info["files"].cast<std::vector<std::string>>();
             
             auto dicom = std::make_shared<DicomSeries>(file, id, DicomSeries::F_NP);
-            dicoms_.push_back(dicom);
+            dicoms_.insert(dicom);
             for (auto& group : file_info["groups"].cast<py::list>()) {
                 std::string group_name = group.cast<std::string>();
                 for (auto& current_group : groups_) {
@@ -72,6 +88,10 @@ std::string core::dataset::Dataset::load(const std::string& path) {
 }
 
 core::dataset::Group& core::dataset::Dataset::createGroup(const std::string& name) {
+    for (auto& group : groups_) {
+        if (group.getName() == name)
+            return group;
+    }
 	groups_.emplace_back(Group(name));
 	return *(--groups_.end());
 }
@@ -97,9 +117,10 @@ jobId& core::dataset::Dataset::importData(const Group& group, std::shared_ptr<st
                             }
                         }
                         if (!paths.empty()) {
-                            all_cases.emplace_back(DicomSeries(paths, patient.ID + std::string("__") + std::to_string(
-                                std::hash<std::string>{}(study.date + study.description + study.time + series->modality + series->number)
-                            )));
+                            auto &dicom = DicomSeries(paths, patient.ID + std::string("___") + std::to_string(
+                                std::hash<std::string>{}(study.date + study.description + study.time + series->modality + series->number)));
+                            dicom.setCrops(series->data.getCropX(), series->data.getCropY(), true);
+                            all_cases.emplace_back(dicom);
                         }
                     }
                 }
@@ -113,10 +134,10 @@ jobId& core::dataset::Dataset::importData(const Group& group, std::shared_ptr<st
         std::vector<DicomSeries> existing;
         std::vector<std::string> save_paths;
         import_result->success = true;
+        auto state = PyGILState_Ensure();
         for (auto& dicom : all_cases) {
             if (failure)
                 break;
-            auto state = PyGILState_Ensure();
 
             py::module scripts;
             bool skip = false;
@@ -149,7 +170,9 @@ jobId& core::dataset::Dataset::importData(const Group& group, std::shared_ptr<st
                     }
 
                     try {
-                        scripts.attr("import_dicom")(path, root_path, dicom.getId(), img_num, replace);
+                        std::vector<float> crop_x = { dicom.getCropX().x, dicom.getCropX().y };
+                        std::vector<float> crop_y = { dicom.getCropY().x, dicom.getCropY().y };
+                        scripts.attr("import_dicom")(path, root_path, dicom.getId(), img_num, dicom.getWW(), dicom.getWC(), crop_x, crop_y, replace);
                     }
                     catch (const std::exception& e) {
                         std::cout << e.what() << std::endl;
@@ -167,8 +190,8 @@ jobId& core::dataset::Dataset::importData(const Group& group, std::shared_ptr<st
             else {
                 i += dicom.getPaths().size();
             }
-            PyGILState_Release(state);
         }
+        PyGILState_Release(state);
 
         if (failure) {
             import_result->success = false;
@@ -182,7 +205,6 @@ jobId& core::dataset::Dataset::importData(const Group& group, std::shared_ptr<st
 
 std::string core::dataset::Dataset::registerFiles(std::vector<std::string> paths, const Group& group, const std::string& root_path) {
     auto state = PyGILState_Ensure();
-    std::cout << "Save file to dataset" << std::endl;
 
     py::module scripts;
     bool skip = false;
