@@ -27,7 +27,7 @@ namespace core {
 			std::string filename_;
 			cv::Mat data_;
 
-			load_from_file(const std::string& filename);
+			void load_from_file(const std::string& filename);
 		public:
 			Mask(int width, int height);
 			Mask(const std::string& filename);
@@ -35,8 +35,10 @@ namespace core {
 			/**
 			* Copy constructors
 			*/
-			operator=(const Mask& other);
-			Mask(const Mask& other);
+			//void operator=(const Mask& other);
+			//Mask(const Mask& other);
+
+			Mask copy();
 
 			Mask() = default;
 
@@ -66,25 +68,50 @@ namespace core {
 		*/
 		class MaskCollection {
 		private:
-			using iterator = std::list<Student>::iterator it;
+			using iterator = std::list<Mask>::iterator;
 
+			iterator it_;
 			std::list<Mask> history_;
 			
 			iterator current_;
+
+			int width_ = 0;
+			int height_ = 0;
 
 			Mask prediction_;
 			Mask validated_;
 		public:
 			MaskCollection() = default;
+			MaskCollection(int width, int height);
+			MaskCollection(const std::string& filename);
 
 			void push(const Mask& mask);
-			void undo();
-			void redo();
+			void push_new();
 
-			Mask& getCurrent() { return *current_; }
+			MaskCollection copy();
 
-			void setValidated(const Mask& mask);
-			void setPrediction(const Mask& mask);
+			/**
+			 * Goes back into the history of the mask collection
+			*/
+			Mask& undo();
+
+			/**
+			 * Goes in the future of the history of the mask collection
+			*/
+			Mask& redo();
+
+			/**
+			 * Returns the current mask in the list
+			 * If there is no mask in the collection, returns an empty mask
+			*/
+			Mask& getCurrent();
+
+			std::string saveCollection(const std::string& basename);
+
+			std::string loadCollection(const std::string& basename);
+
+			void setValidated(const Mask& mask) { validated_ = validated_; }
+			void setPrediction(const Mask& mask) { prediction_ = prediction_; }
 		};
 	}
 }

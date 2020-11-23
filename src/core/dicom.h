@@ -98,6 +98,9 @@ namespace core {
         int& getWC() { return window_center_; }
         int size() { return images_path_.size(); }
 
+        int rows();
+        int cols();
+
         std::vector<Dicom>& getData() { return data_; }
         int getCurrentIndex() const { return selected_index_; }
         std::string getId() { return id_; }

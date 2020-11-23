@@ -73,7 +73,7 @@ endif (WIN32)
 
 add_definitions(-DPy_ENABLE_SHARED)
 
-option(Python_ROOT_DIR "")
+set(Python_ROOT_DIR "" CACHE PATH "Python conda path")
 
 find_package(Python REQUIRED Interpreter Development)
 
@@ -152,19 +152,20 @@ file (GLOB _project_src RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         src/*.cpp src/*.h
         src/python/*.h
         src/python/*.cpp
+        src/core/*.cpp src/core/*.h
+        src/core/project/*.cpp src/core/project/*.h
+        src/core/segmentation/*.cpp src/core/segmentation/*.h
+        src/core/dataset/*.cpp src/core/dataset/*.h
+        src/core/editor/*.cpp src/core/editor/*.h
         src/rendering/*.cpp src/rendering/*.h
         src/rendering/ui/*.cpp src/rendering/ui/*.h
         src/rendering/ui/modales/*.h src/rendering/ui/modales/*.cpp
         src/rendering/ui/dataset/*.h src/rendering/ui/dataset/*.cpp
         src/rendering/ui/widgets/*.h src/rendering/ui/widgets/*.cpp
         src/rendering/ui/project/*.cpp src/rendering/ui/project/*.h
+        src/rendering/ui/segmentation/*.cpp src/rendering/ui/segmentation/*.h
         src/rendering/ui/import/*.cpp src/rendering/ui/import/*.h
-        src/rendering/views/*.cpp src/rendering/views/*.h
-        src/core/*.cpp src/core/*.h
-        src/core/project/*.cpp src/core/project/*.h
-        src/core/segmentation/*.cpp src/core/segmentation/*.h
-        src/core/dataset/*.cpp src/core/dataset/*.h
-        src/core/editor/*.cpp src/core/editor/*.h)
+        src/rendering/views/*.cpp src/rendering/views/*.h)
 
 set(all_sources ${_project_src} ${GLAD_GL} ${imgui_src} ${imgui_binding} ${gl3w_src})
 list(REMOVE_ITEM all_sources "src/main.cpp")

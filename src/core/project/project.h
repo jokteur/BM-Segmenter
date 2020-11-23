@@ -3,9 +3,11 @@
 #include <vector>
 #include <set>
 #include <string>
+#include <map>
 
 #include "core/dataset/dataset.h"
 #include "core/dicom.h"
+#include "core/segmentation/segmentation.h"
 
 namespace core {
     namespace project {
@@ -21,6 +23,8 @@ namespace core {
 
             bool is_saved_ = false;
             std::set<DicomMarker> markers;
+
+            std::set<std::shared_ptr<segmentation::Segmentation>> segmentations_;
 
         public:
             Project(const std::string &name, const std::string &description);
@@ -89,6 +93,21 @@ namespace core {
             void setSavedState() {
                 is_saved_ = true;
             }
+
+            /**
+             * Saves all the segmentations to the disk
+             * Returns an error in the form of a string if the save could not proceed
+            */
+            std::string saveSegmentations();
+
+            /**
+             * Loads all segmentations it can find in the project
+            */
+            std::string loadSegmentations();
+
+            std::string addSegmentation(std::shared_ptr<segmentation::Segmentation> segmentation);
+
+            std::set<std::shared_ptr<segmentation::Segmentation>>& getSegmentations() { return segmentations_; }
 
             /**
              * Returns if the project is in a saved state

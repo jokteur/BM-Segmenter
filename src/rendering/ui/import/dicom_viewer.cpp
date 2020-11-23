@@ -171,7 +171,7 @@ void Rendering::DicomViewer::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
             drag_delta_.x = 0;
             drag_delta_.y = 0;
         }
-        if (active_dragging_) {
+        if (active_dragging_ && series_node_ != nullptr) {
             image_widget_.setImageDrag(SimpleImage::IMAGE_NO_INTERACT);
             auto drag = ImGui::GetMouseDragDelta(0, 0);
             float attenuation = 1.f;

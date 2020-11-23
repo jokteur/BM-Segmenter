@@ -71,9 +71,9 @@ namespace Rendering {
 
         void button_logic();
 
-        void lasso_widget(ImVec2 size, ImVec2 position);
-        void box_widget(ImVec2 size, ImVec2 position);
-        void brush_widget(ImVec2 size, ImVec2 position);
+        void lasso_widget(Rect& dimensions);
+        void box_widget(Rect& dimensions);
+        void brush_widget(Rect& dimensions);
 
         void accept_drag_and_drop();
 

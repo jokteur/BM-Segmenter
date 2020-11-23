@@ -5,11 +5,11 @@
 #include "rendering/views/default_view.h"
 
 Rendering::ProjectInfo::ProjectInfo() {
-	auto &project = project_manager_.getCurrentProject();
+	auto& project = project_manager_.getCurrentProject();
 }
 
 void Rendering::ProjectInfo::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) {
-	auto &project = project_manager_.getCurrentProject();
+	auto& project = project_manager_.getCurrentProject();
 	ImGui::Begin("Project information");
 
 	if (project != nullptr) {
@@ -19,6 +19,11 @@ void Rendering::ProjectInfo::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
 				auto err = project->getDataset().load(project->getSaveFile());
 				if (!err.empty()) {
 					show_error_modal("Error when opening the project", "An error occured when opening the project's dataset.", err.c_str());
+					EventQueue::getInstance().post(Event_ptr(new SetViewEvent(std::make_unique<DefaultView>())));
+				}
+				err = project->loadSegmentations();
+				if (!err.empty()) {
+					show_error_modal("Error when opening the segmentations", "An error occured when opening the project's segmentations.", err.c_str());
 					EventQueue::getInstance().post(Event_ptr(new SetViewEvent(std::make_unique<DefaultView>())));
 				}
 			}
@@ -82,7 +87,6 @@ void Rendering::ProjectInfo::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
 				}
 				set_tree_closed_ = false;
 			}
-			ImGui::Separator();
 			if (ImGui::Button("Import data to project")) {
 				if (project->getSaveFile().empty()) {
 					show_error_modal("Error", "You can not import data to a project without saving the project first.\n"
@@ -92,8 +96,17 @@ void Rendering::ProjectInfo::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
 					EventQueue::getInstance().post(Event_ptr(new SetViewEvent(std::make_unique<ExploreView>())));
 				}
 			}
+			ImGui::Separator();
+			ImGui::Text("Segmentations");
+			project->getSegmentations();
+			for (auto& seg : project->getSegmentations()) {
+				bool leaf = ImGui::TreeNodeEx(&seg, ImGuiTreeNodeFlags_Framed, "%s", seg->getName().c_str());
+				if (leaf) {
+					ImGui::TreePop();
+				}
+			}
 			if (ImGui::Button("Create segmentation")) {
-
+				new_segmentation_.showModal(project);
 			}
 		}
 	}

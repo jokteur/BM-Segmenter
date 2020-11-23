@@ -117,6 +117,18 @@ void core::DicomSeries::cleanData() {
     }
 }
 
+int core::DicomSeries::rows() {
+    if (data_.empty())
+        return 0;
+    return data_[0].data.rows;
+}
+
+int core::DicomSeries::cols() {
+    if (data_.empty())
+        return 0;
+    return data_[0].data.cols;
+}
+
 core::Dicom &core::DicomSeries::getCurrentDicom() {
     return data_[selected_index_];
 }

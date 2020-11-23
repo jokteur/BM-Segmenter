@@ -1,6 +1,7 @@
 #include "project.h"
 #include "python/py_api.h"
 #include "pybind11/pybind11.h"
+#include "pybind11/stl.h"
 
 namespace core {
     namespace project {
@@ -60,6 +61,82 @@ namespace core {
             }
 
             PyGILState_Release(state);
+        }
+        std::string Project::saveSegmentations() {
+            for (auto& seg : segmentations_) {
+                auto state = PyGILState_Ensure();
+                try {
+                    std::vector<std::string> dicoms;
+                    for (auto& mask : seg->getMasks()) {
+                        dicoms.push_back(mask.first->getId());
+                    }
+                    py::module scripts = py::module::import("python.scripts.segmentation");
+                    auto save_file = scripts.attr("save_segmentation")(save_file_, seg->getName(), seg->getFilename(), dicoms).cast<std::string>();
+                    seg->setFilename(save_file);
+                }   
+                catch (const std::exception& e) {
+                    PyGILState_Release(state);
+                    return e.what();
+                }
+                PyGILState_Release(state);
+            }
+            return "";
+        }
+        std::string Project::loadSegmentations() {
+            auto state = PyGILState_Ensure();
+            try {
+                auto dicoms = dataset_.getDicoms();
+                std::map <std::string, std::shared_ptr<DicomSeries>> dicom_id_map;
+
+                for (auto& dicom : dicoms) {
+                    dicom_id_map[dicom->getId()] = dicom;
+                }
+
+                py::module scripts = py::module::import("python.scripts.segmentation");
+                auto result = scripts.attr("load_segmentations")(root_path_);
+                for (auto& seg : result) {
+                    segmentation::Segmentation segmentation(seg["name"].cast<std::string>(), seg["description"].cast<std::string>());
+                    segmentation.setFilename(seg["path"].cast<std::string>());
+                    segmentation.setStrippedName(seg["stripped_name"].cast<std::string>());
+                    for (auto& id : seg["ids"]) {
+                        std::string _id = id.cast<std::string>();
+                        if (dicom_id_map.find(_id) == dicom_id_map.end()) {
+                            segmentation.addDicom(dicom_id_map[_id]);
+                        }
+                    }
+                    segmentations_.insert(std::make_shared<segmentation::Segmentation>(segmentation));
+                }
+            }
+            catch (const std::exception& e) {
+                PyGILState_Release(state);
+                std::cout << e.what() << std::endl;
+                return e.what();
+            }
+            PyGILState_Release(state);
+            return "";
+        }
+        std::string Project::addSegmentation(std::shared_ptr<segmentation::Segmentation> segmentation) {
+            auto state = PyGILState_Ensure();
+            try {
+                auto util = py::module::import("python.scripts.util");
+                for (auto& seg : segmentations_) {
+                    if (seg->getName() == segmentation->getName()) {
+                        return std::string("A segmentation with identical name already exists");
+                    }
+                    if (util.attr("make_safe_filename")(segmentation->getName()).cast<std::string>() == seg->getStrippedName()) {
+                        PyGILState_Release(state);
+                        return std::string("Cannot have an (almost) identical name to an existing segmentation");
+                    }
+                }
+                segmentation->setStrippedName(util.attr("make_safe_filename")(segmentation->getName()).cast<std::string>());
+            }
+            catch (const std::exception& e) {
+                PyGILState_Release(state);
+                return e.what();
+            }
+            PyGILState_Release(state);
+            segmentations_.insert(segmentation);
+            return "";
         }
     }
 }

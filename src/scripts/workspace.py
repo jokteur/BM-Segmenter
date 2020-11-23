@@ -72,6 +72,8 @@ def get_dirs(path: str):
             dirs["dicoms"] = os.path.join(path, "data", "dicoms")
         if os.path.isdir(os.path.join(path, "data", "masks")):
             dirs["masks"] = os.path.join(path, "data", "masks")
+        if os.path.isdir(os.path.join(path, "models")):
+            dirs["models"] = os.path.join(path, "models")
         if os.path.isdir(os.path.join(path, "data", "train", "x")):
             dirs["train_x"] = os.path.join(path, "data", "train", "x")
         if os.path.isdir(os.path.join(path, "data", "train", "y")):
