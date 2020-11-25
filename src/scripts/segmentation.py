@@ -25,7 +25,7 @@ def save_segmentation(project_file: str, name: str, description: str, filename: 
 
     data = {"name": name, "description": description, "stripped_name": make_safe_filename(name)}
     toml.dump(data, open(save_path, "w"))
-
+    print(data["name"], save_path)
     return save_path
 
 
@@ -46,5 +46,9 @@ def load_segmentations(root_dir: str):
             ]
             segmentations.append(data)
 
-    print(segmentations)
     return segmentations
+
+
+def get_mask_path(dicom_id: str, path: str, name: str):
+    dirs = get_dirs(os.path.dirname(os.path.dirname(path)))[1]
+    return os.path.join(dirs["masks"], name, dicom_id)

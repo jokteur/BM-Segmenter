@@ -5,6 +5,7 @@
 
 void Rendering::DatasetView::drag_and_drop(std::shared_ptr<::core::DicomSeries> case_) {
     if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
+        EventQueue::getInstance().post(Event_ptr(new Event("no_action")));
         auto& drag_and_drop = DragAndDrop<std::shared_ptr<::core::DicomSeries>>::getInstance();
         drag_and_drop.giveData(case_);
 

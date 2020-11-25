@@ -21,7 +21,7 @@ namespace core {
 			Segmentation(const std::string& name, const std::string& description);
 			Segmentation() = default;
 
-			void setFilename(const std::string& filename) { filename_; }
+			void setFilename(const std::string& filename) { filename_ = filename; }
 			void setStrippedName(const std::string& name) { stripped_name_ = name; }
 
 			std::string getName() { return name_; }
@@ -41,7 +41,9 @@ namespace core {
 			*/
 			void setDescription(const std::string& description) { description_ = description; }
 
-			void saveMask(std::shared_ptr<DicomSeries> dicom);
+			//std::string saveMask(std::shared_ptr<DicomSeries> dicom);
+
+			std::string getMaskBasename(std::shared_ptr<DicomSeries> dicom);
 
 			void addDicom(std::shared_ptr<DicomSeries> dicom);
 

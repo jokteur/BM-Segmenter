@@ -66,12 +66,8 @@ namespace core {
             for (auto& seg : segmentations_) {
                 auto state = PyGILState_Ensure();
                 try {
-                    std::vector<std::string> dicoms;
-                    for (auto& mask : seg->getMasks()) {
-                        dicoms.push_back(mask.first->getId());
-                    }
                     py::module scripts = py::module::import("python.scripts.segmentation");
-                    auto save_file = scripts.attr("save_segmentation")(save_file_, seg->getName(), seg->getFilename(), dicoms).cast<std::string>();
+                    auto save_file = scripts.attr("save_segmentation")(save_file_, seg->getName(), seg->getDescription(), seg->getFilename()).cast<std::string>();
                     seg->setFilename(save_file);
                 }   
                 catch (const std::exception& e) {

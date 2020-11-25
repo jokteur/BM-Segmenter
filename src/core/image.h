@@ -3,6 +3,8 @@
 #include <GL/gl3w.h>
 #include <opencv2/core/mat.hpp>
 
+#include "core/segmentation/mask.h"
+
 namespace core {
 
     /**
@@ -49,9 +51,11 @@ namespace core {
          * @param window_width VOI LUT window width (see https://dicom.innolitics.com/ciods/ct-image/voi-lut/00281050)
          * @param window_center VOI LUT window center (see https://dicom.innolitics.com/ciods/ct-image/voi-lut/00281050)
          * @param filtering FILTERING
+         * @param mask draw a mask on top of the image
+         * @param color color of the mask if it is defined
          * @return
          */
-        bool setImageFromHU(const cv::Mat& mat, float window_width, float window_center, Filtering filtering = FILTER_NEAREST);
+        bool setImageFromHU(const cv::Mat& mat, float window_width, float window_center, Filtering filtering = FILTER_NEAREST, const cv::Mat& mask = cv::Mat(), ImVec4 color = ImVec4(0, 0, 0, 0));
 
         /**
          * Erases any content in the image

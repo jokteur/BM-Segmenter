@@ -88,31 +88,25 @@ void Rendering::SimpleImage::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
         ImVec2 rel_mouse_pos = ImVec2((mouse_pos.x - dimensions_.xpos) / scaled_sizes_.x,
                                     (mouse_pos.y - dimensions_.ypos) / scaled_sizes_.y);
 
+
         ImVec2 corrected_rel = ImVec2(crop_.x0 + (crop_.x1 - crop_.x0) * rel_mouse_pos.x,
                                       crop_.y0 + (crop_.y1 - crop_.y0) * rel_mouse_pos.y);
 
         bool do_zoom = false;
+        float zoom = 0.9;
         if (rel_mouse_pos.x > 0.f && rel_mouse_pos.x < 1.f
             && rel_mouse_pos.y > 0.f && rel_mouse_pos.y < 1.f
             && interactive_zoom_ != IMAGE_NO_INTERACT) {
 
             float mouse_wheel = io.MouseWheel;
             if (mouse_wheel != 0.f) {
-                float zoom_speed = 1.f + (zoom_speed_ - 1.f) * abs(mouse_wheel);
                 if (io.KeyShift) {
-                    zoom_speed = 1.f + (zoom_speed - 1.f)/2.5f;
+                    zoom = 0.95;
                 }
-                if (mouse_wheel > 0.f) {
-                    if (zoom_ < max_zoom_) {
-                        zoom_ *= zoom_speed;
-                        do_zoom = true;
-                    }
-                } else {
-                    if (zoom_ > 1.f) {
-                        zoom_ /= zoom_speed;
-                        do_zoom = true;
-                    }
+                if (mouse_wheel < 0.f) {
+                    zoom = 1.f / zoom;
                 }
+                do_zoom = true;
             }
             if (ImGui::IsMouseClicked(0) && (image_drag_ == IMAGE_NORMAL_INTERACT || (image_drag_ == IMAGE_MODIFIER_INTERACT && io.KeyCtrl))) {
                 is_moving_ = true;
@@ -123,18 +117,44 @@ void Rendering::SimpleImage::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
             is_moving_ = false;
         }
         if (do_zoom && (interactive_zoom_ == IMAGE_NORMAL_INTERACT || (interactive_zoom_ == IMAGE_MODIFIER_INTERACT && io.KeyCtrl))) {
-            crop_.x0 = -corrected_rel.x / zoom_ + corrected_rel.x;
-            crop_.x1 = (1 - corrected_rel.x) / zoom_ + corrected_rel.x;
-            crop_.y0 = -corrected_rel.y / zoom_ + corrected_rel.y;
-            crop_.y1 = (1 - corrected_rel.y) / zoom_ + corrected_rel.y;
+            float x0 = crop_.x0 - (corrected_rel.x - crop_.x0) * (zoom - 1);
+            float x1 = x0 + (crop_.x1 - crop_.x0) * zoom;
+            float y0 = crop_.y0 - (corrected_rel.y - crop_.y0) * (zoom - 1);
+            float y1 = y0 + (crop_.y1 - crop_.y0) * zoom;
+
+            crop_ = { x0, x1, y0, y1 };
+
+            if (crop_.x0 < 0.f && crop_.x1 > 1.f) {
+                crop_.x0 = 0.f;
+                crop_.x1 = 1.f;
+            }
+            else {
+                if (crop_.x0 < 0.f) {
+                    crop_.x1 -= crop_.x0;
+                    crop_.x0 = 0.f;
+                }
+                if (crop_.x1 > 1.f) {
+                    crop_.x0 -= (crop_.x1 - 1.f);
+                    crop_.x1 = 1.f;
+                }
+            }
+            if (crop_.y0 < 0.f && crop_.y1 > 1.f) {
+                crop_.y0 = 0.f;
+                crop_.y1 = 1.f;
+            }
+            else {
+                if (crop_.y0 < 0.f) {
+                    crop_.y1 -= crop_.y0;
+                    crop_.y0 = 0.f;
+                }
+                if (crop_.y1 > 1.f) {
+                    crop_.y0 -= (crop_.y1 - 1.f);
+                    crop_.y1 = 1.f;
+                }
+            }
         }
 
-        if (crop_.x0 < 0 || crop_.y0 < 0 || crop_.x1 > 1 || crop_.y1 > 1) {
-            crop_.x0 = 0;
-            crop_.y0 = 0;
-            crop_.x1 = 1;
-            crop_.y1 = 1;
-        }
+        Crop tmp_crop;
 
         if (is_moving_ && (current_drag_.x != corrected_rel.x || current_drag_.y != corrected_rel.y)) {
             current_drag_ = corrected_rel;

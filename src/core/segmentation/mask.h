@@ -22,15 +22,23 @@ namespace core {
 		public:
 			enum {MASK_EDITED, MASK_VALIDATED, MASK_PREDICTION};
 		private:
-			int width_ = 0;
-			int height_ = 0;
+			int rows_ = 0;
+			int cols_ = 0;
 			std::string filename_;
 			cv::Mat data_;
 
-			void load_from_file(const std::string& filename);
+			//void load_from_file(const std::string& filename);
 		public:
-			Mask(int width, int height);
-			Mask(const std::string& filename);
+			Mask(int rows, int cols);
+
+			Mask() = default;
+
+			/**
+			 * Sets the dimensions of the mask
+			 * Will reset any data that was previously present in the object
+			*/
+			void setDimensions(int rows, int cols);
+			//Mask(const std::string& filename);
 
 			/**
 			* Copy constructors
@@ -40,8 +48,6 @@ namespace core {
 
 			Mask copy();
 
-			Mask() = default;
-
 			/**
 			 * Returns the opencv matrix that represent the mask 
 			*/
@@ -49,17 +55,21 @@ namespace core {
 
 			void setData(cv::Mat& data);
 
-			void saveToFile(const std::string& filename);
+			//void saveToFile(const std::string& filename);
+
+			void intersect_with(const Mask& mat);
+			void union_with(const Mask& mat);
+			void difference_with(const Mask& mat);
 
 			/**
 			 * Returns the width of the mask
 			*/
-			int width() { return width_; }
+			int width() { return rows_; }
 
 			/**
 			 * Returns the width of the mask
 			*/
-			int height() { return height_; }
+			int height() { return cols_; }
 		};
 
 		/**
@@ -75,20 +85,27 @@ namespace core {
 			
 			iterator current_;
 
-			int width_ = 0;
-			int height_ = 0;
+			std::string basename_path_;
+
+			int rows_ = 0;
+			int cols_ = 0;
 
 			Mask prediction_;
 			Mask validated_;
 		public:
 			MaskCollection() = default;
-			MaskCollection(int width, int height);
-			MaskCollection(const std::string& filename);
+			MaskCollection(int rows, int cols);
+			//MaskCollection(const std::string& filename);
 
 			void push(const Mask& mask);
 			void push_new();
 
+			void loadData();
+
 			MaskCollection copy();
+
+			void setDimensions(int rows, int cols) { rows_ = rows; cols_ = cols; }
+			void setDimensions(std::shared_ptr<DicomSeries> dicom);
 
 			/**
 			 * Goes back into the history of the mask collection
@@ -106,12 +123,22 @@ namespace core {
 			*/
 			Mask& getCurrent();
 
+			void setBasenamePath(const std::string& basename);
+
 			std::string saveCollection(const std::string& basename);
+			std::string saveCollection();
 
 			std::string loadCollection(const std::string& basename);
+			std::string loadCollection();
 
 			void setValidated(const Mask& mask) { validated_ = validated_; }
 			void setPrediction(const Mask& mask) { prediction_ = prediction_; }
 		};
+
+		void buildHuMask(const cv::Mat& hu_mat, Mask& mask, int min, int max);
+
+		void lassoSelectToMask(const std::vector<ImVec2>& paths, Mask& mask, int value = 1);
+		void boxSelectToMask(const ImVec2& top_left, const ImVec2& bottom_right, Mask& mask, int value = 1);
+		void brushToMask(float brush_size, ImVec2 position, Mask& mask, int value = 1);
 	}
 }

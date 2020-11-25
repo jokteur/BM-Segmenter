@@ -69,24 +69,46 @@ bool core::Image::setImage(unsigned char *data, int width, int height, Filtering
     return success_;
 }
 
-bool core::Image::setImageFromHU(const cv::Mat& mat, float window_width, float window_center, Filtering filtering) {
-    auto* tmp_array = new unsigned char[mat.rows * mat.cols * 4];
+bool core::Image::setImageFromHU(const cv::Mat& mat, float window_width, float window_center, Filtering filtering, const cv::Mat& mask, ImVec4 color) {
+    auto* tmp_array = new unsigned char[(int)mat.rows * (int)mat.cols * 4];
     int i = 0;
+
+    bool draw_mask = false;
+    if (mask.rows == mat.rows && mask.cols == mat.cols) {
+        draw_mask = true;
+    }
+
+    const unsigned char* data;
+    if (draw_mask) {
+        data = mask.data;
+    }
+
     for(int row = 0; row < mat.rows; ++row) {
         auto p = mat.ptr<short int>(row);
+
         for(int col = 0; col < mat.cols; ++col) {
             auto value = (float)*p;
-            unsigned char gray;
+            float gray;
             if (value <= window_center - 0.5f - (window_width - 1.f) * 0.5f)
                 gray = 0;
             else if (value > window_center - 0.5f + (window_width - 1.f) * 0.5f)
                 gray = 255;
             else
-                gray = static_cast<unsigned char>(((value - (window_center - 0.5f))/(window_width - 1.f) + 0.5f) * 255);
-            tmp_array[4*i] = gray;
-            tmp_array[4*i + 1] = gray;
-            tmp_array[4*i + 2] = gray;
-            tmp_array[4*i + 3] = 255;
+                gray = ((value - (window_center - 0.5f))/(window_width - 1.f) + 0.5f) * 255;
+
+            if (draw_mask) {
+                float transparency = color.w * (*data);
+                tmp_array[4 * i] = (char)(gray * (1 - transparency) + 255 * color.x * transparency);
+                tmp_array[4 * i + 1] = (char)(gray * (1 - transparency) + 255 * color.y * transparency);
+                tmp_array[4 * i + 2] = (char)(gray * (1 - transparency) + 255 * color.z * transparency);
+                data++;
+            }
+            else {
+                tmp_array[4 * i] = (char)gray;
+                tmp_array[4 * i + 1] = (char)gray;
+                tmp_array[4 * i + 2] = (char)gray;
+            }
+            tmp_array[4 * i + 3] = 255;
             i++;
             p++;
         }
