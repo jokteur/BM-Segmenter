@@ -19,6 +19,7 @@ namespace Rendering {
         ::core::project::ProjectManager &project_manager_;
         std::string name_;
         std::string description_;
+        std::string out_path_;
 
         bool confirm_ = false;
 

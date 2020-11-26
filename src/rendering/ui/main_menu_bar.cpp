@@ -109,9 +109,9 @@ void Rendering::MainMenuBar::file_menu()  {
         }
     }
 
-    if (ImGui::MenuItem("Save", Shortcuts::save_project_shortcut.description, false, is_project_active)) {
-        save_project();
-    }
+    //if (ImGui::MenuItem("Save", Shortcuts::save_project_shortcut.description, false, is_project_active)) {
+    //    save_project();
+    //}
     //if (ImGui::MenuItem("Save As..", Shortcuts::save_project_under_shortcut.description, false, is_project_active)) {
     //    save_project_under();
     //}
@@ -219,9 +219,9 @@ void Rendering::MainMenuBar::init_listeners() {
         else if (name == "shortcuts/global/save project under") {
             //save_project_under();
         }
-        else if (name == "shortcuts/global/save project") {
-            save_project();
-        }
+        //else if (name == "shortcuts/global/save project") {
+        //    save_project();
+        //}
     };
 
     page_title_change_.filter = "menu/change_title/*";
