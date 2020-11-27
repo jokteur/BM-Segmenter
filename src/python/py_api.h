@@ -10,7 +10,7 @@
 #endif
 
 #include <pybind11/embed.h>
-
+#include "cv2np.h"
 #include <string>
 #include <iostream>
 

@@ -312,6 +312,7 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
                         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, .1f, 0.f, 0.7f));
                         if (ImGui::Button("Unvalidate (all)")) {
                             collection.removeAllValidatedBy();
+                            collection.saveCollection();
                         }
                         ImGui::PopStyleColor();
 
@@ -320,6 +321,7 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
                             ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.7f, .5f, 0.3f, 0.7f));
                             if (ImGui::Button((("Unvalidate (only " + project->getCurrentUser() + ")").c_str()))) {
                                 collection.removeValidatedBy(username);
+                                collection.saveCollection();
                             }
                             ImGui::PopStyleColor();
                         }
@@ -520,7 +522,7 @@ void Rendering::EditMask::lasso_widget(Rect& dimensions) {
             // Draw the polygon
             auto* mask = &tmp_mask_;
             if (threshold_hu_) {
-                mask = new ::core::segmentation::Mask(tmp_mask_.width(), tmp_mask_.height());
+                mask = new ::core::segmentation::Mask(tmp_mask_.rows(), tmp_mask_.cols());
             }
             if (threshold_hu_)
                 ::core::segmentation::lassoSelectToMask(positions, *mask, 1);
@@ -612,7 +614,7 @@ void Rendering::EditMask::brush_widget(Rect& dimensions) {
                 // Otherwise, we can operate directly on tmp_mask_
                 auto* mask = &tmp_mask_;
                 if (threshold_hu_) {
-                    mask = new ::core::segmentation::Mask(tmp_mask_.width(), tmp_mask_.height());
+                    mask = new ::core::segmentation::Mask(tmp_mask_.rows(), tmp_mask_.cols());
                 }
 
                 for (auto& pos : positions) {

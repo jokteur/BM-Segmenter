@@ -19,14 +19,22 @@ Rendering::Preview::Preview() {
 
 Rendering::Preview::Preview(const Preview& other) {
     init();
+    if (other.dicom_ != nullptr)
+        other.dicom_->cancelPendingJobs();
     dicom_ = other.dicom_;
     is_valid_ = other.is_valid_;
 }
 
 Rendering::Preview::Preview(const Preview&& other) {
     init();
+    if (other.dicom_ != nullptr)
+        other.dicom_->cancelPendingJobs();
     dicom_ = other.dicom_;
     is_valid_ = other.is_valid_;
+}
+
+Rendering::Preview::~Preview() {
+    //dicom_->cancelPendingJobs();
 }
 
 void Rendering::Preview::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) {
@@ -145,10 +153,23 @@ void Rendering::Preview::set_case(int idx) {
         return;
 
     dicom_->loadCase(idx, false, [this](const core::Dicom& dicom) {
-        image_.setImageFromHU(dicom.data, (float)dicom_->getWW(), (float)dicom_->getWC());
-        image_widget_.setImage(image_);
-        reset_image_ = true;
-        dicom_->cleanData();
+        // Preface: this is extremely bad practice, I know
+        // This function may cause a segfault (if Preview is destroyed before the job is finished)
+        // This happens when there is a problem when the project loads (syntax error in python file mostly)
+        // If the project is not loaded, then the WelcomeView is loaded again (thus destroying the Previews
+        // immediately)
+        // TODO: refactor loadCase such that this never happen
+        //
+        // Explanation of the hack:
+        // If this function is called when Preview is already destroyed, __num should contain any garbage
+        // What are the chances that __num will contain exactly this sequence:
+        // 0100000001101101011101001111010011010010000110101101000010100010 ?
+        if (__num == 235.654885342) {
+            image_.setImageFromHU(dicom.data, (float)dicom_->getWW(), (float)dicom_->getWC());
+            image_widget_.setImage(image_);
+            reset_image_ = true;
+            dicom_->cleanData();
+        }
     });
 }
 
@@ -165,5 +186,5 @@ void Rendering::Preview::set_window(int width, int center, bool lock) {
 void Rendering::Preview::setSeries(std::shared_ptr<::core::DicomSeries> dicom) {
     is_valid_ = true;
     dicom_ = dicom; 
-    set_case(0);
+    //set_case(0);
 }

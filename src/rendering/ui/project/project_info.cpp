@@ -167,7 +167,7 @@ void Rendering::ProjectInfo::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
 
 				if (!users_.empty()) {
 					const char* combo_label = user_names_[user_idx_].c_str();
-					if (ImGui::BeginCombo("Select current user", combo_label)) {
+					if (ImGui::BeginCombo("Select user", combo_label)) {
 						int n = 0;
 						for (int n = 0; n < user_names_.size(); n++) {
 							const bool is_selected = (user_idx_ == n);

@@ -110,6 +110,9 @@ void Rendering::Window::update() {
         highDPIscale_ = xscale_;
         ui_size = Settings::getInstance().getUIsize();
 
+        if (ui_size > 300)
+            ui_size = 300;
+
         float new_scale = highDPIscale_ * (float)ui_size/100.f;
 
         Settings::getInstance().setScale(new_scale);

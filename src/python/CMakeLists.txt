@@ -17,6 +17,8 @@ install(
     DESTINATION ${INSTALL_DIR}/python/bin
 )
 
+
+
 # Check for the required packages
 file(STRINGS ../scripts/requirements.txt PYTHON_REQUIREMENTS)
 foreach(_package IN LISTS PYTHON_REQUIREMENTS)

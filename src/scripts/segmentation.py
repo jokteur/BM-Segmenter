@@ -1,6 +1,8 @@
 import os
 import toml
 
+import numpy as np
+
 from .workspace import get_dirs, get_root
 from .util import make_safe_filename
 
@@ -56,3 +58,12 @@ def load_segmentations(root_dir: str):
 def get_mask_path(dicom_id: str, path: str, name: str):
     dirs = get_dirs(os.path.dirname(os.path.dirname(path)))[1]
     return os.path.join(dirs["masks"], name, dicom_id)
+
+
+def save_mask_collection(current, validated, prediction, filename: str):
+    np.savez_compressed(filename, current=current, validated=validated, prediction=prediction)
+    print(filename, "Saving")
+
+
+def load_mask_collection(filename):
+    pass

@@ -86,8 +86,8 @@ namespace core {
         void setId(const std::string& id) { id_ = id; }
 
         void loadAll(bool force_load = false);
-        void loadCase(float percentage, bool force_replace = false, const std::function<void(const Dicom&)>& when_finished_fct = [](const Dicom&) {});
-        void loadCase(int index, bool force_replace = false, const std::function<void(const Dicom&)>& when_finished_fct = [](const Dicom&) {});
+        jobId loadCase(float percentage, bool force_replace = false, const std::function<void(const Dicom&)>& when_finished_fct = [](const Dicom&) {});
+        jobId loadCase(int index, bool force_replace = false, const std::function<void(const Dicom&)>& when_finished_fct = [](const Dicom&) {});
         void unloadData(bool keep_current = false);
         void cleanData();
         void cancelPendingJobs();

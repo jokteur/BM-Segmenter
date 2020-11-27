@@ -4,6 +4,7 @@
 namespace core {
 	namespace segmentation {
 		namespace py = pybind11;
+		using namespace py::literals;
 
 		MaskCollection::MaskCollection(int rows, int cols, int max_size) : rows_(rows), cols_(cols), max_size_(max_size) {
 			it_ = history_.end();
@@ -124,8 +125,7 @@ namespace core {
 
 		std::string MaskCollection::saveCollection(const std::string& basename) {
 			basename_path_ = basename;
-			saveCollection();
-			return "";
+			return saveCollection();
 		}
 
 		std::string MaskCollection::saveCollection() {
@@ -133,9 +133,23 @@ namespace core {
 				return "Cannot save mask because basename path is missing";
 			}
 
+			std::string error_msg;
+			auto state = PyGILState_Ensure();
+			try {
+				NDArrayConverter::init_numpy();
+				py::module np = py::module::import("numpy");
+				auto& current = getCurrent();
 
+				py::module seg = py::module::import("python.scripts.segmentation");
+				seg.attr("save_mask_collection")(current.getData(), validated_.getData(), prediction_.getData(), basename_path_);
+			}
+			catch (const std::exception& e) {
+				std::cout << e.what() << std::endl;
+				error_msg = e.what();
+			}
+			PyGILState_Release(state);
 
-			return "";
+			return error_msg;
 		}
 
 		std::string MaskCollection::loadCollection(const std::string& basename) {
@@ -159,6 +173,7 @@ namespace core {
 		void MaskCollection::removeAllValidatedBy() {
 			is_validated_ = false;
 			validated_by_.clear();
+			validated_ = Mask();
 		}
 
 		void MaskCollection::removeValidatedBy(std::string name) {
@@ -167,6 +182,7 @@ namespace core {
 			}
 			if (validated_by_.empty()) {
 				is_validated_ = false;
+				validated_ = Mask();
 			}
 		}
 

@@ -74,8 +74,9 @@ endif (WIN32)
 add_definitions(-DPy_ENABLE_SHARED)
 
 set(Python_ROOT_DIR "" CACHE PATH "Python conda path")
+set(Python_NUMPY_INCLUDE "" CACHE PATH "Numpy include dir path")
 
-find_package(Python REQUIRED Interpreter Development)
+find_package(Python COMPONENTS Interpreter Development)
 
 if((NOT ${Python_FOUND}))
     message(FATAL_ERROR
@@ -95,7 +96,9 @@ if(NOT EXISTS "${Python_INCLUDE_DIRS}/Python.h")
             )
 endif()
 
+message(${Python_INCLUDE_DIRS})
 include_directories(${Python_INCLUDE_DIRS})
+include_directories(${Python_NUMPY_INCLUDE})
 add_subdirectory(src/python)
 
 add_subdirectory(thirdparty/pybind11)
@@ -128,6 +131,12 @@ set(imgui_binding
         ${imgui_bindings_DIR}/imgui_impl_opengl3.cpp
         ${imgui_bindings_DIR}/imgui_impl_opengl3.h)
 include_directories(thirdparty/imgui_bindings)
+
+# ---------------
+# opencv to numpy
+# ---------------
+set(cv2np thirdparty/opencv2np/cv2np.h thirdparty/opencv2np/cv2np.cpp)
+include_directories(thirdparty/opencv2np)
 
 # ----------------
 # nativefiledialog
@@ -167,7 +176,7 @@ file (GLOB _project_src RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         src/rendering/ui/import/*.cpp src/rendering/ui/import/*.h
         src/rendering/views/*.cpp src/rendering/views/*.h)
 
-set(all_sources ${_project_src} ${GLAD_GL} ${imgui_src} ${imgui_binding} ${gl3w_src})
+set(all_sources ${_project_src} ${GLAD_GL} ${imgui_src} ${imgui_binding} ${gl3w_src} ${cv2np})
 list(REMOVE_ITEM all_sources "src/main.cpp")
 
 add_library(${PROJECT_NAME}_lib STATIC ${all_sources})

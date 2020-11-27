@@ -49,13 +49,14 @@ void core::DicomSeries::loadAll(bool force_load) {
     }
 }
 
-void core::DicomSeries::loadCase(float percentage, bool force_replace, const std::function<void(const Dicom&)>& when_finished_fct) {
+jobId core::DicomSeries::loadCase(float percentage, bool force_replace, const std::function<void(const Dicom&)>& when_finished_fct) {
     if (percentage >= 0.f && percentage <= 1.f) {
-        loadCase((int) ((float) (data_.size() - 1) * percentage), force_replace, when_finished_fct);
+        return loadCase((int) ((float) (data_.size() - 1) * percentage), force_replace, when_finished_fct);
     }
+    return 0;
 }
 
-void core::DicomSeries::loadCase(int index, bool force_replace, const std::function<void(const Dicom&)>& when_finished_fct) {
+jobId core::DicomSeries::loadCase(int index, bool force_replace, const std::function<void(const Dicom&)>& when_finished_fct) {
     if (index >= 0 && index < data_.size()) {
         if (!load_all_) {
             cancelPendingJobs();
@@ -64,7 +65,7 @@ void core::DicomSeries::loadCase(int index, bool force_replace, const std::funct
         data_[index].error_message.clear();
         if (!force_replace && data_[index].is_set) {
             when_finished_fct(data_[index]);
-            return;
+            return 0;
         }
 
         jobResultFct when_finished = [=] (const std::shared_ptr<JobResult> &result) {
@@ -91,15 +92,20 @@ void core::DicomSeries::loadCase(int index, bool force_replace, const std::funct
             pending_jobs_.erase(result->id);
         };
 
+        jobId id;
         if (format_ == F_NP) {
             auto job = dataset::npy_to_matrix(images_path_[index], when_finished);
+            id = job->id;
             pending_jobs_.insert(job->id);
         }
         else {
             auto job = dataset::dicom_to_matrix(images_path_[index], when_finished);
             pending_jobs_.insert(job->id);
+            id = job->id;
         }
+        return id;
     }
+    return 0;
 }
 
 void core::DicomSeries::unloadData(bool keep_current) {

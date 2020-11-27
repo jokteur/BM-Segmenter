@@ -5,7 +5,6 @@
 #include <memory>
 
 #include "opencv2/opencv.hpp"
-#include "opencv2/imgproc.hpp"
 
 #include "core/dicom.h"
 
@@ -73,12 +72,12 @@ namespace core {
 			/**
 			 * Returns the width of the mask
 			*/
-			int width() { return rows_; }
+			int rows() { return rows_; }
 
 			/**
 			 * Returns the width of the mask
 			*/
-			int height() { return cols_; }
+			int cols() { return cols_; }
 		};
 
 		/**

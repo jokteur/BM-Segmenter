@@ -45,11 +45,16 @@ namespace Rendering {
         ImVec2 prev_crop_x_ = ImVec2(0, 100);
         ImVec2 prev_crop_y_ = ImVec2(0, 100);
 
+        Listener job_listener_;
+        jobId waiting_on_;
+
         bool is_crop_locked = false; // When true, setCrop won't affect excepted when forced
         bool is_window_locked = false;
 
         bool allow_scroll_ = false;
         int case_idx = 0;
+        
+        double __num = 235.654885342;
 
         void set_case(int idx);
         void set_crop(ImVec2 crop_x, ImVec2 crop_y, bool lock = false);
@@ -65,6 +70,8 @@ namespace Rendering {
         Preview(const Preview& other);
 
         Preview(const Preview&& other);
+
+        ~Preview();
 
         /**
          * Draws the viewer image widget
