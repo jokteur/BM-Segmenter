@@ -24,7 +24,17 @@ namespace Rendering {
 
         std::vector<const char*> group_names_ = { "Show all" };
         std::vector<::core::dataset::Group> groups_;
-        int item_select_ = 0;
+        int group_idx_ = 0;
+        int group_prev_idx_ = 0;
+
+
+        std::shared_ptr<::core::segmentation::Segmentation> active_seg_ = nullptr;
+        int seg_idx_ = 0;
+        int seg_prev_idx_ = 0;
+        std::vector<std::string> seg_names_;
+        std::map<int, std::shared_ptr<::core::segmentation::Segmentation>> seg_map_;
+        int num_segs_ = 0;
+
         int num_cols_ = 3;
         static void drag_and_drop(std::shared_ptr<::core::DicomSeries> case_);
 

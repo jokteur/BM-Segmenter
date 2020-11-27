@@ -5,7 +5,7 @@ from .workspace import get_dirs, get_root
 from .util import make_safe_filename
 
 
-def save_segmentation(project_file: str, name: str, description: str, filename: str):
+def save_segmentation(project_file: str, name: str, description: str, filename: str, color: list):
     """Saves a segmentation to a file."""
     root = get_root(project_file)
     dirs = get_dirs(root)[1]
@@ -23,9 +23,13 @@ def save_segmentation(project_file: str, name: str, description: str, filename: 
         except FileExistsError:
             pass
 
-    data = {"name": name, "description": description, "stripped_name": make_safe_filename(name)}
+    data = {
+        "name": name,
+        "description": description,
+        "stripped_name": make_safe_filename(name),
+        "color": color,
+    }
     toml.dump(data, open(save_path, "w"))
-    print(data["name"], save_path)
     return save_path
 
 

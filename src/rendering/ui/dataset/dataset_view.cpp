@@ -5,11 +5,14 @@
 
 void Rendering::DatasetView::drag_and_drop(std::shared_ptr<::core::DicomSeries> case_) {
     if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
-        EventQueue::getInstance().post(Event_ptr(new Event("no_action")));
+        std::cout << "Drag" << std::endl;
+        EventQueue::getInstance().post(Event_ptr(new Event("global/no_action")));
         auto& drag_and_drop = DragAndDrop<std::shared_ptr<::core::DicomSeries>>::getInstance();
         drag_and_drop.giveData(case_);
 
         int a = 0; // Dummy int
+        int b = 1;
+        b / a;
         ImGui::SetDragDropPayload("_DICOM_PAYLOAD", &a, sizeof(a));
         ImGui::Text("Drag %s", ::core::parse_dicom_id(case_->getId()).first.c_str());
         ImGui::EndDragDropSource();
@@ -42,44 +45,90 @@ void Rendering::DatasetView::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
         }
 
         // Interaction for the column viewing
-        if (dicom_previews_.size() < num_cols_ && !dicom_previews_.empty()) {
-            num_cols_ = dicom_previews_.size();
-        }
-        ImGui::Text("Num. columns: %d", num_cols_);
-        ImGui::SameLine();
-        if (ImGui::Button(" -###explorer_preview_button_minus")) {
-            if (num_cols_ > 1)
-                num_cols_--;
-        }
-        ImGui::SameLine();
-        if (ImGui::Button("+###explorer_preview_button_plus")) {
-            if (num_cols_ < 5)
-                num_cols_++;
-        }
-
-        // Show group selection
-        if (std::equal(groups_.begin(), groups_.end(), project->getDataset().getGroups().begin())) {
-            groups_ = project->getDataset().getGroups();
-            group_names_.clear();
-            group_names_.push_back("Show all");
-            for (auto& group : groups_) {
-                group_names_.push_back(group.getName().c_str());
+        {
+            if (dicom_previews_.size() < num_cols_ && !dicom_previews_.empty()) {
+                num_cols_ = dicom_previews_.size();
+            }
+            ImGui::Text("Num. columns: %d", num_cols_);
+            ImGui::SameLine();
+            if (ImGui::Button(" -###explorer_preview_button_minus")) {
+                if (num_cols_ > 1)
+                    num_cols_--;
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("+###explorer_preview_button_plus")) {
+                if (num_cols_ < 5)
+                    num_cols_++;
             }
         }
-        if (!groups_.empty()) {
-            const char* combo_label = group_names_[item_select_];
-            if (ImGui::BeginCombo("Select group", combo_label)) {
+
+        // Show segmentation selection
+        {
+            auto& segs = project->getSegmentations();
+            if (segs.size() != seg_map_.size()) {
+                seg_names_.clear();
+                seg_names_.push_back("Select segmentation");
+                seg_map_.clear();
                 int n = 0;
-                for (int n = 0; n < groups_.size() + 1; n++) {
-                    const bool is_selected = (item_select_ == n);
-                    if (ImGui::Selectable(group_names_[n], is_selected))
-                        item_select_ = n;
+                for (auto& seg : segs) {
+                    seg_names_.push_back(seg->getName());
+                    seg_map_[n] = seg;
+                    n++;
+                }
+                seg_idx_ = 0;
+                num_segs_ = segs.size();
+            }
+            const char* combo_label = seg_names_[seg_idx_].c_str();
+            if (ImGui::BeginCombo("Segmentation", combo_label)) {
+                int n = 0;
+                for (int n = 0; n < seg_names_.size(); n++) {
+                    const bool is_selected = (seg_idx_ == n);
+                    if (ImGui::Selectable(seg_names_[n].c_str(), is_selected))
+                        seg_idx_ = n;
 
                     // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
                     if (is_selected)
                         ImGui::SetItemDefaultFocus();
                 }
                 ImGui::EndCombo();
+            }
+
+            if (seg_prev_idx_ != seg_idx_) {
+                seg_prev_idx_ = seg_idx_;
+                if (seg_idx_ == 0) {
+                    EventQueue::getInstance().post(Event_ptr(new ::core::segmentation::SelectSegmentationEvent(nullptr)));
+                }
+                else {
+                    EventQueue::getInstance().post(Event_ptr(new ::core::segmentation::SelectSegmentationEvent(seg_map_.at(seg_idx_ - 1))));
+                }
+            }
+        }
+
+        // Show group selection
+        {
+            if (std::equal(groups_.begin(), groups_.end(), project->getDataset().getGroups().begin())) {
+                groups_ = project->getDataset().getGroups();
+                group_names_.clear();
+                group_names_.push_back("Show all");
+                for (auto& group : groups_) {
+                    group_names_.push_back(group.getName().c_str());
+                }
+            }
+            if (!groups_.empty()) {
+                const char* combo_label = group_names_[group_idx_];
+                if (ImGui::BeginCombo("Select group", combo_label)) {
+                    int n = 0;
+                    for (int n = 0; n < groups_.size() + 1; n++) {
+                        const bool is_selected = (group_idx_ == n);
+                        if (ImGui::Selectable(group_names_[n], is_selected))
+                            group_idx_ = n;
+
+                        // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+                        if (is_selected)
+                            ImGui::SetItemDefaultFocus();
+                    }
+                    ImGui::EndCombo();
+                }
             }
         }
         ImGui::Separator();
@@ -93,13 +142,13 @@ void Rendering::DatasetView::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
         ImGui::Columns(num_cols_);
         float width = ImGui::GetContentRegionAvailWidth();
         // Show all cases
-        if (item_select_ == 0) {
+        if (group_idx_ == 0) {
             for (auto& dicom : dicoms_) {
                 preview_widget(dicom_previews_[dicom], width, mouse_pos, sub_window_dim, dicom, window, parent_dimension);
             }
         }
         else {
-            for (auto& dicom : groups_[item_select_ - 1].getOrderedDicoms()) {
+            for (auto& dicom : groups_[group_idx_ - 1].getOrderedDicoms()) {
                 preview_widget(dicom_previews_[dicom], width, mouse_pos, sub_window_dim, dicom, window, parent_dimension);
             }
         }

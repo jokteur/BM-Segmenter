@@ -6,9 +6,27 @@ namespace core {
 	namespace segmentation {
 		namespace py = pybind11;
 
-		Segmentation::Segmentation(const std::string& name, const std::string& description)
-			: name_(name), description_(description)
+		Segmentation::Segmentation(const std::string& name, const std::string& description, ImVec4 color)
+			: name_(name), description_(description), color_(color)
 		{
+		}
+
+		void Segmentation::setMaskColor(const std::vector<float> color) {
+			color_.x = color[0];
+			color_.y = color[1];
+			color_.z = color[2];
+			color_.w = color[3];
+		}
+
+		void Segmentation::setMaskColor(const float color[4]) {
+			color_.x = color[0];
+			color_.y = color[1];
+			color_.z = color[2];
+			color_.w = color[3];
+		}
+
+		void Segmentation::clear() {
+			segmentations_.clear();
 		}
 
 		std::string Segmentation::getMaskBasename(std::shared_ptr<DicomSeries> dicom) {
@@ -31,7 +49,7 @@ namespace core {
 			if (segmentations_.find(dicom) == segmentations_.end()) {
 				if (dicom->size() > 0) {
 					segmentations_[dicom] = MaskCollection();
-					segmentations_[dicom].setBasenamePath(getMaskBasename(dicom));
+					segmentations_[dicom].loadCollection(getMaskBasename(dicom));
 				}
 			}
 		}

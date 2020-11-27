@@ -5,6 +5,14 @@
 
 int Rendering::ImageButton::instance_number = 0;
 
+bool Rendering::ImageButton::isMouseReleased() {
+    if (mouse_released_) {
+        mouse_released_ = false;
+        return true;
+    }
+    return false;
+}
+
 void Rendering::ImageButton::ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) {
     is_just_pressed_ = false;
     // Set the styling for the button
@@ -85,6 +93,7 @@ void Rendering::ImageButton::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
     if (Widgets::check_hitbox(mouse_pos, dimensions_)) {
         is_hovering_ = true;
         if (ImGui::IsMouseClicked(0)) {
+            mouse_released_ = false;
             if (is_toggle_)
                 is_pressed_ = !is_pressed_;
             else
@@ -93,6 +102,7 @@ void Rendering::ImageButton::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
             is_just_pressed_ = true;
         }
         if (ImGui::IsMouseDown(0)) {
+            mouse_released_ = false;
             ImGuiIO& io = ImGui::GetIO();
             click_duration_ = io.MouseDownDuration[0];
         }
@@ -102,6 +112,10 @@ void Rendering::ImageButton::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
     }
 
     if (ImGui::IsMouseReleased(0)) {
+        if (Widgets::check_hitbox(mouse_pos, dimensions_)) {
+            mouse_released_ = true;
+        }
+
         if (!is_toggle_)
             is_pressed_ = false;
 //        click_duration_ = 0.f;

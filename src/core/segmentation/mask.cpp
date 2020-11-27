@@ -5,21 +5,42 @@ namespace core {
 	namespace segmentation {
 		namespace py = pybind11;
 
-		MaskCollection::MaskCollection(int rows, int cols) : rows_(rows), cols_(cols) {
+		MaskCollection::MaskCollection(int rows, int cols, int max_size) : rows_(rows), cols_(cols), max_size_(max_size) {
 			it_ = history_.end();
 		}
 
 		void MaskCollection::push(const Mask& mask) {
-			if (it_ != history_.end()) {
+			if (!history_.empty() && it_ != history_.end()) {
 				history_.erase(it_, history_.end());
 			}
 			history_.push_back(mask);
+
+			if (history_.size() > max_size_) {
+				history_.pop_front();
+			}
+
 			it_ = history_.end();
 		}
 
 		void MaskCollection::push_new() {
 			Mask mask(cols_, rows_);
 			push(mask);
+		}
+
+		void MaskCollection::loadData(bool keep) {
+			//is_valid_ = true;
+			keep_ = keep;
+			std::cout << "load mask" << std::endl;
+		}
+
+		void MaskCollection::unloadData(bool force) {
+			if (!keep_ || force) {
+				prediction_ = Mask();
+				validated_ = Mask();
+				history_.clear();
+				it_ = history_.end();
+				is_valid_ = false;
+			}
 		}
 
 		MaskCollection MaskCollection::copy() {
@@ -36,14 +57,29 @@ namespace core {
 		}
 
 		void MaskCollection::setDimensions(std::shared_ptr<DicomSeries> dicom) {
+			if (!dicom->getData().empty()) {
+				auto& data = dicom->getData()[0].data;
+				if (data.rows > 0 && data.cols > 0) {
+					rows_ = data.rows;
+					cols_ = data.cols;
+					is_valid_ = true;
+					std::cout << "Already set " << rows_ << " " << cols_ << std::endl;
+					return;
+				}
+			}
 			dicom->loadCase(0, false, [this, &dicom](const core::Dicom& dicom_res) {
 				rows_ = dicom_res.data.rows;
 				cols_ = dicom_res.data.cols;
+				std::cout << "Set after " << rows_ << " " << cols_ << std::endl;
+				is_valid_ = true;
 				dicom->cleanData();
 			});
 		}
 
 		Mask& MaskCollection::undo() {
+			if (history_.empty()) {
+				return Mask(rows_, cols_);
+			}
 			if (it_ != ++history_.begin()) {
 				it_--;
 			}
@@ -51,19 +87,37 @@ namespace core {
 		}
 
 		Mask& MaskCollection::redo() {
+			if (history_.empty()) {
+				return Mask(rows_, cols_);
+			}
 			if (it_ != history_.end()) {
 				it_++;
 			}
 			return getCurrent();
 		}
 
+		int MaskCollection::size() {
+			return history_.size();
+		}
+
+		bool MaskCollection::isCursorBegin() {
+			if (history_.empty())
+				return true;
+			return it_ == ++history_.begin();
+		}
+
+		bool MaskCollection::isCursorEnd() {
+			if (history_.empty())
+				return true;
+			return it_ == history_.end();
+		}
+
 		Mask& core::segmentation::MaskCollection::getCurrent() {
 			if (history_.empty()) {
-				return Mask(rows_, cols_);
+				push_new();
 			}
-			Mask& mask = *(it_--);
-			it_++;
-			return mask;
+			iterator my_it = it_;
+			return *(--my_it);
 		}
 
 		void MaskCollection::setBasenamePath(const std::string& basename) {
@@ -112,18 +166,20 @@ namespace core {
 			data_.copyTo(mask.data_);
 			mask.rows_ = rows_;
 			mask.cols_ = cols_;
-			mask.filename_ = filename_;
+			mask.is_empty_ = is_empty_;
 			return mask;
 		}
 
 		void Mask::setData(cv::Mat& data) {
 			data_ = data;
+			is_empty_ = false;
 		}
 
 		void Mask::intersect_with(const Mask& mat) {
 			if (mat.data_.rows != rows_ || mat.data_.cols != cols_) {
 				return;
 			}
+			is_empty_ = false;
 
 			unsigned char* data = data_.data;
 			for (int row = 0; row < rows_; ++row) {
@@ -144,6 +200,7 @@ namespace core {
 			if (mat.data_.rows != rows_ || mat.data_.cols != cols_) {
 				return;
 			}
+			is_empty_ = false;
 
 			unsigned char* data = data_.data;
 			for (int row = 0; row < rows_; ++row) {
@@ -163,6 +220,7 @@ namespace core {
 			if (mat.data_.rows != rows_ || mat.data_.cols != cols_) {
 				return;
 			}
+			is_empty_ = false;
 
 			unsigned char* data = data_.data;
 			for (int row = 0; row < rows_; ++row) {
@@ -203,9 +261,16 @@ namespace core {
 			}
 		}
 
+		void lassoSelectToMask(const std::vector<cv::Point>& pts, Mask& mask, int value) {
+			if (!pts.empty() && mask.getData().rows > 0 && mask.getData().cols > 0)
+				cv::fillPoly(mask.getData(), pts, value);
+		}
+
 		void brushToMask(float radius, ImVec2 position, Mask& mask, int value) {
-			cv::Point circle_center(position.x, position.y);
-			cv::circle(mask.getData(), circle_center, radius, value, -1);
+			if (mask.getData().rows > 0 && mask.getData().cols > 0) {
+				cv::Point circle_center(position.x, position.y);
+				cv::circle(mask.getData(), circle_center, radius, value, -1);
+			}
 		}
 	}
 }

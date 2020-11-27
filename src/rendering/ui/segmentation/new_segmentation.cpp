@@ -9,31 +9,40 @@ void Rendering::NewSegmentationModal::showModal(const std::shared_ptr<::core::pr
 
     draw_fct = [project = project_, this](bool& show, bool& enter, bool& escape) {
 
-        Shortcut shortcut;
-        shortcut.keys = { KEY_ENTER, CMD_KEY };
-        shortcut.name = "confirm";
-        shortcut.callback = [this] {
-            confirm_ = true;
-        };
-
         KeyboardShortCut::ignoreNormalShortcuts();
 
         ImGui::Text("Segmentation name:");
         ImGui::SameLine();
         ImGui::InputText("##new_seg_name", &name_);
 
-        ImGui::Text("Segmentation description:");
-        ImGui::InputTextMultiline("##new_seg_description", &description_, ImVec2(-FLT_MIN, ImGui::GetTextLineHeight() * 16), ImGuiInputTextFlags_AllowTabInput);
+        //ImGui::Text("Segmentation description:");
+        //ImGui::InputTextMultiline("##new_seg_description", &description_, ImVec2(-FLT_MIN, ImGui::GetTextLineHeight() * 16), ImGuiInputTextFlags_AllowTabInput);
+
+        //ImGui::ColorEdit4("color of the masks", color_);
+        ImGui::Text("Overlay color (mask color):");
+        ImGui::SameLine();
+        ImGui::ColorButton("overlay color (with alpha)", color, ImGuiColorEditFlags_AlphaPreviewHalf);
+        if (ImGui::BeginPopupContextItem("Change color", 0)) {
+            ImGui::ColorPicker4("color", color_, ImGuiColorEditFlags_AlphaPreviewHalf);
+            color = { color_[0], color_[1], color_[2], color_[3] };
+            ImGui::EndPopup();
+        }
+        
 
         if (escape) {
             show = false;
         }
-        if (ImGui::Button("Create segmentation") || confirm_) {
+        if (ImGui::Button("Create segmentation") || enter) {
+            enter = false;
             if (name_.empty()) {
                 show_error_modal("New segmentation error", "Please enter a name for the segmentation", "");
             }
             else {
-                std::string err = project_manager_.getCurrentProject()->addSegmentation(std::make_shared<::core::segmentation::Segmentation>(name_, description_));
+                std::string err = project_manager_.getCurrentProject()->addSegmentation(std::make_shared<::core::segmentation::Segmentation>(
+                    name_,
+                    description_, 
+                    ImVec4(color_[0], color_[1], color_[2], color_[3])
+                ));
                 if (err.empty()) {
                     project_manager_.getCurrentProject()->saveSegmentations();
                     name_ = "";

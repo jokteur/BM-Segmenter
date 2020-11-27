@@ -16,6 +16,7 @@
 #include "rendering/drawables.h"
 #include "rendering/ui/widgets/image_simple.h"
 #include "rendering/ui/widgets/image_button.h"
+#include "rendering/keyboard_shortcuts.h"
 
 namespace Rendering {
     struct Line {
@@ -36,6 +37,10 @@ namespace Rendering {
         ::core::Image image_;
         SimpleImage image_widget_;
 
+        // Shortcuts
+        Shortcut ctrl_z_;
+        Shortcut ctrl_y_;
+
         // Buttons
         ImageButton lasso_select_b_;
         ImageButton box_select_b_;
@@ -47,14 +52,10 @@ namespace Rendering {
         std::vector<ImageButton*> buttons_list_;
 
         std::shared_ptr<::core::segmentation::Segmentation> active_seg_ = nullptr;
-        int seg_idx_ = 0;
-        std::vector<std::string> seg_names_;
-        std::map<int, std::shared_ptr<::core::segmentation::Segmentation>> seg_map_;
-        int num_segs_ = 0;
-        int previous_seg_ = 0;
+
+        ImVec2 dicom_dimensions_;
 
         // State variables
-
         float brush_size_ = 10;
         int add_sub_option_ = 0;
 
@@ -71,7 +72,9 @@ namespace Rendering {
         int path_size = 0;
 
         // Listeners
-        Listener listener_;
+        Listener load_dicom_;
+        Listener reload_seg_;
+        Listener load_segmentation_;
         Listener deactivate_buttons_;
         Listener reset_viewer_listener_;
 
@@ -93,9 +96,15 @@ namespace Rendering {
         void loadDicom(const std::shared_ptr<::core::DicomSeries> dicom);
         void loadCase(int idx);
 
+        void load_segmentation(std::shared_ptr<::core::segmentation::Segmentation> seg);
+        bool set_and_load();
+
         void button_logic();
 
-        void build_mask();
+        void set_mask();
+        void undo();
+        void redo();
+
 
         void lasso_widget(Rect& dimensions);
         void box_widget(Rect& dimensions);

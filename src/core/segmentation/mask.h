@@ -5,6 +5,7 @@
 #include <memory>
 
 #include "opencv2/opencv.hpp"
+#include "opencv2/imgproc.hpp"
 
 #include "core/dicom.h"
 
@@ -27,6 +28,8 @@ namespace core {
 			std::string filename_;
 			cv::Mat data_;
 
+			bool is_empty_ = true;
+
 			//void load_from_file(const std::string& filename);
 		public:
 			Mask(int rows, int cols);
@@ -47,6 +50,8 @@ namespace core {
 			//Mask(const Mask& other);
 
 			Mask copy();
+
+			bool empty() { return is_empty_; }
 
 			/**
 			 * Returns the opencv matrix that represent the mask 
@@ -89,18 +94,26 @@ namespace core {
 
 			int rows_ = 0;
 			int cols_ = 0;
+			int max_size_ = 40;
+
+			bool is_valid_ = false;
+			bool keep_ = false;
 
 			Mask prediction_;
 			Mask validated_;
 		public:
-			MaskCollection() = default;
-			MaskCollection(int rows, int cols);
+			MaskCollection() {
+				std::cout << "Create maskCollection" << std::endl;
+			}
+			MaskCollection(int rows, int cols, int max_size = 40);
 			//MaskCollection(const std::string& filename);
 
 			void push(const Mask& mask);
 			void push_new();
 
-			void loadData();
+			void loadData(bool keep = false);
+			void unloadData(bool force = false);
+			bool isValid() { return is_valid_; }
 
 			MaskCollection copy();
 
@@ -116,6 +129,14 @@ namespace core {
 			 * Goes in the future of the history of the mask collection
 			*/
 			Mask& redo();
+
+			/**
+			 * Returns the size of the history
+			*/
+			int size();
+
+			bool isCursorBegin();
+			bool isCursorEnd();
 
 			/**
 			 * Returns the current mask in the list
@@ -137,7 +158,8 @@ namespace core {
 
 		void buildHuMask(const cv::Mat& hu_mat, Mask& mask, int min, int max);
 
-		void lassoSelectToMask(const std::vector<ImVec2>& paths, Mask& mask, int value = 1);
+		void lassoSelectToMask(const std::vector<cv::Point>& pts, Mask& mask, int value = 1);
+
 		void boxSelectToMask(const ImVec2& top_left, const ImVec2& bottom_right, Mask& mask, int value = 1);
 		void brushToMask(float brush_size, ImVec2 position, Mask& mask, int value = 1);
 	}

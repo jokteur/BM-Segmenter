@@ -13,8 +13,13 @@ void Rendering::EditMask::loadDicom(const std::shared_ptr<core::DicomSeries> dic
     if (dicom_series_ != nullptr) {
         dicom_series_->cancelPendingJobs();
         dicom_series_->unloadData();
+        if (active_seg_ != nullptr) {
+            active_seg_->getMasks()[dicom_series_].unloadData(true);
+        }
     }
     dicom_series_ = dicom;
+
+    set_and_load();
     loadCase(0);
 }
 
@@ -24,12 +29,48 @@ void Rendering::EditMask::loadCase(int idx) {
             image_.setImageFromHU(dicom.data, (float)dicom_series_->getWW(), (float)dicom_series_->getWC());
             image_widget_.setImage(image_);
 
+            if (active_seg_ != nullptr) {
+                active_seg_->getMasks()[dicom_series_].setDimensions(dicom.data.rows, dicom.data.cols);
+                if (active_seg_->getMasks()[dicom_series_].size() == 0) {
+                    active_seg_->getMasks()[dicom_series_].push_new();
+                }
+            }
+            dicom_dimensions_.x = dicom.data.rows;
+            dicom_dimensions_.y = dicom.data.cols;
+
             tmp_mask_.setDimensions(dicom.data.rows, dicom.data.cols);
             tmp_dicom_ = dicom;
 
             dicom_series_->cleanData();
             });
     }
+}
+
+void Rendering::EditMask::load_segmentation(std::shared_ptr<::core::segmentation::Segmentation> seg) {
+    if (active_seg_ != nullptr) {
+        if (dicom_series_ != nullptr) {
+            active_seg_->getMasks()[dicom_series_].unloadData(true);
+        }
+    }
+    active_seg_ = seg;
+    if (dicom_series_ != nullptr) {
+        if (!set_and_load()) {
+            tmp_mask_ = ::core::segmentation::Mask(thresholded_hu_.getData().rows, thresholded_hu_.getData().cols);
+        }
+        reset_image_ = true;
+    }
+}
+
+bool Rendering::EditMask::set_and_load() {
+    if (active_seg_ != nullptr && dicom_series_ != nullptr) {
+        active_seg_->addDicom(dicom_series_);
+        auto& mask_collection = active_seg_->getMasks()[dicom_series_];
+        mask_collection.loadData(true);
+        if (!mask_collection.isValid()) {
+            set_mask();
+        }
+    }
+    return active_seg_ != nullptr;
 }
 
 Rendering::EditMask::EditMask()
@@ -78,19 +119,20 @@ Rendering::EditMask::EditMask()
 
 
     // Listen to selection in the dataset viewer
-    listener_.callback = [=](Event_ptr& event) {
+    load_dicom_.callback = [=](Event_ptr& event) {
         auto log = reinterpret_cast<core::DicomSelectEvent*>(event.get());
         loadDicom(log->getDicom());
     };
-    listener_.filter = "dataset/dicom_edit";
+    load_dicom_.filter = "dataset/dicom_edit";
 
-
+    // Deactivate buttons if user is dragging
     deactivate_buttons_.callback = [=](Event_ptr& event) {
-        active_button_ = nullptr;
         std::cout << "Hello" << std::endl;
+        active_button_ = nullptr;
     };
-    deactivate_buttons_.filter = "no_action";
+    deactivate_buttons_.filter = "global/no_action";
 
+    // Reset the view if there is a request
     reset_viewer_listener_.callback = [=](Event_ptr& event) {
         if (dicom_series_ != nullptr) {
             dicom_series_->cancelPendingJobs();
@@ -99,16 +141,56 @@ Rendering::EditMask::EditMask()
             image_.reset();
             image_widget_.setImage(image_);
         }
+        if (active_seg_ != nullptr) {
+            active_seg_->clear();
+        }
     };
     reset_viewer_listener_.filter = "dataset/dicom/reset";
 
-    EventQueue::getInstance().subscribe(&listener_);
+    // Load a new segmentation
+    load_segmentation_.callback = [=](Event_ptr& event) {
+        load_segmentation(reinterpret_cast<::core::segmentation::SelectSegmentationEvent*>(event.get())->getSegmentation());
+    };
+    load_segmentation_.filter = "segmentation/select";
+
+    // Mainly used for changing colors
+    reload_seg_.callback = [=](Event_ptr& event) {
+        reset_image_ = true;
+    };
+    reload_seg_.filter = "segmentation/reload";
+
+    // Undo and redo
+    ctrl_z_.keys = { KEY_CTRL, GLFW_KEY_Z};
+    ctrl_z_.name = "undo";
+    ctrl_z_.callback = [this] {
+        if (active_seg_ != nullptr && dicom_series_ != nullptr) {
+            if (!active_seg_->getMasks()[dicom_series_].isCursorBegin()) {
+                undo();
+            }
+        }
+    };
+
+    ctrl_y_.keys = { KEY_CTRL, GLFW_KEY_Y };
+    ctrl_y_.name = "undo";
+    ctrl_y_.callback = [this] {
+        if (active_seg_ != nullptr && dicom_series_ != nullptr) {
+            if (!active_seg_->getMasks()[dicom_series_].isCursorEnd()) {
+                redo();
+            }
+        }
+    };
+
+    EventQueue::getInstance().subscribe(&load_dicom_);
+    EventQueue::getInstance().subscribe(&reload_seg_);
+    EventQueue::getInstance().subscribe(&load_segmentation_);
     EventQueue::getInstance().subscribe(&deactivate_buttons_);
     EventQueue::getInstance().subscribe(&reset_viewer_listener_);
 }
 
 Rendering::EditMask::~EditMask() {
-    EventQueue::getInstance().unsubscribe(&listener_);
+    EventQueue::getInstance().unsubscribe(&load_dicom_);
+    EventQueue::getInstance().unsubscribe(&reload_seg_);
+    EventQueue::getInstance().unsubscribe(&load_segmentation_);
     EventQueue::getInstance().unsubscribe(&deactivate_buttons_);
     EventQueue::getInstance().unsubscribe(&reset_viewer_listener_);
 }
@@ -120,6 +202,8 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
     auto project = ::core::project::ProjectManager::getInstance().getCurrentProject();
     
     button_logic();
+    KeyboardShortCut::addTempShortcut(ctrl_z_);
+    KeyboardShortCut::addTempShortcut(ctrl_y_);
 
     ImGui::Begin("Edit mask", &is_open_); // TODO: unique ID
 
@@ -132,55 +216,39 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
         ImGui::Text("ID: %s", ::core::parse_dicom_id(dicom_series_->getId()).first.c_str());
     }
 
-    auto& segs = project->getSegmentations();
-
-    // Build the segmentations names
-    if (segs.size() != num_segs_) {
-        seg_names_.clear();
-        seg_names_.push_back("Select segmentation");
-        seg_map_.clear();
-        int n = 0;
-        for (auto& seg : segs) {
-            seg_names_.push_back(seg->getName());
-            seg_map_[n] = seg;
-            n++;
-        }
-        seg_idx_ = 0;
-        num_segs_ = segs.size();
-    }
-
-    if (dicom_series_ != nullptr) {
-        if (previous_seg_ != seg_idx_) {
-            previous_seg_ = seg_idx_;
-            if (seg_idx_ > 0) {
-                seg_map_[seg_idx_ - 1]->addDicom(dicom_series_);
-            }
-        }
-    }
-
     // Redraw image if necessary
     if (reset_image_) {
         reset_image_ = false;
-        image_.setImageFromHU(tmp_dicom_.data, (float)dicom_series_->getWW(), (float)dicom_series_->getWC(), core::Image::FILTER_NEAREST, tmp_mask_.getData(), ImVec4(1.f, 0.f, 0.f, 0.3f));
+        ImVec4 color = { 1.f, 0.f, 0.f, 0.3f };
+        if (active_seg_ != nullptr) {
+            color = active_seg_->getMaskColor();
+        }
+        image_.setImageFromHU(tmp_dicom_.data, (float)dicom_series_->getWW(), (float)dicom_series_->getWC(), core::Image::FILTER_NEAREST, tmp_mask_.getData(), color);
     }
 
     // Mask edition buttons
-    if (seg_idx_ == 0) {
+    if (active_seg_ == nullptr) {
         ImGui::Text("Please select a segmentation before editing the image.");
     }
     else {
         // Draw the buttons
         lasso_select_b_.ImGuiDraw(window, dimensions_);
         ImGui::SameLine();
-        box_select_b_.ImGuiDraw(window, dimensions_);
-        ImGui::SameLine();
+        //box_select_b_.ImGuiDraw(window, dimensions_);
+        //ImGui::SameLine();
         brush_select_b_.ImGuiDraw(window, dimensions_);
         ImGui::SameLine();
         info_b_.ImGuiDraw(window, dimensions_);
-        ImGui::SameLine();
-        undo_b_.ImGuiDraw(window, dimensions_);
-        ImGui::SameLine();
-        redo_b_.ImGuiDraw(window, dimensions_);
+        if (active_seg_ != nullptr) {
+            if (!active_seg_->getMasks()[dicom_series_].isCursorBegin()) {
+                ImGui::SameLine();
+                undo_b_.ImGuiDraw(window, dimensions_);
+            }
+            if (!active_seg_->getMasks()[dicom_series_].isCursorEnd()) {
+                ImGui::SameLine();
+                redo_b_.ImGuiDraw(window, dimensions_);
+            }
+        }
         if (active_button_ != nullptr) {
             ImGui::SameLine();
             ImGui::Text("Use Ctrl + Mouse to zoom and pan");
@@ -204,24 +272,6 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
                 ImGui::SliderFloat("Brush size", &brush_size_, 1, 200, "%.1f px", 2.f);
             }
         }
-    }
-
-
-    // Select segmentations
-    const char* combo_label = seg_names_[seg_idx_].c_str();
-    if (ImGui::BeginCombo("Select segmentation", combo_label)) {
-        active_button_ = nullptr;
-        int n = 0;
-        for (int n = 0; n < segs.size() + 1; n++) {
-            const bool is_selected = (seg_idx_ == n);
-            if (ImGui::Selectable(seg_names_[n].c_str(), is_selected))
-                seg_idx_ = n;
-
-            // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
-            if (is_selected)
-                ImGui::SetItemDefaultFocus();
-        }
-        ImGui::EndCombo();
     }
 
     ImGui::Separator();
@@ -316,9 +366,40 @@ void Rendering::EditMask::button_logic() {
         image_widget_.setInteractiveZoom(SimpleImage::IMAGE_MODIFIER_INTERACT);
         active_button_ = next_active;
     }
+
+    if (undo_b_.isMouseReleased()) {
+        undo();
+    }
+    if (redo_b_.isMouseReleased()) {
+        redo();
+    }
 }
 
-void Rendering::EditMask::build_mask() {
+void Rendering::EditMask::set_mask() {
+    reset_image_ = true;
+    if (active_seg_ != nullptr) {
+        auto& collections = active_seg_->getMasks();
+        collections[dicom_series_].push(tmp_mask_.copy());
+        collections[dicom_series_].saveCollection();
+    }
+}
+
+void Rendering::EditMask::undo() {
+    if (active_seg_ != nullptr) {
+        auto& collections = active_seg_->getMasks();
+        tmp_mask_ = collections[dicom_series_].undo().copy();
+        collections[dicom_series_].saveCollection();
+        reset_image_ = true;
+    }
+}
+
+void Rendering::EditMask::redo() {
+    if (active_seg_ != nullptr) {
+        auto& collections = active_seg_->getMasks();
+        tmp_mask_ = collections[dicom_series_].redo().copy();
+        collections[dicom_series_].saveCollection();
+        reset_image_ = true;
+    }
 }
 
 void Rendering::EditMask::lasso_widget(Rect& dimensions) {
@@ -345,18 +426,42 @@ void Rendering::EditMask::lasso_widget(Rect& dimensions) {
                 ImGui::GetForegroundDrawList()->AddPolyline(raw_path_, path_size, ImColor(0.7f, 0.7f, 0.7f, 0.5f), true, 2);
         }
     }
-    if (ImGui::IsMouseReleased(0)) {
+    if (ImGui::IsMouseReleased(0) && begin_action_) {
         if (raw_path_ != nullptr) {
-            std::vector<ImVec2> positions;
+            std::vector<cv::Point> positions;
+            Crop crop = image_widget_.getCrop();
             for (int i = 0; i < path_size; i++) {
-                positions.push_back(ImVec2(
-                    (raw_path_[i].x - dimensions.xpos)/dimensions.width * image_.width(), 
-                    (raw_path_[i].y - dimensions.ypos)/dimensions.height * image_.height()
+                positions.push_back(cv::Point(
+                    (crop.x0 + (crop.x1 - crop.x0) * (raw_path_[i].x - dimensions.xpos) / dimensions.width) * image_.width(),
+                    (crop.y0 + (crop.y1 - crop.y0) * (raw_path_[i].y - dimensions.ypos)/dimensions.height) * image_.height()
                 ));
             }
+
+            // Draw the polygon
+            auto* mask = &tmp_mask_;
+            if (threshold_hu_) {
+                mask = new ::core::segmentation::Mask(tmp_mask_.width(), tmp_mask_.height());
+            }
+            if (threshold_hu_)
+                ::core::segmentation::lassoSelectToMask(positions, *mask, 1);
+            else
+                ::core::segmentation::lassoSelectToMask(positions, *mask, (!add_sub_option_) ? 1 : 0);
+
+            if (threshold_hu_) {
+                mask->intersect_with(thresholded_hu_);
+                if (add_sub_option_) {
+                    tmp_mask_.difference_with(*mask);
+                }
+                else {
+                    tmp_mask_.union_with(*mask);
+                }
+                delete mask;
+            }
+
             delete[] raw_path_;
             path_size = 0;
             raw_path_ = nullptr;
+            set_mask();
         }
         begin_action_ = false;
     }
@@ -451,13 +556,13 @@ void Rendering::EditMask::brush_widget(Rect& dimensions) {
                     }
                     delete mask;
                 }
-
-                begin_action_ = true;
                 reset_image_ = true;
+                begin_action_ = true;
             }
         }
     }
-    if (ImGui::IsMouseReleased(0)) {
+    if (ImGui::IsMouseReleased(0) && begin_action_) {
         begin_action_ = false;
+        set_mask();
     }
 }

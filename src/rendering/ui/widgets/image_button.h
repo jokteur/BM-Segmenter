@@ -42,6 +42,7 @@ namespace Rendering {
         bool is_pressed_ = false;
         bool is_just_pressed_ = false;
         bool is_hovering_ = false;
+        bool mouse_released_ = false;
         const char* tooltip_;
 
         float click_duration_ = 0.f;
@@ -104,6 +105,8 @@ namespace Rendering {
          * @return
          */
         bool isLongPressed(float duration = 1.f) const { return click_duration_ > duration; }
+
+        bool isMouseReleased();
 
         /**
          * Draws the viewer image widget

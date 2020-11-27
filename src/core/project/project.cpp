@@ -67,7 +67,9 @@ namespace core {
                 auto state = PyGILState_Ensure();
                 try {
                     py::module scripts = py::module::import("python.scripts.segmentation");
-                    auto save_file = scripts.attr("save_segmentation")(save_file_, seg->getName(), seg->getDescription(), seg->getFilename()).cast<std::string>();
+                    auto color = seg->getMaskColor();
+                    std::vector<float> color_arr = { color.x, color.y, color.z, color.w };
+                    auto save_file = scripts.attr("save_segmentation")(save_file_, seg->getName(), seg->getDescription(), seg->getFilename(), color_arr).cast<std::string>();
                     seg->setFilename(save_file);
                 }   
                 catch (const std::exception& e) {
@@ -79,6 +81,7 @@ namespace core {
             return "";
         }
         std::string Project::loadSegmentations() {
+            segmentations_.clear();
             auto state = PyGILState_Ensure();
             try {
                 auto dicoms = dataset_.getDicoms();
@@ -94,6 +97,7 @@ namespace core {
                     segmentation::Segmentation segmentation(seg["name"].cast<std::string>(), seg["description"].cast<std::string>());
                     segmentation.setFilename(seg["path"].cast<std::string>());
                     segmentation.setStrippedName(seg["stripped_name"].cast<std::string>());
+                    segmentation.setMaskColor(seg["color"].cast <std::vector<float>>());
                     for (auto& id : seg["ids"]) {
                         std::string _id = id.cast<std::string>();
                         if (dicom_id_map.find(_id) == dicom_id_map.end()) {

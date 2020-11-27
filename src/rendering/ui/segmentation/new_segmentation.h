@@ -20,6 +20,8 @@ namespace Rendering {
         ::core::project::ProjectManager& project_manager_;
         std::string name_;
         std::string description_;
+        float color_[4] = {1.f, 0.f, 0.f, 0.5f};
+        ImVec4 color = { 1.f, 0.f, 0.f, 0.5f };
         std::shared_ptr < ::core::project::Project> project_;
 
         bool confirm_ = false;

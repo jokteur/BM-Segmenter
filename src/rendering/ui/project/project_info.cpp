@@ -98,10 +98,25 @@ void Rendering::ProjectInfo::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
 			}
 			ImGui::Separator();
 			ImGui::Text("Segmentations");
-			project->getSegmentations();
 			for (auto& seg : project->getSegmentations()) {
+				auto& color = seg->getMaskColor();
+				ImGui::PushStyleColor(ImGuiCol_Header, seg->getMaskColor());
 				bool leaf = ImGui::TreeNodeEx(&seg, ImGuiTreeNodeFlags_Framed, "%s", seg->getName().c_str());
+				ImGui::PopStyleColor();
 				if (leaf) {
+					ImGui::Text("Overlay color (mask color):"); ImGui::SameLine();
+					ImGui::ColorButton("Overlay color (with alpha)", color, ImGuiColorEditFlags_AlphaPreviewHalf);
+					if (ImGui::BeginPopupContextItem("Change color", 0)) {
+						static float edit_col[4] = { color.x, color.y, color.z, color.w };
+						ImGui::ColorPicker4("color", edit_col, ImGuiColorEditFlags_AlphaPreviewHalf);
+						ImVec4 new_color = { edit_col[0], edit_col[1], edit_col[2], edit_col[3] };
+						if (new_color.x != color.x || new_color.y != color.y || new_color.z != color.z || new_color.w != color.w) {
+							seg->setMaskColor(edit_col);
+							EventQueue::getInstance().post(Event_ptr(new ::core::segmentation::ReloadSegmentationEvent()));
+							project->saveSegmentations();
+						}
+						ImGui::EndPopup();
+					}
 					ImGui::TreePop();
 				}
 			}
