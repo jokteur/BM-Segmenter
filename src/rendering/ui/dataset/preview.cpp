@@ -66,6 +66,7 @@ void Rendering::Preview::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) {
                     image_.texture(),
                     ImVec2(128, 128)
                 );
+                EventQueue::getInstance().post(Event_ptr(new Event("global/no_action")));
                 ImGui::PopID();
                 ImGui::EndDragDropSource();
             }

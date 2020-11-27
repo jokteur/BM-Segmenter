@@ -104,7 +104,13 @@ Rendering::EditMask::EditMask()
         "assets/info_dark.png",
         true,
         "Circular brush"
-    ) {
+    ), validate_b_(
+        "assets/validate.png",
+        "assets/validate_dark.png",
+        true,
+        "Validate image"
+    )
+{
     my_instance_ = instance_number++;
     identifier_ = std::to_string(my_instance_) + std::string("DicomViewer");
     image_widget_.setInteractiveZoom(SimpleImage::IMAGE_NORMAL_INTERACT);
@@ -116,6 +122,7 @@ Rendering::EditMask::EditMask()
     buttons_list_.push_back(&lasso_select_b_);
     buttons_list_.push_back(&box_select_b_);
     buttons_list_.push_back(&brush_select_b_);
+    buttons_list_.push_back(&validate_b_);
 
 
     // Listen to selection in the dataset viewer
@@ -127,8 +134,7 @@ Rendering::EditMask::EditMask()
 
     // Deactivate buttons if user is dragging
     deactivate_buttons_.callback = [=](Event_ptr& event) {
-        std::cout << "Hello" << std::endl;
-        active_button_ = nullptr;
+        disable_buttons();
     };
     deactivate_buttons_.filter = "global/no_action";
 
@@ -200,7 +206,7 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
     io.ConfigWindowsMoveFromTitleBarOnly = true;
 
     auto project = ::core::project::ProjectManager::getInstance().getCurrentProject();
-    
+
     button_logic();
     KeyboardShortCut::addTempShortcut(ctrl_z_);
     KeyboardShortCut::addTempShortcut(ctrl_y_);
@@ -226,53 +232,117 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
         image_.setImageFromHU(tmp_dicom_.data, (float)dicom_series_->getWW(), (float)dicom_series_->getWC(), core::Image::FILTER_NEAREST, tmp_mask_.getData(), color);
     }
 
-    // Mask edition buttons
-    if (active_seg_ == nullptr) {
-        ImGui::Text("Please select a segmentation before editing the image.");
-    }
-    else {
-        // Draw the buttons
-        lasso_select_b_.ImGuiDraw(window, dimensions_);
-        ImGui::SameLine();
-        //box_select_b_.ImGuiDraw(window, dimensions_);
-        //ImGui::SameLine();
-        brush_select_b_.ImGuiDraw(window, dimensions_);
-        ImGui::SameLine();
-        info_b_.ImGuiDraw(window, dimensions_);
-        if (active_seg_ != nullptr) {
-            if (!active_seg_->getMasks()[dicom_series_].isCursorBegin()) {
-                ImGui::SameLine();
-                undo_b_.ImGuiDraw(window, dimensions_);
-            }
-            if (!active_seg_->getMasks()[dicom_series_].isCursorEnd()) {
-                ImGui::SameLine();
-                redo_b_.ImGuiDraw(window, dimensions_);
-            }
+
+    // Buttons and validation
+    {
+        if (active_seg_ == nullptr) {
+            ImGui::Text("Please select a segmentation before editing the image.");
         }
-        if (active_button_ != nullptr) {
+        else if (dicom_series_ != nullptr) {
+            auto& collection = active_seg_->getMasks()[dicom_series_];
+            bool is_validated = collection.getIsValidated();
+
+            // Draw the buttons
+            info_b_.ImGuiDraw(window, dimensions_);
             ImGui::SameLine();
-            ImGui::Text("Use Ctrl + Mouse to zoom and pan");
-        }
+            if (!is_validated) {
+                lasso_select_b_.ImGuiDraw(window, dimensions_);
+                ImGui::SameLine();
+                //box_select_b_.ImGuiDraw(window, dimensions_);
+                //ImGui::SameLine();
+                brush_select_b_.ImGuiDraw(window, dimensions_);
+                ImGui::SameLine();
+            }
+            validate_b_.ImGuiDraw(window, dimensions_);
 
-        if (active_button_ != nullptr) {
-            ImGui::Text("Tool options");
-            ImGui::RadioButton("Add", &add_sub_option_, 0); ImGui::SameLine();
-            ImGui::RadioButton("Substract", &add_sub_option_, 1); ImGui::SameLine();
-            ImGui::Checkbox("Threshold HU", &threshold_hu_);
-            if (threshold_hu_) {
-                ImGui::DragFloatRange2("HU threshold", &hu_min_, &hu_max_, 1.f, -1000.f, 3000.f, "Min: %.1f HU", "Max: %.1f HU");
-
-                if (prev_hu_max_ != hu_max_ || prev_hu_min_ != hu_min_) {
-                    prev_hu_max_ = hu_max_;
-                    prev_hu_min_ = hu_min_;
-                    ::core::segmentation::buildHuMask(tmp_dicom_.data, thresholded_hu_, hu_min_, hu_max_);
+            if (!is_validated) {
+                if (!active_seg_->getMasks()[dicom_series_].isCursorBegin()) {
+                    ImGui::SameLine();
+                    undo_b_.ImGuiDraw(window, dimensions_);
+                }
+                if (!active_seg_->getMasks()[dicom_series_].isCursorEnd()) {
+                    ImGui::SameLine();
+                    redo_b_.ImGuiDraw(window, dimensions_);
                 }
             }
-            if (active_button_ == &brush_select_b_) {
-                ImGui::SliderFloat("Brush size", &brush_size_, 1, 200, "%.1f px", 2.f);
+
+            if (active_button_ != nullptr && active_button_ != &validate_b_) {
+                ImGui::SameLine();
+                ImGui::Text("Use Ctrl + Mouse to zoom and pan");
+                ImGui::Text("Tool options");
+                ImGui::RadioButton("Add", &add_sub_option_, 0); ImGui::SameLine();
+                ImGui::RadioButton("Substract", &add_sub_option_, 1); ImGui::SameLine();
+                ImGui::Checkbox("Threshold HU", &threshold_hu_);
+                if (threshold_hu_) {
+                    ImGui::DragFloatRange2("HU threshold", &hu_min_, &hu_max_, 1.f, -1000.f, 3000.f, "Min: %.1f HU", "Max: %.1f HU");
+
+                    if (prev_hu_max_ != hu_max_ || prev_hu_min_ != hu_min_) {
+                        prev_hu_max_ = hu_max_;
+                        prev_hu_min_ = hu_min_;
+                        ::core::segmentation::buildHuMask(tmp_dicom_.data, thresholded_hu_, hu_min_, hu_max_);
+                    }
+                }
+                if (active_button_ == &brush_select_b_) {
+                    ImGui::SliderFloat("Brush size", &brush_size_, 1, 200, "%.1f px", 2.f);
+                }
+            }
+            else if (active_button_ == &validate_b_ || is_validated) {
+                image_widget_.setImageDrag(SimpleImage::IMAGE_NORMAL_INTERACT);
+                image_widget_.setInteractiveZoom(SimpleImage::IMAGE_NORMAL_INTERACT);
+
+                auto& username = project->getCurrentUser();
+                auto& names = collection.getValidatedBy();
+
+                bool username_is_validated = names.find(username) != names.end();
+
+                ImGui::Text("Validation");
+                if (!names.empty()) {
+                    std::string text;
+                    for (auto& name : names) {
+                        text += name + ", ";
+                    }
+                    text = text.substr(0, text.size() - 2);
+                    ImGui::Text("Currently validated by: %s", text.c_str());
+                }
+                if (username.empty()) {
+                    ImGui::Text("For validation of the image, please select a user in the project info tab");
+                }
+                else {
+                    if (is_validated) {
+                        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, .1f, 0.f, 0.7f));
+                        if (ImGui::Button("Unvalidate (all)")) {
+                            collection.removeAllValidatedBy();
+                        }
+                        ImGui::PopStyleColor();
+
+                        if (names.find(username) != names.end()) {
+                            ImGui::SameLine();
+                            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.7f, .5f, 0.3f, 0.7f));
+                            if (ImGui::Button((("Unvalidate (only " + project->getCurrentUser() + ")").c_str()))) {
+                                collection.removeValidatedBy(username);
+                            }
+                            ImGui::PopStyleColor();
+                        }
+                    }
+                    if (!username_is_validated) {
+                        if (is_validated)
+                            ImGui::SameLine();
+
+                        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.1f, .8f, 0.f, 0.7f));
+                        if (ImGui::Button(("Validate (by " + project->getCurrentUser() + ")").c_str())) {
+                            if (!is_validated) {
+                                collection.setValidated(tmp_mask_);
+                                collection.saveCollection();
+                            }
+                            collection.setValidatedBy(username);
+                        }
+                        ImGui::PopStyleColor();
+                    }
+                }
             }
         }
     }
+
 
     ImGui::Separator();
 
@@ -332,9 +402,19 @@ void Rendering::EditMask::accept_drag_and_drop() {
             auto& drag_and_drop = DragAndDrop<std::shared_ptr<::core::DicomSeries>>::getInstance();
             auto data = drag_and_drop.returnData();
             loadDicom(data);
+            active_button_ = nullptr;
         }
         ImGui::EndDragDropTarget();
     }
+}
+
+void Rendering::EditMask::disable_buttons() {
+    for (auto button : buttons_list_) {
+        if (button != &validate_b_)
+            button->setState(false);
+    }
+    info_b_.setState(false);
+    active_button_ = nullptr;
 }
 
 void Rendering::EditMask::button_logic() {

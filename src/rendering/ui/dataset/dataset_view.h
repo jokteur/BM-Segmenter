@@ -31,12 +31,11 @@ namespace Rendering {
         std::shared_ptr<::core::segmentation::Segmentation> active_seg_ = nullptr;
         int seg_idx_ = 0;
         int seg_prev_idx_ = 0;
-        std::vector<std::string> seg_names_;
+        std::vector<std::string> seg_names_ = {"Select segmentation"};
         std::map<int, std::shared_ptr<::core::segmentation::Segmentation>> seg_map_;
         int num_segs_ = 0;
 
         int num_cols_ = 3;
-        static void drag_and_drop(std::shared_ptr<::core::DicomSeries> case_);
 
         void preview_widget(Preview& preview, float width, ImVec2 mouse_pos, Rect sub_window_dim, std::shared_ptr<::core::DicomSeries> dicom, GLFWwindow* window, Rect& parent_dimension);
     public:

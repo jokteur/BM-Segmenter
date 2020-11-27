@@ -3,23 +3,6 @@
 #include "drag_and_drop.h"
 #include "rendering/ui/widgets/util.h"
 
-void Rendering::DatasetView::drag_and_drop(std::shared_ptr<::core::DicomSeries> case_) {
-    if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
-        std::cout << "Drag" << std::endl;
-        EventQueue::getInstance().post(Event_ptr(new Event("global/no_action")));
-        auto& drag_and_drop = DragAndDrop<std::shared_ptr<::core::DicomSeries>>::getInstance();
-        drag_and_drop.giveData(case_);
-
-        int a = 0; // Dummy int
-        int b = 1;
-        b / a;
-        ImGui::SetDragDropPayload("_DICOM_PAYLOAD", &a, sizeof(a));
-        ImGui::Text("Drag %s", ::core::parse_dicom_id(case_->getId()).first.c_str());
-        ImGui::EndDragDropSource();
-    }
-}
-
-
 Rendering::DatasetView::DatasetView() {
 	auto& project = project_manager_.getCurrentProject();
 }
@@ -180,6 +163,5 @@ void Rendering::DatasetView::preview_widget(Preview& preview, float width, ImVec
     // Image widget
     preview.setSize(ImVec2(width * 0.98, width * 0.98));
     preview.ImGuiDraw(window, parent_dimension);
-    drag_and_drop(dicom);
     ImGui::NextColumn();
 }

@@ -21,6 +21,14 @@ namespace Rendering {
         ::core::project::ProjectManager& project_manager_ = ::core::project::ProjectManager::getInstance();
 
         NewSegmentationModal new_segmentation_;
+        Shortcut enter_shortcut_;
+
+        std::vector<std::string> user_names_;
+        std::set<std::string> users_;
+        std::string current_user_;
+        bool confirm_ = false;
+        int user_idx_ = 0;
+        int user_prev_idx_ = 0;
 
         bool is_set_ = false;
         bool set_tree_closed_ = true;

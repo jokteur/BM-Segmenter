@@ -58,7 +58,9 @@ namespace core {
 
                 const toml::value general{
                         {"name",        project->getName()},
-                        {"description", project->getDescription()}};
+                        {"description", project->getDescription()},
+                        {"users", project->getUsers()}
+                };
 
                 file << general << std::endl;
 
@@ -100,10 +102,19 @@ namespace core {
 
 
             const auto description = toml::find<std::string>(general, "description");
+            const auto users_find = toml::find<std::vector<std::string>>(general, "users");
+
+            std::vector<std::string> users;
+            for (auto& user : users_find) {
+                users.push_back(user);
+            }
 
             std::shared_ptr<Project> new_project =  std::make_shared<Project>(name, description);
             new_project->setSaveFile(filename);
+            new_project->setUsers(users);
             new_project->setSavedState();
+
+
             projects_.insert(new_project);
             Settings::getInstance().addRecentFile(filename);
             return new_project;

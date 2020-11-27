@@ -63,14 +63,12 @@ namespace core {
 					rows_ = data.rows;
 					cols_ = data.cols;
 					is_valid_ = true;
-					std::cout << "Already set " << rows_ << " " << cols_ << std::endl;
 					return;
 				}
 			}
 			dicom->loadCase(0, false, [this, &dicom](const core::Dicom& dicom_res) {
 				rows_ = dicom_res.data.rows;
 				cols_ = dicom_res.data.cols;
-				std::cout << "Set after " << rows_ << " " << cols_ << std::endl;
 				is_valid_ = true;
 				dicom->cleanData();
 			});
@@ -134,7 +132,9 @@ namespace core {
 			if (basename_path_.empty()) {
 				return "Cannot save mask because basename path is missing";
 			}
-			std::cout << "Saving " << basename_path_ << std::endl;
+
+
+
 			return "";
 		}
 
@@ -151,6 +151,25 @@ namespace core {
 			return "";
 		}
 
+		void MaskCollection::setValidatedBy(std::string name) {
+			validated_by_.insert(name);
+			is_validated_ = true;
+		}
+
+		void MaskCollection::removeAllValidatedBy() {
+			is_validated_ = false;
+			validated_by_.clear();
+		}
+
+		void MaskCollection::removeValidatedBy(std::string name) {
+			if (std::find(validated_by_.begin(), validated_by_.end(), name) != validated_by_.end()) {
+				validated_by_.erase(name);
+			}
+			if (validated_by_.empty()) {
+				is_validated_ = false;
+			}
+		}
+
 		Mask::Mask(int rows, int cols) : rows_(rows), cols_(cols) {
 			setDimensions(rows, cols);
 		}
@@ -161,7 +180,7 @@ namespace core {
 			data_ = cv::Mat::zeros(cv::Size(rows, cols), CV_8U);
 		}
 
-		Mask Mask::copy() {
+		Mask const Mask::copy() const {
 			Mask mask(rows_, cols_);
 			data_.copyTo(mask.data_);
 			mask.rows_ = rows_;

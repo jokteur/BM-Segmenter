@@ -21,12 +21,14 @@ namespace core {
 		*/
 		class Mask {
 		public:
-			enum {MASK_EDITED, MASK_VALIDATED, MASK_PREDICTION};
+			enum mask_info {MASK_EDITED, MASK_VALIDATED, MASK_PREDICTION};
 		private:
 			int rows_ = 0;
 			int cols_ = 0;
 			std::string filename_;
 			cv::Mat data_;
+
+			mask_info state_ = MASK_EDITED;
 
 			bool is_empty_ = true;
 
@@ -49,7 +51,7 @@ namespace core {
 			//void operator=(const Mask& other);
 			//Mask(const Mask& other);
 
-			Mask copy();
+			Mask const copy() const;
 
 			bool empty() { return is_empty_; }
 
@@ -59,6 +61,8 @@ namespace core {
 			cv::Mat& getData() { return data_; }
 
 			void setData(cv::Mat& data);
+
+			void setState(mask_info state) { state_ = state; }
 
 			//void saveToFile(const std::string& filename);
 
@@ -91,20 +95,20 @@ namespace core {
 			iterator current_;
 
 			std::string basename_path_;
+			std::set<std::string> validated_by_;
 
 			int rows_ = 0;
 			int cols_ = 0;
 			int max_size_ = 40;
 
 			bool is_valid_ = false;
+			bool is_validated_ = false;
 			bool keep_ = false;
 
 			Mask prediction_;
 			Mask validated_;
 		public:
-			MaskCollection() {
-				std::cout << "Create maskCollection" << std::endl;
-			}
+			MaskCollection() = default;
 			MaskCollection(int rows, int cols, int max_size = 40);
 			//MaskCollection(const std::string& filename);
 
@@ -152,7 +156,14 @@ namespace core {
 			std::string loadCollection(const std::string& basename);
 			std::string loadCollection();
 
-			void setValidated(const Mask& mask) { validated_ = validated_; }
+			bool getIsValidated() { return is_validated_; }
+			std::set<std::string> getValidatedBy() { return validated_by_; }
+
+			void setValidated(Mask& mask) { validated_ = mask.copy(); }
+			void setValidatedBy(std::string name);
+			void removeAllValidatedBy();
+			void removeValidatedBy(std::string name);
+
 			void setPrediction(const Mask& mask) { prediction_ = prediction_; }
 		};
 
@@ -160,7 +171,7 @@ namespace core {
 
 		void lassoSelectToMask(const std::vector<cv::Point>& pts, Mask& mask, int value = 1);
 
-		void boxSelectToMask(const ImVec2& top_left, const ImVec2& bottom_right, Mask& mask, int value = 1);
+		//void boxSelectToMask(const ImVec2& top_left, const ImVec2& bottom_right, Mask& mask, int value = 1);
 		void brushToMask(float brush_size, ImVec2 position, Mask& mask, int value = 1);
 	}
 }

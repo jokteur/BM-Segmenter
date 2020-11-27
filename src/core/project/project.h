@@ -26,6 +26,9 @@ namespace core {
 
             std::set<std::shared_ptr<segmentation::Segmentation>> segmentations_;
 
+            std::set<std::string> users_;
+            std::string current_user_;
+
         public:
             Project(const std::string &name, const std::string &description);
 
@@ -53,6 +56,10 @@ namespace core {
              * @return
              */
             std::string& getSaveFile() { return save_file_; }
+
+            std::set<std::string> getUsers() { return users_; }
+
+            std::string getCurrentUser() { return current_user_; }
 
             /**
              * Returns the set of markers (for 3D dicom file) in the project
@@ -93,6 +100,10 @@ namespace core {
             void setSavedState() {
                 is_saved_ = true;
             }
+
+            void setUsers(std::vector<std::string> users);
+
+            void setCurrentUser(std::string user);
 
             /**
              * Saves all the segmentations to the disk

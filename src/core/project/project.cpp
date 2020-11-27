@@ -62,6 +62,19 @@ namespace core {
 
             PyGILState_Release(state);
         }
+        void Project::setUsers(std::vector<std::string> users) {
+            users_.clear();
+            for (auto& user : users) {
+                users_.insert(user);
+            }
+        }
+
+        void Project::setCurrentUser(std::string user) {
+            current_user_ = user;
+            if (!user.empty())
+                users_.insert(user);
+        }
+
         std::string Project::saveSegmentations() {
             for (auto& seg : segmentations_) {
                 auto state = PyGILState_Ensure();

@@ -45,6 +45,7 @@ namespace Rendering {
         ImageButton lasso_select_b_;
         ImageButton box_select_b_;
         ImageButton brush_select_b_;
+        ImageButton validate_b_;
         ImageButton undo_b_;
         ImageButton redo_b_;
         ImageButton info_b_;
@@ -99,6 +100,7 @@ namespace Rendering {
         void load_segmentation(std::shared_ptr<::core::segmentation::Segmentation> seg);
         bool set_and_load();
 
+        void disable_buttons();
         void button_logic();
 
         void set_mask();
