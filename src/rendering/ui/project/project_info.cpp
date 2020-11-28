@@ -3,6 +3,7 @@
 #include "drag_and_drop.h"
 #include "rendering/views/explore_view.h"
 #include "rendering/views/default_view.h"
+#include "rendering/ui/widgets/util.h"
 
 Rendering::ProjectInfo::ProjectInfo() {
 	auto& project = project_manager_.getCurrentProject();
@@ -46,7 +47,9 @@ void Rendering::ProjectInfo::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
 			{
 				if (!dataset.getDicoms().empty()) {
 					ImGui::Text("%d unique dicoms in the project.", dataset.getDicoms().size());
+					Widgets::NewLine(5.f);
 					ImGui::Text("Groups:");
+					Widgets::NewLine(5.f);
 					for (auto& group : dataset.getGroups()) {
 						if (set_tree_closed_) {
 							ImGui::SetNextTreeNodeOpen(false);
@@ -97,6 +100,7 @@ void Rendering::ProjectInfo::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
 					}
 					set_tree_closed_ = false;
 				}
+				Widgets::NewLine(5.f);
 				if (ImGui::Button("Import data to project")) {
 					if (project->getSaveFile().empty()) {
 						show_error_modal("Error", "You can not import data to a project without saving the project first.\n"
@@ -106,12 +110,15 @@ void Rendering::ProjectInfo::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
 						EventQueue::getInstance().post(Event_ptr(new SetViewEvent(std::make_unique<ExploreView>())));
 					}
 				}
+				Widgets::NewLine(5.f);
 				ImGui::Separator();
 			}
 
 			// Segmentation menu
 			{
-				ImGui::Text("Segmentations");
+				Widgets::NewLine(5.f);
+				ImGui::Text("Segmentations:");
+				Widgets::NewLine(5.f);
 				for (auto& seg : project->getSegmentations()) {
 					auto& color = seg->getMaskColor();
 					ImGui::PushStyleColor(ImGuiCol_Header, seg->getMaskColor());
@@ -134,17 +141,20 @@ void Rendering::ProjectInfo::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
 						ImGui::TreePop();
 					}
 				}
+				Widgets::NewLine(5.f);
 				if (ImGui::Button("Create segmentation")) {
 					new_segmentation_.showModal(project);
 				}
+				Widgets::NewLine(5.f);
 				ImGui::Separator();
 			}
 
 			// Users
 			{
 				users_ = project->getUsers();
-
+				Widgets::NewLine(5.f);
 				ImGui::Text("Users");
+				Widgets::NewLine(5.f);
 
 				for (auto& user : users_) {
 					ImGui::BulletText("%s", user.c_str());

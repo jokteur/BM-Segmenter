@@ -277,6 +277,7 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
                 }
             }
 
+            Widgets::NewLine(3.f);
             if (active_button_ != nullptr && active_button_ != &validate_b_) {
                 ImGui::SameLine();
                 ImGui::Text("Use Ctrl + Mouse to zoom and pan");

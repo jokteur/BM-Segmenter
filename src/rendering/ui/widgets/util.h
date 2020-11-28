@@ -26,6 +26,15 @@ namespace Rendering {
             }
         }
 
+        static void NewLine(float size = 0.f) {
+            if (size == 0.f) {
+                ImGui::NewLine();
+            }
+            else {
+                ImGui::Dummy(ImVec2(0.f, size));
+            }
+        }
+
         /**
          * Checks if the mouse is inside the rectangle
          * @param mouse_position

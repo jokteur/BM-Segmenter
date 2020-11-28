@@ -63,7 +63,6 @@ def get_mask_path(dicom_id: str, path: str, name: str):
 def save_mask_collection(users: list, current, validated, prediction, filename: str):
 
     users = [str(u) for u in users]
-    print("users", users)
     np.savez_compressed(
         filename,
         current=current,
