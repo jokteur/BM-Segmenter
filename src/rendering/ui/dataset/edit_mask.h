@@ -81,6 +81,7 @@ namespace Rendering {
 
         bool reset_image_ = false;
 
+        bool build_hu_mask_ = false;
         bool active_dragging_ = false;
         ImVec2 drag_delta_;
 

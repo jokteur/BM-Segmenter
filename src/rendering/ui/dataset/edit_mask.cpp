@@ -42,7 +42,8 @@ void Rendering::EditMask::loadCase(int idx) {
             tmp_dicom_ = dicom;
 
             dicom_series_->cleanData();
-            });
+            set_and_load();
+        });
     }
 }
 
@@ -65,9 +66,19 @@ bool Rendering::EditMask::set_and_load() {
     if (active_seg_ != nullptr && dicom_series_ != nullptr) {
         active_seg_->addDicom(dicom_series_);
         auto& mask_collection = active_seg_->getMasks()[dicom_series_];
-        mask_collection.loadData(true);
-        if (!mask_collection.isValid()) {
+        mask_collection.loadData(true, true);
+        if (!mask_collection.isValid() && mask_collection.size() == 0) {
             set_mask();
+        }
+        else if (mask_collection.isValid()) {
+            tmp_mask_ = mask_collection.getValidated().copy();
+            reset_image_ = true;
+            build_hu_mask_ = true;
+        }
+        else {
+            tmp_mask_ = mask_collection.getCurrent().copy();
+            reset_image_ = true;
+            build_hu_mask_ = true;
         }
     }
     return active_seg_ != nullptr;
@@ -276,7 +287,8 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
                 if (threshold_hu_) {
                     ImGui::DragFloatRange2("HU threshold", &hu_min_, &hu_max_, 1.f, -1000.f, 3000.f, "Min: %.1f HU", "Max: %.1f HU");
 
-                    if (prev_hu_max_ != hu_max_ || prev_hu_min_ != hu_min_) {
+                    if (prev_hu_max_ != hu_max_ || prev_hu_min_ != hu_min_ || build_hu_mask_) {
+                        build_hu_mask_ = false;
                         prev_hu_max_ = hu_max_;
                         prev_hu_min_ = hu_min_;
                         ::core::segmentation::buildHuMask(tmp_dicom_.data, thresholded_hu_, hu_min_, hu_max_);
@@ -304,18 +316,16 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
                     text = text.substr(0, text.size() - 2);
                     ImGui::Text("Currently validated by: %s", text.c_str());
                 }
-                if (username.empty()) {
-                    ImGui::Text("For validation of the image, please select a user in the project info tab");
+                if (is_validated) {
+                    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, .1f, 0.f, 0.7f));
+                    if (ImGui::Button("Unvalidate (all)")) {
+                        collection.removeAllValidatedBy();
+                        collection.saveCollection();
+                    }
+                    ImGui::PopStyleColor();
                 }
-                else {
+                if (!username.empty()) {
                     if (is_validated) {
-                        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, .1f, 0.f, 0.7f));
-                        if (ImGui::Button("Unvalidate (all)")) {
-                            collection.removeAllValidatedBy();
-                            collection.saveCollection();
-                        }
-                        ImGui::PopStyleColor();
-
                         if (names.find(username) != names.end()) {
                             ImGui::SameLine();
                             ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.7f, .5f, 0.3f, 0.7f));
@@ -334,12 +344,15 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
                         if (ImGui::Button(("Validate (by " + project->getCurrentUser() + ")").c_str())) {
                             if (!is_validated) {
                                 collection.setValidated(tmp_mask_);
-                                collection.saveCollection();
                             }
                             collection.setValidatedBy(username);
+                            collection.saveCollection();
                         }
                         ImGui::PopStyleColor();
                     }
+                }
+                else {
+                    ImGui::Text("For validation of the image, please select a user in the project info tab");
                 }
             }
         }

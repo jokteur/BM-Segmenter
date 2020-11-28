@@ -49,7 +49,7 @@ namespace core {
 			if (segmentations_.find(dicom) == segmentations_.end()) {
 				if (dicom->size() > 0) {
 					segmentations_[dicom] = MaskCollection();
-					segmentations_[dicom].loadCollection(getMaskBasename(dicom));
+					segmentations_[dicom].setBasenamePath(getMaskBasename(dicom));
 				}
 			}
 		}

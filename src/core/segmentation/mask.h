@@ -5,6 +5,7 @@
 #include <memory>
 
 #include "opencv2/opencv.hpp"
+#include "python/py_api.h"
 
 #include "core/dicom.h"
 
@@ -13,6 +14,8 @@ namespace core {
 		struct Validator {
 			std::string name;
 		};
+
+		void npy_buffer_to_cv(pybind11::object object, cv::Mat& mat);
 
 		/**
 		 * Little container class around cv::Mat to store and manipulate masks 
@@ -41,7 +44,8 @@ namespace core {
 			 * Sets the dimensions of the mask
 			 * Will reset any data that was previously present in the object
 			*/
-			void setDimensions(int rows, int cols);
+			void setDimensions(int rows, int cols, bool no_build = false);
+			void updateDimensions();
 			//Mask(const std::string& filename);
 
 			/**
@@ -103,6 +107,7 @@ namespace core {
 			bool is_valid_ = false;
 			bool is_validated_ = false;
 			bool keep_ = false;
+			bool is_loading_ = false;
 
 			Mask prediction_;
 			Mask validated_;
@@ -114,11 +119,13 @@ namespace core {
 			void push(const Mask& mask);
 			void push_new();
 
-			void loadData(bool keep = false);
+			void loadData(bool keep = false, bool immediate = false, const std::function<void(const Mask&, const Mask&, const Mask&)>& when_finished_fct = [](const Mask&, const Mask&, const Mask&) {});
 			void unloadData(bool force = false);
 			bool isValid() { return is_valid_; }
 
 			MaskCollection copy();
+
+			void clearHistory();
 
 			void setDimensions(int rows, int cols) { rows_ = rows; cols_ = cols; }
 			void setDimensions(std::shared_ptr<DicomSeries> dicom);
@@ -146,14 +153,13 @@ namespace core {
 			 * If there is no mask in the collection, returns an empty mask
 			*/
 			Mask& getCurrent();
+			Mask& getValidated() { return validated_; }
+			Mask& getPrediction() { return prediction_; }
 
 			void setBasenamePath(const std::string& basename);
 
 			std::string saveCollection(const std::string& basename);
 			std::string saveCollection();
-
-			std::string loadCollection(const std::string& basename);
-			std::string loadCollection();
 
 			bool getIsValidated() { return is_validated_; }
 			std::set<std::string> getValidatedBy() { return validated_by_; }

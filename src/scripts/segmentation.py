@@ -60,10 +60,38 @@ def get_mask_path(dicom_id: str, path: str, name: str):
     return os.path.join(dirs["masks"], name, dicom_id)
 
 
-def save_mask_collection(current, validated, prediction, filename: str):
-    np.savez_compressed(filename, current=current, validated=validated, prediction=prediction)
-    print(filename, "Saving")
+def save_mask_collection(users: list, current, validated, prediction, filename: str):
+
+    users = [str(u) for u in users]
+    print("users", users)
+    np.savez_compressed(
+        filename,
+        current=current,
+        validated=validated,
+        predicted=prediction,
+        users=np.array(users, dtype="object"),
+    )
 
 
 def load_mask_collection(filename):
-    pass
+
+    filename = filename + ".npz"
+    data = {}
+
+    if os.path.isfile(filename):
+        data = np.load(filename, allow_pickle=True)
+
+    ret = {"users": []}
+    if "current" in data and data["current"].shape:
+        ret["current"] = data["current"]
+
+    if "predicted" in data and data["predicted"].shape:
+        ret["predicted"] = data["predicted"]
+
+    if "validated" in data and data["validated"].shape:
+        ret["validated"] = data["validated"]
+
+    if "users" in data:
+        ret["users"] = list(data["users"])
+
+    return ret

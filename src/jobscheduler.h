@@ -50,6 +50,7 @@ typedef uint64_t workerId;
 struct JobResult {
     bool success = false;
     jobId id;
+    std::string err;
     JobResult() = default;
     virtual ~JobResult() = default;
 };

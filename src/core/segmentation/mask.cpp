@@ -1,10 +1,22 @@
 #include "mask.h"
-#include "python/py_api.h"
+#include "core/np2cv.h"
+#include "pybind11/stl.h"
 
 namespace core {
 	namespace segmentation {
 		namespace py = pybind11;
 		using namespace py::literals;
+
+		void npy_buffer_to_cv(py::object object, cv::Mat& mat) {
+			auto buffer = object.cast<py::buffer>();
+			py::buffer_info info = buffer.request();
+			int rows = info.shape[0];
+			int cols = info.shape[1];
+
+			auto array = static_cast<unsigned char*>(info.ptr);
+			mat.create(rows, cols, CV_8U);
+			memcpy(mat.data, array, sizeof(unsigned char) * rows * cols);
+		}
 
 		MaskCollection::MaskCollection(int rows, int cols, int max_size) : rows_(rows), cols_(cols), max_size_(max_size) {
 			it_ = history_.end();
@@ -28,10 +40,64 @@ namespace core {
 			push(mask);
 		}
 
-		void MaskCollection::loadData(bool keep) {
+		void MaskCollection::loadData(bool keep, bool immediate, const std::function<void(const Mask&, const Mask&, const Mask&)>& when_finished_fct) {
 			//is_valid_ = true;
 			keep_ = keep;
-			std::cout << "load mask" << std::endl;
+			jobId id;
+
+			jobFct job = [=](float& progress, bool& abort) -> std::shared_ptr<JobResult> {
+				auto result = std::make_shared<JobResult>();
+				auto state = PyGILState_Ensure();
+				try {
+					py::module script = py::module::import("python.scripts.segmentation");
+
+					auto& dict = script.attr("load_mask_collection")(basename_path_).cast<py::dict>();
+
+					if (dict.contains("current")) {
+						Mask mask;
+						npy_buffer_to_cv(dict["current"], mask.getData());
+						clearHistory();
+						mask.updateDimensions();
+						push(mask);
+					}
+					if (dict.contains("predicted")) {
+						npy_buffer_to_cv(dict["predicted"], prediction_.getData());
+						prediction_.updateDimensions();
+					}
+					if (dict.contains("validated")) {
+						npy_buffer_to_cv(dict["validated"], validated_.getData());
+						prediction_.updateDimensions();
+					}
+						
+					auto& users = dict["users"].cast<std::vector<std::string>>();
+					for (auto& user : users) {
+						setValidatedBy(user);
+					}
+				}
+				catch (const std::exception& e) {
+					py::print(e.what());
+					result->err = e.what();
+				}
+
+				PyGILState_Release(state);
+				return result;
+			};
+
+			jobResultFct when_finished = [=](const std::shared_ptr<JobResult>& result) {
+				when_finished_fct(getCurrent(), prediction_, validated_);
+			};
+			
+			if (immediate) {
+				float a = 0.f;
+				bool b = true;
+				auto& res = job(a, b);
+				if (!res->err.empty())
+					std::cout << "res" << res->err << std::endl;
+				when_finished_fct(getCurrent(), prediction_, validated_);
+			}
+			else {
+				JobScheduler::getInstance().addJob("dicom_to_image", job, when_finished);
+			}
 		}
 
 		void MaskCollection::unloadData(bool force) {
@@ -55,6 +121,12 @@ namespace core {
 			collection.prediction_ = prediction_.copy();
 			collection.validated_ = validated_.copy();
 			return collection;
+		}
+
+		void MaskCollection::clearHistory() {
+			history_.clear();
+			it_ = history_.end();
+			is_valid_ = false;
 		}
 
 		void MaskCollection::setDimensions(std::shared_ptr<DicomSeries> dicom) {
@@ -141,7 +213,12 @@ namespace core {
 				auto& current = getCurrent();
 
 				py::module seg = py::module::import("python.scripts.segmentation");
-				seg.attr("save_mask_collection")(current.getData(), validated_.getData(), prediction_.getData(), basename_path_);
+				std::vector<std::string> users;
+				for (auto& user : validated_by_) {
+					users.push_back(user);
+					std::cout << "SDFSDF" << user << std::endl;
+				}
+				seg.attr("save_mask_collection")(users, current.getData(), validated_.getData(), prediction_.getData(), basename_path_);
 			}
 			catch (const std::exception& e) {
 				std::cout << e.what() << std::endl;
@@ -150,19 +227,6 @@ namespace core {
 			PyGILState_Release(state);
 
 			return error_msg;
-		}
-
-		std::string MaskCollection::loadCollection(const std::string& basename) {
-			basename_path_ = basename;
-			loadCollection();
-			return "";
-		}
-
-		std::string MaskCollection::loadCollection() {
-			if (basename_path_.empty()) {
-				return "Cannot load mask because basename path is missing";
-			}			
-			return "";
 		}
 
 		void MaskCollection::setValidatedBy(std::string name) {
@@ -190,10 +254,16 @@ namespace core {
 			setDimensions(rows, cols);
 		}
 
-		void Mask::setDimensions(int rows, int cols) {
+		void Mask::setDimensions(int rows, int cols, bool no_build) {
 			rows_ = rows;
 			cols_ = cols;
-			data_ = cv::Mat::zeros(cv::Size(rows, cols), CV_8U);
+			if (!no_build)
+				data_ = cv::Mat::zeros(cv::Size(rows, cols), CV_8U);
+		}
+
+		void Mask::updateDimensions() {
+			rows_ = data_.rows;
+			cols_ = data_.cols;
 		}
 
 		Mask const Mask::copy() const {
@@ -207,6 +277,8 @@ namespace core {
 
 		void Mask::setData(cv::Mat& data) {
 			data_ = data;
+			rows_ = data.rows;
+			cols_ = data.cols;
 			is_empty_ = false;
 		}
 
@@ -280,6 +352,7 @@ namespace core {
 
 			auto &mat = mask.getData();
 			mat = cv::Mat::zeros(cv::Size(hu_mat.rows, hu_mat.cols), CV_8U);
+			mask.setDimensions(hu_mat.rows, hu_mat.cols);
 
 			unsigned char* data = mat.data;
 
