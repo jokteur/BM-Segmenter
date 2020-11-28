@@ -8,6 +8,7 @@
 #include "rendering/drawables.h"
 #include "rendering/ui/dataset/preview.h"
 #include "core/project/project_manager.h"
+#include "rendering/ui/widgets/util.h"
 #include "jobscheduler.h"
 
 namespace Rendering {
@@ -22,18 +23,13 @@ namespace Rendering {
 
         std::map<std::shared_ptr<::core::DicomSeries>, Preview> dicom_previews_;
 
-        std::vector<const char*> group_names_ = { "Show all" };
         std::vector<::core::dataset::Group> groups_;
         int group_idx_ = 0;
-        int group_prev_idx_ = 0;
-
+        Widgets::Selectable group_select_;
 
         std::shared_ptr<::core::segmentation::Segmentation> active_seg_ = nullptr;
-        int seg_idx_ = 0;
-        int seg_prev_idx_ = 0;
-        std::vector<std::string> seg_names_ = {"Select segmentation"};
         std::map<int, std::shared_ptr<::core::segmentation::Segmentation>> seg_map_;
-        int num_segs_ = 0;
+        Widgets::Selectable seg_select_;
 
         int num_cols_ = 3;
 

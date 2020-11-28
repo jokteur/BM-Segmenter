@@ -144,51 +144,10 @@ void Rendering::ProjectInfo::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
 			{
 				users_ = project->getUsers();
 
-				if (user_names_.size() - 1 != users_.size()) {
-					user_names_.clear();
-					std::string current_user = project->getCurrentUser();
-
-					if (current_user.empty()) {
-						user_idx_ = 0;
-					}
-					user_names_.push_back("Select user");
-
-					int n = 1;
-					for (auto& user : users_) {
-						if (user == current_user) {
-							user_idx_ = n;
-						}
-						user_names_.push_back(user);
-						n++;
-					}
-				}
-
 				ImGui::Text("Users");
 
-				if (!users_.empty()) {
-					const char* combo_label = user_names_[user_idx_].c_str();
-					if (ImGui::BeginCombo("Select user", combo_label)) {
-						int n = 0;
-						for (int n = 0; n < user_names_.size(); n++) {
-							const bool is_selected = (user_idx_ == n);
-							if (ImGui::Selectable(user_names_[n].c_str(), is_selected))
-								user_idx_ = n;
-
-							// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
-							if (is_selected)
-								ImGui::SetItemDefaultFocus();
-						}
-						ImGui::EndCombo();
-					}
-					if (user_idx_ != user_prev_idx_) {
-						user_prev_idx_ = user_idx_;
-						if (user_idx_ > 0) {
-							project->setCurrentUser(user_names_[user_idx_]);
-						}
-						else {
-							project->setCurrentUser("");
-						}
-					}
+				for (auto& user : users_) {
+					ImGui::BulletText("%s", user.c_str());
 				}
 				
 				ImGui::Button("Add user");

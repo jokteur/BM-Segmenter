@@ -16,6 +16,7 @@
 #include "rendering/drawables.h"
 #include "rendering/ui/widgets/image_simple.h"
 #include "rendering/ui/widgets/image_button.h"
+#include "rendering/ui/widgets/util.h"
 #include "rendering/keyboard_shortcuts.h"
 
 namespace Rendering {
@@ -86,6 +87,9 @@ namespace Rendering {
         ImVec2 drag_delta_;
 
         std::shared_ptr<::core::DicomSeries> dicom_series_ = nullptr;
+
+        Widgets::Selectable name_select_;
+        int num_names_ = 0;
 
         ::core::segmentation::Mask tmp_mask_;
         ::core::segmentation::Mask thresholded_hu_;

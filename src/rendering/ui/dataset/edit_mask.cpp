@@ -304,10 +304,26 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
 
                 auto& username = project->getCurrentUser();
                 auto& names = collection.getValidatedBy();
+                auto& users = project->getUsers();
+
 
                 bool username_is_validated = names.find(username) != names.end();
 
-                ImGui::Text("Validation");
+                ImGui::Text("Validation:");
+                ImGui::SameLine();
+
+                if (name_select_.size() != users.size() + 1) {
+                    std::vector<std::string> opts;
+                    opts.push_back("");
+                    for (auto& opt : users) {
+                        opts.push_back(opt);
+                    }
+                    name_select_.setOptions(opts, [=](std::string name) {
+                        project->setCurrentUser(name);
+                    });
+                }
+                name_select_.ImGuiDraw("Select user", 250);
+
                 if (!names.empty()) {
                     std::string text;
                     for (auto& name : names) {
@@ -351,8 +367,14 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
                         ImGui::PopStyleColor();
                     }
                 }
-                else {
-                    ImGui::Text("For validation of the image, please select a user in the project info tab");
+
+                if (username.empty()) {
+                    if (users.empty()) {
+                        ImGui::Text("For validation of the image, please create a user in the Project Info tab");
+                    }
+                    else {
+                        ImGui::Text("For validation of the image, please select a user");
+                    }
                 }
             }
         }

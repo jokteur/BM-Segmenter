@@ -1,5 +1,9 @@
 #pragma once
 #include "imgui.h"
+#include "rendering/drawables.h"
+
+#include <set>
+#include <functional>
 
 namespace Rendering {
     namespace Widgets {
@@ -32,5 +36,33 @@ namespace Rendering {
             return mouse_position.x > dimensions.xpos && mouse_position.x < dimensions.xpos + dimensions.width
                    && mouse_position.y > dimensions.ypos && mouse_position.y < dimensions.ypos + dimensions.height;
         }
+
+        class Selectable {
+        private:
+            std::function<void(std::string)> str_fct_;
+            std::function<void(int idx)> idx_fct_;
+
+            std::vector<std::string> options_;
+            int which_ = -1;
+            int idx_ = 0;
+            int prev_idx_ = 0;
+
+            void build(std::vector<std::string> options);
+        public:
+            Selectable() {}
+            Selectable(const std::vector<std::string>& options, std::function<void(std::string)> on_select);
+            Selectable(const std::vector<std::string>& options, std::function<void(int)> on_select);
+
+            void setOptions(const std::vector<std::string>& options, std::function<void(std::string)> on_select);
+            void setOptions(const std::set<std::string>& options, std::function<void(std::string)> on_select);
+            void setOptions(std::vector<std::string> options, std::function<void(int)> on_select);
+            void setOptions(std::set<std::string> options, std::function<void(int)> on_select);
+
+            void setIdx(int idx);
+
+            int size() { return options_.size(); }
+
+            void ImGuiDraw(const std::string& label, float size = 0);
+        };
     }
 }

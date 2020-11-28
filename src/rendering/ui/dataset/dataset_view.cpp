@@ -49,70 +49,41 @@ void Rendering::DatasetView::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
         {
             auto& segs = project->getSegmentations();
             if (segs.size() != seg_map_.size()) {
-                seg_names_.clear();
-                seg_names_.push_back("Select segmentation");
+                std::vector<std::string> names;
+                names.push_back("Select segmentation");
                 seg_map_.clear();
                 int n = 0;
                 for (auto& seg : segs) {
-                    seg_names_.push_back(seg->getName());
+                    names.push_back(seg->getName());
                     seg_map_[n] = seg;
                     n++;
                 }
-                seg_idx_ = 0;
-                num_segs_ = segs.size();
+                seg_select_.setOptions(names, [=](int idx) {
+                    if (idx == 0) {
+                        EventQueue::getInstance().post(Event_ptr(new ::core::segmentation::SelectSegmentationEvent(nullptr)));
+                        active_seg_ = nullptr;
+                    }
+                    else {
+                        EventQueue::getInstance().post(Event_ptr(new ::core::segmentation::SelectSegmentationEvent(seg_map_.at(idx - 1))));
+                        active_seg_ = seg_map_.at(idx - 1);
+                    }
+                });
             }
-            const char* combo_label = seg_names_[seg_idx_].c_str();
-            if (ImGui::BeginCombo("Segmentation", combo_label)) {
-                int n = 0;
-                for (int n = 0; n < seg_names_.size(); n++) {
-                    const bool is_selected = (seg_idx_ == n);
-                    if (ImGui::Selectable(seg_names_[n].c_str(), is_selected))
-                        seg_idx_ = n;
-
-                    // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
-                    if (is_selected)
-                        ImGui::SetItemDefaultFocus();
-                }
-                ImGui::EndCombo();
-            }
-
-            if (seg_prev_idx_ != seg_idx_) {
-                seg_prev_idx_ = seg_idx_;
-                if (seg_idx_ == 0) {
-                    EventQueue::getInstance().post(Event_ptr(new ::core::segmentation::SelectSegmentationEvent(nullptr)));
-                }
-                else {
-                    EventQueue::getInstance().post(Event_ptr(new ::core::segmentation::SelectSegmentationEvent(seg_map_.at(seg_idx_ - 1))));
-                }
-            }
+            seg_select_.ImGuiDraw("Select segmentation");
         }
 
         // Show group selection
         {
             if (std::equal(groups_.begin(), groups_.end(), project->getDataset().getGroups().begin())) {
                 groups_ = project->getDataset().getGroups();
-                group_names_.clear();
-                group_names_.push_back("Show all");
+                std::vector<std::string> names;
+                names.push_back("Show all");
                 for (auto& group : groups_) {
-                    group_names_.push_back(group.getName().c_str());
+                    names.push_back(group.getName());
                 }
+                group_select_.setOptions(names, [=](int idx) { group_idx_ = idx; });
             }
-            if (!groups_.empty()) {
-                const char* combo_label = group_names_[group_idx_];
-                if (ImGui::BeginCombo("Select group", combo_label)) {
-                    int n = 0;
-                    for (int n = 0; n < groups_.size() + 1; n++) {
-                        const bool is_selected = (group_idx_ == n);
-                        if (ImGui::Selectable(group_names_[n], is_selected))
-                            group_idx_ = n;
-
-                        // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
-                        if (is_selected)
-                            ImGui::SetItemDefaultFocus();
-                    }
-                    ImGui::EndCombo();
-                }
-            }
+            group_select_.ImGuiDraw("Select group");
         }
         ImGui::Separator();
 

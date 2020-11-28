@@ -216,7 +216,6 @@ namespace core {
 				std::vector<std::string> users;
 				for (auto& user : validated_by_) {
 					users.push_back(user);
-					std::cout << "SDFSDF" << user << std::endl;
 				}
 				seg.attr("save_mask_collection")(users, current.getData(), validated_.getData(), prediction_.getData(), basename_path_);
 			}
