@@ -56,7 +56,7 @@ void Rendering::ExplorerPreview::ImGuiDraw(GLFWwindow *window, Rect &parent_dime
         ImGui::SetWindowSize(init_size_);
     }
     if (is_cases_set_) {
-        if (dicom_previews_.size() < num_cols_) {
+        if (dicom_previews_.size() < num_cols_ && dicom_previews_.size() > 0) {
             num_cols_ = dicom_previews_.size();
         }
         ImGui::Text("Num. columns: %d", num_cols_);
@@ -114,6 +114,10 @@ void Rendering::ExplorerPreview::ImGuiDraw(GLFWwindow *window, Rect &parent_dime
         Rect sub_window_dim(window_pos, content);
 
         ImVec2 mouse_pos = ImGui::GetMousePos();
+
+        if (dicom_previews_.empty()) {
+            ImGui::Text("No dicom found");
+        }
 
         ImGui::Columns(num_cols_);
         float width = ImGui::GetContentRegionAvailWidth();
