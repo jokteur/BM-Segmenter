@@ -48,8 +48,8 @@ namespace core {
 		void Segmentation::addDicom(std::shared_ptr<DicomSeries> dicom) {
 			if (segmentations_.find(dicom) == segmentations_.end()) {
 				if (dicom->size() > 0) {
-					segmentations_[dicom] = MaskCollection();
-					segmentations_[dicom].setBasenamePath(getMaskBasename(dicom));
+					segmentations_[dicom] = std::make_shared<MaskCollection>();
+					segmentations_[dicom]->setBasenamePath(getMaskBasename(dicom));
 				}
 			}
 		}

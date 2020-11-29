@@ -75,6 +75,7 @@ namespace Rendering {
 
         // Listeners
         Listener load_dicom_;
+        Listener group_listener_;
         Listener reload_seg_;
         Listener load_segmentation_;
         Listener deactivate_buttons_;
@@ -93,11 +94,19 @@ namespace Rendering {
 
         ::core::segmentation::Mask tmp_mask_;
         ::core::segmentation::Mask thresholded_hu_;
+        std::shared_ptr<::core::segmentation::MaskCollection> mask_collection_ = nullptr;
         ::core::Dicom tmp_dicom_;
 
         int case_select_ = 1;
         int previous_select_ = 0;
         int image_size_ = 0;
+
+        // Variables for telling if there is a next or previous dicom in list
+        std::shared_ptr<::core::DicomSeries> next_dicom_ = nullptr;
+        std::shared_ptr<::core::DicomSeries> prev_dicom_ = nullptr;
+        int group_idx_ = 0;
+
+        void unload();
 
         void loadDicom(const std::shared_ptr<::core::DicomSeries> dicom);
         void loadCase(int idx);
@@ -107,6 +116,11 @@ namespace Rendering {
 
         void disable_buttons();
         void button_logic();
+
+        // For group select
+        void set_NextPrev_buttons();
+        void next();
+        void previous();
 
         void set_mask();
         void undo();

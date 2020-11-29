@@ -119,7 +119,7 @@ namespace core {
 			void push(const Mask& mask);
 			void push_new();
 
-			void loadData(bool keep = false, bool immediate = false, const std::function<void(const Mask&, const Mask&, const Mask&)>& when_finished_fct = [](const Mask&, const Mask&, const Mask&) {});
+			std::string loadData(bool keep = false, bool immediate = false, const std::function<void(const Mask&, const Mask&, const Mask&)>& when_finished_fct = [](const Mask&, const Mask&, const Mask&) {});
 			void unloadData(bool force = false);
 			bool isValid() { return is_valid_; }
 
@@ -152,7 +152,7 @@ namespace core {
 			 * Returns the current mask in the list
 			 * If there is no mask in the collection, returns an empty mask
 			*/
-			Mask& getCurrent();
+			Mask& getCurrent(bool no_push = false);
 			Mask& getValidated() { return validated_; }
 			Mask& getPrediction() { return prediction_; }
 

@@ -236,3 +236,11 @@ std::string core::dataset::Dataset::save(const std::string& root_path) {
     }
     return "";
 }
+
+std::vector<std::shared_ptr<::core::DicomSeries>> core::dataset::Dataset::getOrderedDicoms() {
+    std::vector<std::shared_ptr<DicomSeries>> vector;
+    for (auto& series : dicoms_) {
+        vector.push_back(series);
+    }
+    return vector;
+}

@@ -71,6 +71,7 @@ namespace core {
 
             std::vector<Group>& getGroups() { return groups_; }
             dicom_set& getDicoms() { return dicoms_; }
+            std::vector<std::shared_ptr<::core::DicomSeries>> getOrderedDicoms();
         };
     }
 }

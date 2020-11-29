@@ -81,14 +81,17 @@ def load_mask_collection(filename):
         data = np.load(filename, allow_pickle=True)
 
     ret = {"users": []}
-    if "current" in data and data["current"].shape:
-        ret["current"] = data["current"]
+    if "current" in data:
+        if data["current"].shape:
+            ret["current"] = data["current"]
 
-    if "predicted" in data and data["predicted"].shape:
-        ret["predicted"] = data["predicted"]
+    if "predicted" in data:
+        if data["predicted"].shape:
+            ret["predicted"] = data["predicted"]
 
-    if "validated" in data and data["validated"].shape:
-        ret["validated"] = data["validated"]
+    if "validated" in data:
+        if data["validated"].shape:
+            ret["validated"] = data["validated"]
 
     if "users" in data:
         ret["users"] = list(data["users"])

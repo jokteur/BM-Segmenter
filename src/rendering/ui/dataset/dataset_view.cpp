@@ -74,14 +74,22 @@ void Rendering::DatasetView::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
 
         // Show group selection
         {
-            if (std::equal(groups_.begin(), groups_.end(), project->getDataset().getGroups().begin())) {
+            if (project->getDataset().getGroups().size() != groups_.size()) {
                 groups_ = project->getDataset().getGroups();
                 std::vector<std::string> names;
-                names.push_back("Show all");
+                names.push_back("Show all"); 
                 for (auto& group : groups_) {
                     names.push_back(group.getName());
                 }
-                group_select_.setOptions(names, [=](int idx) { group_idx_ = idx; });
+                group_select_.setOptions(names, [=](int idx) { 
+                    group_idx_ = idx; 
+                    if (idx == 0) {
+                        EventQueue::getInstance().post(Event_ptr(new Event("dataset/group/select/all")));
+                    }
+                    else {
+                        EventQueue::getInstance().post(Event_ptr(new Event("dataset/group/select/" + std::to_string(idx - 1))));
+                    }
+                });
             }
             group_select_.ImGuiDraw("Select group");
         }

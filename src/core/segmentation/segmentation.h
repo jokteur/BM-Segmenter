@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <memory>
 
 #include "events.h"
 
@@ -21,7 +22,7 @@ namespace core {
 			std::string filename_;
 			ImVec4 color_ = { 1.f, 0.f, 0.f, 0.5f };
 
-			std::map<std::shared_ptr<DicomSeries>, MaskCollection> segmentations_;
+			std::map<std::shared_ptr<DicomSeries>, std::shared_ptr<MaskCollection>> segmentations_;
 		public:
 			Segmentation(const std::string& name, const std::string& description, ImVec4 color = { 1.f, 0.f, 0.f, 0.5f });
 			Segmentation() = default;
@@ -34,7 +35,7 @@ namespace core {
 			std::string getStrippedName() { return stripped_name_; }
 			std::string getDescription() { return description_; }
 
-			std::map<std::shared_ptr<DicomSeries>, MaskCollection>& getMasks() { return segmentations_; }
+			std::map<std::shared_ptr<DicomSeries>, std::shared_ptr<MaskCollection>>& getMasks() { return segmentations_; }
 
 			void setMaskColor(const ImVec4 color) { color_ = color; }
 			void setMaskColor(const std::vector<float> color);

@@ -9,17 +9,20 @@
 int Rendering::EditMask::instance_number = 0;
 
 
+void Rendering::EditMask::unload() {
+    if (mask_collection_ != nullptr) {
+        mask_collection_->unloadData(true);
+    }
+}
+
 void Rendering::EditMask::loadDicom(const std::shared_ptr<core::DicomSeries> dicom) {
     if (dicom_series_ != nullptr) {
         dicom_series_->cancelPendingJobs();
         dicom_series_->unloadData();
-        if (active_seg_ != nullptr) {
-            active_seg_->getMasks()[dicom_series_].unloadData(true);
-        }
+        unload();
     }
     dicom_series_ = dicom;
 
-    set_and_load();
     loadCase(0);
 }
 
@@ -28,58 +31,46 @@ void Rendering::EditMask::loadCase(int idx) {
         dicom_series_->loadCase(0, false, [this](const core::Dicom& dicom) {
             image_.setImageFromHU(dicom.data, (float)dicom_series_->getWW(), (float)dicom_series_->getWC());
             image_widget_.setImage(image_);
-
-            if (active_seg_ != nullptr) {
-                active_seg_->getMasks()[dicom_series_].setDimensions(dicom.data.rows, dicom.data.cols);
-                if (active_seg_->getMasks()[dicom_series_].size() == 0) {
-                    active_seg_->getMasks()[dicom_series_].push_new();
-                }
-            }
             dicom_dimensions_.x = dicom.data.rows;
             dicom_dimensions_.y = dicom.data.cols;
+            set_and_load();
 
-            tmp_mask_.setDimensions(dicom.data.rows, dicom.data.cols);
             tmp_dicom_ = dicom;
 
             dicom_series_->cleanData();
-            set_and_load();
         });
+        set_NextPrev_buttons();
     }
 }
 
 void Rendering::EditMask::load_segmentation(std::shared_ptr<::core::segmentation::Segmentation> seg) {
-    if (active_seg_ != nullptr) {
-        if (dicom_series_ != nullptr) {
-            active_seg_->getMasks()[dicom_series_].unloadData(true);
-        }
-    }
+    unload();
     active_seg_ = seg;
-    if (dicom_series_ != nullptr) {
-        if (!set_and_load()) {
-            tmp_mask_ = ::core::segmentation::Mask(thresholded_hu_.getData().rows, thresholded_hu_.getData().cols);
-        }
-        reset_image_ = true;
-    }
+    set_and_load();
 }
 
 bool Rendering::EditMask::set_and_load() {
     if (active_seg_ != nullptr && dicom_series_ != nullptr) {
         active_seg_->addDicom(dicom_series_);
-        auto& mask_collection = active_seg_->getMasks()[dicom_series_];
-        mask_collection.loadData(true, true);
-        if (!mask_collection.isValid() && mask_collection.size() == 0) {
-            set_mask();
-        }
-        else if (mask_collection.isValid()) {
-            tmp_mask_ = mask_collection.getValidated().copy();
-            reset_image_ = true;
-            build_hu_mask_ = true;
+
+        mask_collection_ = active_seg_->getMasks()[dicom_series_];
+        mask_collection_->loadData(true, true);
+
+        if (mask_collection_->getIsValidated()) {
+            tmp_mask_ = mask_collection_->getValidated().copy();
         }
         else {
-            tmp_mask_ = mask_collection.getCurrent().copy();
-            reset_image_ = true;
-            build_hu_mask_ = true;
+            if (mask_collection_->size() == 0) {
+                tmp_mask_ = ::core::segmentation::Mask(dicom_dimensions_.x, dicom_dimensions_.y);
+                mask_collection_->setDimensions(dicom_dimensions_.x, dicom_dimensions_.y);
+                set_mask();
+            }
+            else {
+                tmp_mask_ = mask_collection_->getCurrent().copy();
+            }
         }
+        reset_image_ = true;
+        build_hu_mask_ = true;
     }
     return active_seg_ != nullptr;
 }
@@ -176,12 +167,24 @@ Rendering::EditMask::EditMask()
     };
     reload_seg_.filter = "segmentation/reload";
 
+    group_listener_.callback = [=](Event_ptr& event) {
+        std::string id = event->getName().substr(21);
+        if (id == "all") {
+            group_idx_ = -1;
+        }
+        else {
+            group_idx_ = std::stoi(id);
+        }
+        set_NextPrev_buttons();
+    };
+    group_listener_.filter = "dataset/group/select/*";
+
     // Undo and redo
     ctrl_z_.keys = { KEY_CTRL, GLFW_KEY_Z};
     ctrl_z_.name = "undo";
     ctrl_z_.callback = [this] {
         if (active_seg_ != nullptr && dicom_series_ != nullptr) {
-            if (!active_seg_->getMasks()[dicom_series_].isCursorBegin()) {
+            if (!mask_collection_->isCursorBegin()) {
                 undo();
             }
         }
@@ -191,7 +194,7 @@ Rendering::EditMask::EditMask()
     ctrl_y_.name = "undo";
     ctrl_y_.callback = [this] {
         if (active_seg_ != nullptr && dicom_series_ != nullptr) {
-            if (!active_seg_->getMasks()[dicom_series_].isCursorEnd()) {
+            if (!mask_collection_->isCursorEnd()) {
                 redo();
             }
         }
@@ -200,14 +203,17 @@ Rendering::EditMask::EditMask()
     EventQueue::getInstance().subscribe(&load_dicom_);
     EventQueue::getInstance().subscribe(&reload_seg_);
     EventQueue::getInstance().subscribe(&load_segmentation_);
+    EventQueue::getInstance().subscribe(&group_listener_);
     EventQueue::getInstance().subscribe(&deactivate_buttons_);
     EventQueue::getInstance().subscribe(&reset_viewer_listener_);
 }
 
 Rendering::EditMask::~EditMask() {
+    unload();
     EventQueue::getInstance().unsubscribe(&load_dicom_);
     EventQueue::getInstance().unsubscribe(&reload_seg_);
     EventQueue::getInstance().unsubscribe(&load_segmentation_);
+    EventQueue::getInstance().unsubscribe(&group_listener_);
     EventQueue::getInstance().unsubscribe(&deactivate_buttons_);
     EventQueue::getInstance().unsubscribe(&reset_viewer_listener_);
 }
@@ -230,6 +236,22 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
     }
 
     if (dicom_series_ != nullptr) {
+        if (prev_dicom_ != nullptr) {
+            if (ImGui::Button("Previous")) {
+                previous();
+            }
+        }
+        if (next_dicom_ != nullptr) {
+            if (prev_dicom_ != nullptr)
+                ImGui::SameLine();
+            if (ImGui::Button("Next")) {
+                next();
+            }
+        }
+        if (prev_dicom_ != nullptr || next_dicom_ != nullptr) {
+            ImGui::Separator();
+        }
+        
         ImGui::Text("ID: %s", ::core::parse_dicom_id(dicom_series_->getId()).first.c_str());
     }
 
@@ -249,9 +271,8 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
         if (active_seg_ == nullptr) {
             ImGui::Text("Please select a segmentation before editing the image.");
         }
-        else if (dicom_series_ != nullptr) {
-            auto& collection = active_seg_->getMasks()[dicom_series_];
-            bool is_validated = collection.getIsValidated();
+        else if (dicom_series_ != nullptr && mask_collection_ != nullptr) {
+            bool is_validated = mask_collection_->getIsValidated();
 
             // Draw the buttons
             info_b_.ImGuiDraw(window, dimensions_);
@@ -267,20 +288,20 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
             validate_b_.ImGuiDraw(window, dimensions_);
 
             if (!is_validated) {
-                if (!active_seg_->getMasks()[dicom_series_].isCursorBegin()) {
+                if (!mask_collection_->isCursorBegin()) {
                     ImGui::SameLine();
                     undo_b_.ImGuiDraw(window, dimensions_);
                 }
-                if (!active_seg_->getMasks()[dicom_series_].isCursorEnd()) {
+                if (!mask_collection_->isCursorEnd()) {
                     ImGui::SameLine();
                     redo_b_.ImGuiDraw(window, dimensions_);
                 }
             }
 
-            Widgets::NewLine(3.f);
             if (active_button_ != nullptr && active_button_ != &validate_b_) {
                 ImGui::SameLine();
                 ImGui::Text("Use Ctrl + Mouse to zoom and pan");
+                Widgets::NewLine(3.f);
                 ImGui::Text("Tool options");
                 ImGui::RadioButton("Add", &add_sub_option_, 0); ImGui::SameLine();
                 ImGui::RadioButton("Substract", &add_sub_option_, 1); ImGui::SameLine();
@@ -298,13 +319,14 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
                 if (active_button_ == &brush_select_b_) {
                     ImGui::SliderFloat("Brush size", &brush_size_, 1, 200, "%.1f px", 2.f);
                 }
+                Widgets::NewLine(3.f);
             }
             else if (active_button_ == &validate_b_ || is_validated) {
                 image_widget_.setImageDrag(SimpleImage::IMAGE_NORMAL_INTERACT);
                 image_widget_.setInteractiveZoom(SimpleImage::IMAGE_NORMAL_INTERACT);
 
                 auto& username = project->getCurrentUser();
-                auto& names = collection.getValidatedBy();
+                auto& names = mask_collection_->getValidatedBy();
                 auto& users = project->getUsers();
 
 
@@ -323,21 +345,13 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
                         project->setCurrentUser(name);
                     });
                 }
-                name_select_.ImGuiDraw("Select user", 250);
+                name_select_.ImGuiDraw("Select user", 200);
 
-                if (!names.empty()) {
-                    std::string text;
-                    for (auto& name : names) {
-                        text += name + ", ";
-                    }
-                    text = text.substr(0, text.size() - 2);
-                    ImGui::Text("Currently validated by: %s", text.c_str());
-                }
                 if (is_validated) {
                     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, .1f, 0.f, 0.7f));
                     if (ImGui::Button("Unvalidate (all)")) {
-                        collection.removeAllValidatedBy();
-                        collection.saveCollection();
+                        mask_collection_->removeAllValidatedBy();
+                        mask_collection_->saveCollection();
                     }
                     ImGui::PopStyleColor();
                 }
@@ -347,8 +361,8 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
                             ImGui::SameLine();
                             ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.7f, .5f, 0.3f, 0.7f));
                             if (ImGui::Button((("Unvalidate (only " + project->getCurrentUser() + ")").c_str()))) {
-                                collection.removeValidatedBy(username);
-                                collection.saveCollection();
+                                mask_collection_->removeValidatedBy(username);
+                                mask_collection_->saveCollection();
                             }
                             ImGui::PopStyleColor();
                         }
@@ -360,13 +374,22 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
                         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.1f, .8f, 0.f, 0.7f));
                         if (ImGui::Button(("Validate (by " + project->getCurrentUser() + ")").c_str())) {
                             if (!is_validated) {
-                                collection.setValidated(tmp_mask_);
+                                mask_collection_->setValidated(tmp_mask_);
                             }
-                            collection.setValidatedBy(username);
-                            collection.saveCollection();
+                            mask_collection_->setValidatedBy(username);
+                            mask_collection_->saveCollection();
                         }
                         ImGui::PopStyleColor();
                     }
+                }
+
+                if (!names.empty()) {
+                    std::string text;
+                    for (auto& name : names) {
+                        text += name + ", ";
+                    }
+                    text = text.substr(0, text.size() - 2);
+                    ImGui::Text("Currently validated by: %s", text.c_str());
                 }
 
                 if (username.empty()) {
@@ -493,29 +516,75 @@ void Rendering::EditMask::button_logic() {
     }
 }
 
+void Rendering::EditMask::set_NextPrev_buttons() {
+    auto& project = ::core::project::ProjectManager::getInstance().getCurrentProject();
+    std::vector<std::shared_ptr<::core::DicomSeries>> dicoms;
+    if (group_idx_ >= 0) {
+        auto& groups = project->getDataset().getGroups();
+        dicoms = groups[group_idx_].getOrderedDicoms();
+    }
+    else {
+        dicoms = project->getDataset().getOrderedDicoms();
+    }
+    std::shared_ptr<::core::DicomSeries> prev = nullptr;
+    std::shared_ptr<::core::DicomSeries> next = nullptr;
+    bool found = false;
+    int n = 0;
+    if (dicom_series_ != nullptr) {
+        for (auto& dicom : dicoms) {
+            if (found) {
+                next = dicom;
+                break;
+            }
+            if (dicom == dicom_series_) {
+                found = true;
+            }
+            else {
+                prev = dicom;
+            }
+            n++;
+        }
+    }
+    
+    prev_dicom_ = prev;
+    next_dicom_ = next;
+}
+
+void Rendering::EditMask::next() {
+    if (next_dicom_ != nullptr) {
+        loadDicom(next_dicom_);
+    }
+}
+
+void Rendering::EditMask::previous() {
+    if (prev_dicom_ != nullptr) {
+        loadDicom(prev_dicom_);
+    }
+}
+
 void Rendering::EditMask::set_mask() {
-    reset_image_ = true;
-    if (active_seg_ != nullptr) {
+    if (active_seg_ != nullptr && mask_collection_ != nullptr) {
         auto& collections = active_seg_->getMasks();
-        collections[dicom_series_].push(tmp_mask_.copy());
-        collections[dicom_series_].saveCollection();
+        mask_collection_->push(tmp_mask_.copy());
+        mask_collection_->saveCollection();
+        reset_image_ = true;
     }
 }
 
 void Rendering::EditMask::undo() {
-    if (active_seg_ != nullptr) {
+    if (active_seg_ != nullptr && mask_collection_ != nullptr) {
         auto& collections = active_seg_->getMasks();
-        tmp_mask_ = collections[dicom_series_].undo().copy();
-        collections[dicom_series_].saveCollection();
+        tmp_mask_ = mask_collection_->undo().copy();
+        mask_collection_->saveCollection();
         reset_image_ = true;
     }
 }
 
 void Rendering::EditMask::redo() {
-    if (active_seg_ != nullptr) {
+    if (active_seg_ != nullptr && mask_collection_ != nullptr) {
         auto& collections = active_seg_->getMasks();
-        tmp_mask_ = collections[dicom_series_].redo().copy();
-        collections[dicom_series_].saveCollection();
+        tmp_mask_ = mask_collection_->redo().copy();
+        mask_collection_->saveCollection();
         reset_image_ = true;
     }
 }

@@ -40,7 +40,7 @@ namespace core {
 			push(mask);
 		}
 
-		void MaskCollection::loadData(bool keep, bool immediate, const std::function<void(const Mask&, const Mask&, const Mask&)>& when_finished_fct) {
+		std::string MaskCollection::loadData(bool keep, bool immediate, const std::function<void(const Mask&, const Mask&, const Mask&)>& when_finished_fct) {
 			//is_valid_ = true;
 			keep_ = keep;
 			jobId id;
@@ -53,10 +53,11 @@ namespace core {
 
 					auto& dict = script.attr("load_mask_collection")(basename_path_).cast<py::dict>();
 
+					clearHistory();
+
 					if (dict.contains("current")) {
 						Mask mask;
 						npy_buffer_to_cv(dict["current"], mask.getData());
-						clearHistory();
 						mask.updateDimensions();
 						push(mask);
 					}
@@ -92,22 +93,57 @@ namespace core {
 				bool b = true;
 				auto& res = job(a, b);
 				if (!res->err.empty())
-					std::cout << "res" << res->err << std::endl;
-				when_finished_fct(getCurrent(), prediction_, validated_);
+					std::cout << "Error:" << res->err << std::endl;
+				return res->err;
 			}
 			else {
 				JobScheduler::getInstance().addJob("dicom_to_image", job, when_finished);
 			}
+			return "";
 		}
 
 		void MaskCollection::unloadData(bool force) {
 			if (!keep_ || force) {
 				prediction_ = Mask();
 				validated_ = Mask();
-				history_.clear();
-				it_ = history_.end();
+				rows_ = 0;
+				cols_ = 0;
+				clearHistory();
 				is_valid_ = false;
 			}
+		}
+
+		std::string MaskCollection::saveCollection(const std::string& basename) {
+			basename_path_ = basename;
+			return saveCollection();
+		}
+
+		std::string MaskCollection::saveCollection() {
+			if (basename_path_.empty()) {
+				return "Cannot save mask because basename path is missing";
+			}
+
+			std::string error_msg;
+			auto state = PyGILState_Ensure();
+			try {
+				NDArrayConverter::init_numpy();
+				py::module np = py::module::import("numpy");
+				auto& current = getCurrent();
+
+				py::module seg = py::module::import("python.scripts.segmentation");
+				std::vector<std::string> users;
+				for (auto& user : validated_by_) {
+					users.push_back(user);
+				}
+				seg.attr("save_mask_collection")(users, current.getData(), validated_.getData(), prediction_.getData(), basename_path_);
+			}
+			catch (const std::exception& e) {
+				std::cout << e.what() << std::endl;
+				error_msg = e.what();
+			}
+			PyGILState_Release(state);
+
+			return error_msg;
 		}
 
 		MaskCollection MaskCollection::copy() {
@@ -183,7 +219,7 @@ namespace core {
 			return it_ == history_.end();
 		}
 
-		Mask& core::segmentation::MaskCollection::getCurrent() {
+		Mask& core::segmentation::MaskCollection::getCurrent(bool no_push) {
 			if (history_.empty()) {
 				push_new();
 			}
@@ -193,39 +229,6 @@ namespace core {
 
 		void MaskCollection::setBasenamePath(const std::string& basename) {
 			basename_path_ = basename;
-		}
-
-		std::string MaskCollection::saveCollection(const std::string& basename) {
-			basename_path_ = basename;
-			return saveCollection();
-		}
-
-		std::string MaskCollection::saveCollection() {
-			if (basename_path_.empty()) {
-				return "Cannot save mask because basename path is missing";
-			}
-
-			std::string error_msg;
-			auto state = PyGILState_Ensure();
-			try {
-				NDArrayConverter::init_numpy();
-				py::module np = py::module::import("numpy");
-				auto& current = getCurrent();
-
-				py::module seg = py::module::import("python.scripts.segmentation");
-				std::vector<std::string> users;
-				for (auto& user : validated_by_) {
-					users.push_back(user);
-				}
-				seg.attr("save_mask_collection")(users, current.getData(), validated_.getData(), prediction_.getData(), basename_path_);
-			}
-			catch (const std::exception& e) {
-				std::cout << e.what() << std::endl;
-				error_msg = e.what();
-			}
-			PyGILState_Release(state);
-
-			return error_msg;
 		}
 
 		void MaskCollection::setValidatedBy(std::string name) {
