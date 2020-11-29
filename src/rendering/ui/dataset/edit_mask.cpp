@@ -248,6 +248,19 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
                 next();
             }
         }
+        auto& groups = project->getDataset().getGroups();
+        if (prev_dicom_ != nullptr || next_dicom_ != nullptr) {
+            ImGui::SameLine();
+            if (group_idx_ == -1) {
+                ImGui::Text("(all images)");
+            }
+            else {
+                ImGui::Text("(in group `%s`)", groups[group_idx_].getName().c_str());
+            }
+        }
+        else {
+            ImGui::Text("(this image does not belong to group `%s`)", groups[group_idx_].getName().c_str());
+        }
         if (prev_dicom_ != nullptr || next_dicom_ != nullptr) {
             ImGui::Separator();
         }
@@ -546,8 +559,14 @@ void Rendering::EditMask::set_NextPrev_buttons() {
         }
     }
     
-    prev_dicom_ = prev;
-    next_dicom_ = next;
+    if (found) {
+        prev_dicom_ = prev;
+        next_dicom_ = next;
+    }
+    else {
+        prev_dicom_ = nullptr;
+        next_dicom_ = nullptr;
+    }
 }
 
 void Rendering::EditMask::next() {

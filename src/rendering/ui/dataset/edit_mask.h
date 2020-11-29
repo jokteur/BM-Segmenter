@@ -104,7 +104,7 @@ namespace Rendering {
         // Variables for telling if there is a next or previous dicom in list
         std::shared_ptr<::core::DicomSeries> next_dicom_ = nullptr;
         std::shared_ptr<::core::DicomSeries> prev_dicom_ = nullptr;
-        int group_idx_ = 0;
+        int group_idx_ = -1;
 
         void unload();
 
