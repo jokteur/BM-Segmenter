@@ -6,7 +6,7 @@
 #include "rendering/views/project_view.h"
 #include "rendering/views/default_view.h"
 
-namespace project = ::core::project;
+namespace project_n = ::core::project;
 
 void Rendering::MainMenuBar::ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) {
     if (ImGui::BeginMainMenuBar()) {
@@ -34,52 +34,52 @@ void Rendering::MainMenuBar::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
             ImGui::TextDisabled(page_title_.c_str());
         }
 
-        std::shared_ptr<project::Project> project = project_manager_.getCurrentProject();
-        if (project != nullptr) {
-            // Try to align a Text element to the right
-            const float item_spacing = ImGui::GetStyle().ItemSpacing.x;
-            static float text_width = 200.0f;
-            float pos = text_width + item_spacing + 20.f;
-            ImGui::SameLine(ImGui::GetWindowWidth() - pos);
+        //std::shared_ptr<project_n::Project> project = project_manager_.getCurrentProject();
+        //if (project != nullptr) {
+        //    // Try to align a Text element to the right
+        //    const float item_spacing = ImGui::GetStyle().ItemSpacing.x;
+        //    static float text_width = 200.0f;
+        //    float pos = text_width + item_spacing + 20.f;
+        //    ImGui::SameLine(ImGui::GetWindowWidth() - pos);
 
-            std::string str = "Current project: ";
-            str += project->isSaved() ? project->getName() : project->getName() + "*";
-            ImGui::Text("%s", str.c_str());
-            if (ImGui::IsItemHovered())
-            {
-                ImGui::BeginTooltip();
-                //ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
-                ImGui::TextUnformatted(project->getDescription().c_str());
-                //ImGui::PopTextWrapPos();
-                ImGui::EndTooltip();
-            }
-            text_width = ImGui::GetItemRectSize().x;
+        //    std::string str = "Current project: ";
+        //    str += project->isSaved() ? project->getName() : project->getName() + "*";
+        //    ImGui::Text("%s", str.c_str());
+        //    if (ImGui::IsItemHovered())
+        //    {
+        //        ImGui::BeginTooltip();
+        //        //ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
+        //        ImGui::TextUnformatted(project->getDescription().c_str());
+        //        //ImGui::PopTextWrapPos();
+        //        ImGui::EndTooltip();
+        //    }
+        //    text_width = ImGui::GetItemRectSize().x;
 
 
-        }
+        //}
         ImGui::EndMainMenuBar();
     }
-    if (close_projects_ && project_manager_.getNumProjects() == 0) {
-        EventQueue::getInstance().post(Event_ptr(new SetViewEvent(std::make_unique<DefaultView>())));
-        close_projects_ = false;
-        num_projects = 0;
-    }
-    else if (close_projects_) {
-        if (num_projects != project_manager_.getNumProjects())  {
-            for (auto& prj : project_manager_) {
-                close_project_modal_.setProject(prj);
-                break;
-            }
-            num_projects = project_manager_.getNumProjects();
-        }
-        if (close_projects_) {
-            close_project_modal_.showModal();
-        }
-    }
+    //if (close_projects_ && project_manager_.getNumProjects() == 0) {
+    //    EventQueue::getInstance().post(Event_ptr(new SetViewEvent(std::make_unique<DefaultView>())));
+    //    close_projects_ = false;
+    //    close_project_modal_.setProject(nullptr);
+    //    num_projects = 0;
+    //}
+    //else if (close_projects_) {
+    //    if (num_projects != project_manager_.getNumProjects())  {
+    //        for (auto& prj : project_manager_) {
+    //            close_project_modal_.setProject(prj);
+    //            break;
+    //        }
+    //        num_projects = project_manager_.getNumProjects();
+    //    }
+    //    if (close_projects_) {
+    //        close_project_modal_.showModal();
+    //    }
+    //}
 }
 
 void Rendering::MainMenuBar::file_menu()  {
-    bool is_project_active = project_manager_.getCurrentProject() != nullptr;
 
     if (ImGui::MenuItem("New project", Shortcuts::new_project_shortcut.description)) {
         new_project_modal_.showModal();
@@ -105,7 +105,11 @@ void Rendering::MainMenuBar::file_menu()  {
     }
     if (project_manager_.getNumProjects() > 0) {
         if (ImGui::MenuItem("Close all projects")) {
-            close_projects_ = true;
+            auto projects = project_manager_.getProjects();
+            for (auto it = projects.begin(); it != projects.end();it++) {
+                project_manager_.removeProject(*it);
+            }
+            EventQueue::getInstance().post(Event_ptr(new SetViewEvent(std::make_unique<DefaultView>())));
         }
     }
 
@@ -119,7 +123,7 @@ void Rendering::MainMenuBar::file_menu()  {
 
 void Rendering::MainMenuBar::projects_menu() {
     if (project_manager_.getNumProjects() > 0) {
-        for(auto &prj : project_manager_) {
+        for(auto prj : project_manager_) {
             bool is_active = project_manager_.getCurrentProject() == prj;
             std::string name = prj->isSaved() ? prj->getName() : "*" + prj->getName();
             if (ImGui::MenuItem(name.c_str(), prj->getSaveFile().c_str(), is_active)) {
@@ -281,7 +285,7 @@ void Rendering::MainMenuBar::save_project_under() {
     }
 }
 
-void Rendering::MainMenuBar::save(const std::shared_ptr<project::Project>& project, const std::string& filename) {
+void Rendering::MainMenuBar::save(const std::shared_ptr<project_n::Project>& project, const std::string& filename) {
     bool result = project_manager_.saveProjectToFile(project, filename);
     if (!result) {
         error_msg = "Error when saving '" + project->getName() + "', please try again";

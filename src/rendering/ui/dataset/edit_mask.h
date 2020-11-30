@@ -95,7 +95,6 @@ namespace Rendering {
         ::core::segmentation::Mask tmp_mask_;
         ::core::segmentation::Mask thresholded_hu_;
         std::shared_ptr<::core::segmentation::MaskCollection> mask_collection_ = nullptr;
-        ::core::Dicom tmp_dicom_;
 
         int case_select_ = 1;
         int previous_select_ = 0;
@@ -106,13 +105,14 @@ namespace Rendering {
         std::shared_ptr<::core::DicomSeries> prev_dicom_ = nullptr;
         int group_idx_ = -1;
 
-        void unload();
+        void unload_mask();
+        void unload_dicom();
 
         void loadDicom(const std::shared_ptr<::core::DicomSeries> dicom);
         void loadCase(int idx);
 
         void load_segmentation(std::shared_ptr<::core::segmentation::Segmentation> seg);
-        bool set_and_load();
+        bool load_mask();
 
         void disable_buttons();
         void button_logic();

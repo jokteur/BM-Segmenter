@@ -6,7 +6,6 @@
 #include "rendering/ui/widgets/util.h"
 
 Rendering::ProjectInfo::ProjectInfo() {
-	auto& project = project_manager_.getCurrentProject();
 	enter_shortcut_.keys = { KEY_ENTER };
 	enter_shortcut_.name = "enter";
 	enter_shortcut_.callback = [this] {
@@ -15,23 +14,22 @@ Rendering::ProjectInfo::ProjectInfo() {
 }
 
 void Rendering::ProjectInfo::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) {
-	auto& project = project_manager_.getCurrentProject();
+	auto project = project_manager_.getCurrentProject();
 	ImGui::Begin("Project information");
 
 	if (project != nullptr) {
-		if (!is_set_) {
-			if (!project->getSaveFile().empty()) {
-				is_set_ = true;
-				auto err = project->getDataset().load(project->getSaveFile());
-				if (!err.empty()) {
-					show_error_modal("Error when opening the project", "An error occured when opening the project's dataset.", err.c_str());
-					EventQueue::getInstance().post(Event_ptr(new SetViewEvent(std::make_unique<DefaultView>())));
-				}
-				err = project->loadSegmentations();
-				if (!err.empty()) {
-					show_error_modal("Error when opening the segmentations", "An error occured when opening the project's segmentations.", err.c_str());
-					EventQueue::getInstance().post(Event_ptr(new SetViewEvent(std::make_unique<DefaultView>())));
-				}
+		if (!is_set_ && !project->getSaveFile().empty()) {
+			is_set_ = true;
+			std::cout << "Set dataset" << std::endl;
+			auto err = project->getDataset().load(project->getSaveFile());
+			if (!err.empty()) {
+				show_error_modal("Error when opening the project", "An error occured when opening the project's dataset.", err.c_str());
+				EventQueue::getInstance().post(Event_ptr(new SetViewEvent(std::make_unique<DefaultView>())));
+			}
+			err = project->loadSegmentations();
+			if (!err.empty()) {
+				show_error_modal("Error when opening the segmentations", "An error occured when opening the project's segmentations.", err.c_str());
+				EventQueue::getInstance().post(Event_ptr(new SetViewEvent(std::make_unique<DefaultView>())));
 			}
 		}
 

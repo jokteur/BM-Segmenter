@@ -18,240 +18,6 @@ namespace core {
 			memcpy(mat.data, array, sizeof(unsigned char) * rows * cols);
 		}
 
-		MaskCollection::MaskCollection(int rows, int cols, int max_size) : rows_(rows), cols_(cols), max_size_(max_size) {
-			it_ = history_.end();
-		}
-
-		void MaskCollection::push(const Mask& mask) {
-			if (!history_.empty() && it_ != history_.end()) {
-				history_.erase(it_, history_.end());
-			}
-			history_.push_back(mask);
-
-			if (history_.size() > max_size_) {
-				history_.pop_front();
-			}
-
-			it_ = history_.end();
-		}
-
-		void MaskCollection::push_new() {
-			Mask mask(cols_, rows_);
-			push(mask);
-		}
-
-		std::string MaskCollection::loadData(bool keep, bool immediate, const std::function<void(const Mask&, const Mask&, const Mask&)>& when_finished_fct) {
-			//is_valid_ = true;
-			keep_ = keep;
-			jobId id;
-
-			jobFct job = [=](float& progress, bool& abort) -> std::shared_ptr<JobResult> {
-				auto result = std::make_shared<JobResult>();
-				auto state = PyGILState_Ensure();
-				try {
-					py::module script = py::module::import("python.scripts.segmentation");
-
-					auto& dict = script.attr("load_mask_collection")(basename_path_).cast<py::dict>();
-
-					clearHistory();
-
-					if (dict.contains("current")) {
-						Mask mask;
-						npy_buffer_to_cv(dict["current"], mask.getData());
-						mask.updateDimensions();
-						push(mask);
-					}
-					if (dict.contains("predicted")) {
-						npy_buffer_to_cv(dict["predicted"], prediction_.getData());
-						prediction_.updateDimensions();
-					}
-					if (dict.contains("validated")) {
-						npy_buffer_to_cv(dict["validated"], validated_.getData());
-						prediction_.updateDimensions();
-					}
-						
-					auto& users = dict["users"].cast<std::vector<std::string>>();
-					for (auto& user : users) {
-						setValidatedBy(user);
-					}
-				}
-				catch (const std::exception& e) {
-					py::print(e.what());
-					result->err = e.what();
-				}
-
-				PyGILState_Release(state);
-				return result;
-			};
-
-			jobResultFct when_finished = [=](const std::shared_ptr<JobResult>& result) {
-				when_finished_fct(getCurrent(), prediction_, validated_);
-			};
-			
-			if (immediate) {
-				float a = 0.f;
-				bool b = true;
-				auto& res = job(a, b);
-				if (!res->err.empty())
-					std::cout << "Error:" << res->err << std::endl;
-				return res->err;
-			}
-			else {
-				JobScheduler::getInstance().addJob("dicom_to_image", job, when_finished);
-			}
-			return "";
-		}
-
-		void MaskCollection::unloadData(bool force) {
-			if (!keep_ || force) {
-				prediction_ = Mask();
-				validated_ = Mask();
-				rows_ = 0;
-				cols_ = 0;
-				clearHistory();
-				is_valid_ = false;
-			}
-		}
-
-		std::string MaskCollection::saveCollection(const std::string& basename) {
-			basename_path_ = basename;
-			return saveCollection();
-		}
-
-		std::string MaskCollection::saveCollection() {
-			if (basename_path_.empty()) {
-				return "Cannot save mask because basename path is missing";
-			}
-
-			std::string error_msg;
-			auto state = PyGILState_Ensure();
-			try {
-				NDArrayConverter::init_numpy();
-				py::module np = py::module::import("numpy");
-				auto& current = getCurrent();
-
-				py::module seg = py::module::import("python.scripts.segmentation");
-				std::vector<std::string> users;
-				for (auto& user : validated_by_) {
-					users.push_back(user);
-				}
-				seg.attr("save_mask_collection")(users, current.getData(), validated_.getData(), prediction_.getData(), basename_path_);
-			}
-			catch (const std::exception& e) {
-				std::cout << e.what() << std::endl;
-				error_msg = e.what();
-			}
-			PyGILState_Release(state);
-
-			return error_msg;
-		}
-
-		MaskCollection MaskCollection::copy() {
-			MaskCollection collection(rows_, cols_);
-			collection.rows_ = rows_;
-			collection.cols_= cols_;
-			for (auto& mask : history_) {
-				collection.history_.push_back(mask.copy());
-			}
-			collection.it_ = collection.history_.end();
-			collection.prediction_ = prediction_.copy();
-			collection.validated_ = validated_.copy();
-			return collection;
-		}
-
-		void MaskCollection::clearHistory() {
-			history_.clear();
-			it_ = history_.end();
-			is_valid_ = false;
-		}
-
-		void MaskCollection::setDimensions(std::shared_ptr<DicomSeries> dicom) {
-			if (!dicom->getData().empty()) {
-				auto& data = dicom->getData()[0].data;
-				if (data.rows > 0 && data.cols > 0) {
-					rows_ = data.rows;
-					cols_ = data.cols;
-					is_valid_ = true;
-					return;
-				}
-			}
-			dicom->loadCase(0, false, [this, &dicom](const core::Dicom& dicom_res) {
-				rows_ = dicom_res.data.rows;
-				cols_ = dicom_res.data.cols;
-				is_valid_ = true;
-				dicom->cleanData();
-			});
-		}
-
-		Mask& MaskCollection::undo() {
-			if (history_.empty()) {
-				return Mask(rows_, cols_);
-			}
-			if (it_ != ++history_.begin()) {
-				it_--;
-			}
-			return getCurrent();
-		}
-
-		Mask& MaskCollection::redo() {
-			if (history_.empty()) {
-				return Mask(rows_, cols_);
-			}
-			if (it_ != history_.end()) {
-				it_++;
-			}
-			return getCurrent();
-		}
-
-		int MaskCollection::size() {
-			return history_.size();
-		}
-
-		bool MaskCollection::isCursorBegin() {
-			if (history_.empty())
-				return true;
-			return it_ == ++history_.begin();
-		}
-
-		bool MaskCollection::isCursorEnd() {
-			if (history_.empty())
-				return true;
-			return it_ == history_.end();
-		}
-
-		Mask& core::segmentation::MaskCollection::getCurrent(bool no_push) {
-			if (history_.empty()) {
-				push_new();
-			}
-			iterator my_it = it_;
-			return *(--my_it);
-		}
-
-		void MaskCollection::setBasenamePath(const std::string& basename) {
-			basename_path_ = basename;
-		}
-
-		void MaskCollection::setValidatedBy(std::string name) {
-			validated_by_.insert(name);
-			is_validated_ = true;
-		}
-
-		void MaskCollection::removeAllValidatedBy() {
-			is_validated_ = false;
-			validated_by_.clear();
-			validated_ = Mask();
-		}
-
-		void MaskCollection::removeValidatedBy(std::string name) {
-			if (std::find(validated_by_.begin(), validated_by_.end(), name) != validated_by_.end()) {
-				validated_by_.erase(name);
-			}
-			if (validated_by_.empty()) {
-				is_validated_ = false;
-				validated_ = Mask();
-			}
-		}
-
 		Mask::Mask(int rows, int cols) : rows_(rows), cols_(cols) {
 			setDimensions(rows, cols);
 		}
@@ -345,6 +111,243 @@ namespace core {
 			}
 		}
 
+		MaskCollection::MaskCollection(int rows, int cols, int max_size) : rows_(rows), cols_(cols), max_size_(max_size) {
+			it_ = history_.end();
+		}
+
+		void MaskCollection::push(const Mask& mask) {
+			if (!history_.empty() && it_ != history_.end()) {
+				history_.erase(it_, history_.end());
+			}
+			history_.push_back(mask);
+
+			if (history_.size() > max_size_) {
+				history_.pop_front();
+			}
+
+			it_ = history_.end();
+		}
+
+		void MaskCollection::push_new() {
+			Mask mask(cols_, rows_);
+			push(mask);
+		}
+
+		std::string MaskCollection::loadData(bool immediate, const std::function<void(const Mask&, const Mask&, const Mask&)>& when_finished_fct, Job::jobPriority priority) {
+			//is_valid_ = true;
+			jobId id;
+
+			jobFct job = [=](float& progress, bool& abort) -> std::shared_ptr<JobResult> {
+				auto result = std::make_shared<JobResult>();
+				auto state = PyGILState_Ensure();
+				try {
+					py::module script = py::module::import("python.scripts.segmentation");
+
+					auto& dict = script.attr("load_mask_collection")(basename_path_).cast<py::dict>();
+
+					clearHistory();
+
+					if (dict.contains("current")) {
+						Mask mask;
+						npy_buffer_to_cv(dict["current"], mask.getData());
+						mask.updateDimensions();
+						push(mask);
+					}
+					if (dict.contains("predicted")) {
+						npy_buffer_to_cv(dict["predicted"], prediction_.getData());
+						prediction_.updateDimensions();
+					}
+					if (dict.contains("validated")) {
+						npy_buffer_to_cv(dict["validated"], validated_.getData());
+						prediction_.updateDimensions();
+					}
+
+					auto& users = dict["users"].cast<std::vector<std::string>>();
+					for (auto& user : users) {
+						setValidatedBy(user);
+					}
+					ref_counter_++;
+				}
+				catch (const std::exception& e) {
+					py::print(e.what());
+					result->err = e.what();
+				}
+
+				PyGILState_Release(state);
+				return result;
+			};
+
+			jobResultFct when_finished = [=](const std::shared_ptr<JobResult>& result) {
+				when_finished_fct(getCurrent(), prediction_, validated_);
+			};
+
+			if (immediate) {
+				float a = 0.f;
+				bool b = true;
+				auto& res = job(a, b);
+				if (!res->err.empty())
+					std::cout << "Error:" << res->err << std::endl;
+				return res->err;
+			}
+			else {
+				JobScheduler::getInstance().addJob("dicom_to_image", job, when_finished, priority);
+			}
+			return "";
+		}
+
+		void MaskCollection::unloadData(bool force) {
+			if (ref_counter_ > 0)
+				ref_counter_--;
+
+			if (ref_counter_ == 0 || force) {
+				ref_counter_ = 0;
+				prediction_ = Mask();
+				validated_ = Mask();
+				rows_ = 0;
+				cols_ = 0;
+				clearHistory();
+				is_valid_ = false;
+			}
+		}
+
+		std::string MaskCollection::saveCollection(const std::string& basename) {
+			basename_path_ = basename;
+			return saveCollection();
+		}
+
+		std::string MaskCollection::saveCollection() {
+			if (basename_path_.empty()) {
+				return "Cannot save mask because basename path is missing";
+			}
+
+			std::string error_msg;
+			auto state = PyGILState_Ensure();
+			try {
+				NDArrayConverter::init_numpy();
+				py::module np = py::module::import("numpy");
+				auto& current = getCurrent();
+
+				py::module seg = py::module::import("python.scripts.segmentation");
+				std::vector<std::string> users;
+				for (auto& user : validated_by_) {
+					users.push_back(user);
+				}
+				seg.attr("save_mask_collection")(users, current.getData(), validated_.getData(), prediction_.getData(), basename_path_);
+			}
+			catch (const std::exception& e) {
+				std::cout << e.what() << std::endl;
+				error_msg = e.what();
+			}
+			PyGILState_Release(state);
+
+			return error_msg;
+		}
+
+		MaskCollection MaskCollection::copy() {
+			MaskCollection collection(rows_, cols_);
+			collection.rows_ = rows_;
+			collection.cols_ = cols_;
+			for (auto& mask : history_) {
+				collection.history_.push_back(mask.copy());
+			}
+			collection.it_ = collection.history_.end();
+			collection.prediction_ = prediction_.copy();
+			collection.validated_ = validated_.copy();
+			return collection;
+		}
+
+		void MaskCollection::clearHistory() {
+			history_.clear();
+			it_ = history_.end();
+			is_valid_ = false;
+		}
+
+		void MaskCollection::setDimensions(std::shared_ptr<DicomSeries> dicom) {
+			if (!dicom->getData().empty()) {
+				auto& data = dicom->getData()[0].data;
+				if (data.rows > 0 && data.cols > 0) {
+					rows_ = data.rows;
+					cols_ = data.cols;
+					is_valid_ = true;
+					return;
+				}
+			}
+			dicom->loadCase(0, false, [this, &dicom](const core::Dicom& dicom_res) {
+				rows_ = dicom_res.data.rows;
+				cols_ = dicom_res.data.cols;
+				is_valid_ = true;
+				dicom->unloadCase(0);
+				});
+		}
+
+		Mask& MaskCollection::undo() {
+			if (history_.empty()) {
+				return Mask(rows_, cols_);
+			}
+			if (it_ != ++history_.begin()) {
+				it_--;
+			}
+			return getCurrent();
+		}
+
+		Mask& MaskCollection::redo() {
+			if (history_.empty()) {
+				return Mask(rows_, cols_);
+			}
+			if (it_ != history_.end()) {
+				it_++;
+			}
+			return getCurrent();
+		}
+
+		int MaskCollection::size() {
+			return history_.size();
+		}
+
+		bool MaskCollection::isCursorBegin() {
+			if (history_.empty())
+				return true;
+			return it_ == ++history_.begin();
+		}
+
+		bool MaskCollection::isCursorEnd() {
+			if (history_.empty())
+				return true;
+			return it_ == history_.end();
+		}
+
+		Mask& core::segmentation::MaskCollection::getCurrent(bool no_push) {
+			if (history_.empty()) {
+				push_new();
+			}
+			iterator my_it = it_;
+			return *(--my_it);
+		}
+
+		void MaskCollection::setBasenamePath(const std::string& basename) {
+			basename_path_ = basename;
+		}
+
+		void MaskCollection::setValidatedBy(std::string name) {
+			validated_by_.insert(name);
+			is_validated_ = true;
+		}
+
+		void MaskCollection::removeAllValidatedBy() {
+			is_validated_ = false;
+			validated_by_.clear();
+			validated_ = Mask();
+		}
+
+		void MaskCollection::removeValidatedBy(std::string name) {
+			if (std::find(validated_by_.begin(), validated_by_.end(), name) != validated_by_.end()) {
+				validated_by_.erase(name);
+			}
+			if (validated_by_.empty()) {
+				is_validated_ = false;
+				validated_ = Mask();
+			}
+		}
 
 		void buildHuMask(const cv::Mat& hu_mat, Mask& mask, int min, int max) {
 			if (hu_mat.rows <= 0 || hu_mat.cols <= 0) {

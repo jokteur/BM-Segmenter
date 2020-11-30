@@ -42,6 +42,8 @@ std::string core::dataset::Dataset::load(const std::string& path) {
     dicoms_.clear();
     groups_.clear();
 
+    std::cout << "Load dataset" << std::endl;
+
     auto state = PyGILState_Ensure();
 
     py::module scripts;

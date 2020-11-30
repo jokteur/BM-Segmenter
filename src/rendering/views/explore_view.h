@@ -12,7 +12,7 @@ namespace Rendering {
     class ExploreView : public View {
     private:
         std::shared_ptr<ExploreFolder> explore_ = std::make_shared<ExploreFolder>();
-        std::shared_ptr<DicomViewer> dicom_ = std::make_shared<DicomViewer>();
+        //std::shared_ptr<DicomViewer> dicom_ = std::make_shared<DicomViewer>();
         std::shared_ptr<ExplorerPreview> preview_ = std::make_shared<ExplorerPreview>();
 
     public:

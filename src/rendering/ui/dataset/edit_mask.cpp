@@ -9,18 +9,26 @@
 int Rendering::EditMask::instance_number = 0;
 
 
-void Rendering::EditMask::unload() {
+void Rendering::EditMask::unload_mask() {
     if (mask_collection_ != nullptr) {
         mask_collection_->unloadData(true);
     }
 }
 
-void Rendering::EditMask::loadDicom(const std::shared_ptr<core::DicomSeries> dicom) {
+void Rendering::EditMask::unload_dicom() {
     if (dicom_series_ != nullptr) {
         dicom_series_->cancelPendingJobs();
-        dicom_series_->unloadData();
-        unload();
+        dicom_series_->unloadCase();
+        dicom_series_ = nullptr;
+        std::cout << "Unload dicom" << std::endl;
+        image_.reset();
     }
+}
+
+void Rendering::EditMask::loadDicom(const std::shared_ptr<core::DicomSeries> dicom) {
+    unload_dicom();
+    unload_mask();
+
     dicom_series_ = dicom;
 
     loadCase(0);
@@ -29,32 +37,27 @@ void Rendering::EditMask::loadDicom(const std::shared_ptr<core::DicomSeries> dic
 void Rendering::EditMask::loadCase(int idx) {
     if (dicom_series_ != nullptr) {
         dicom_series_->loadCase(0, false, [this](const core::Dicom& dicom) {
+            std::cout << "Set load case " << dicom.data.rows << std::endl;
             image_.setImageFromHU(dicom.data, (float)dicom_series_->getWW(), (float)dicom_series_->getWC());
             image_widget_.setImage(image_);
             dicom_dimensions_.x = dicom.data.rows;
             dicom_dimensions_.y = dicom.data.cols;
-            set_and_load();
-
-            tmp_dicom_ = dicom;
-
-            dicom_series_->cleanData();
+            load_mask();
         });
         set_NextPrev_buttons();
     }
 }
 
 void Rendering::EditMask::load_segmentation(std::shared_ptr<::core::segmentation::Segmentation> seg) {
-    unload();
+    unload_mask();
     active_seg_ = seg;
-    set_and_load();
+    load_mask();
 }
 
-bool Rendering::EditMask::set_and_load() {
+bool Rendering::EditMask::load_mask() {
     if (active_seg_ != nullptr && dicom_series_ != nullptr) {
-        active_seg_->addDicom(dicom_series_);
-
-        mask_collection_ = active_seg_->getMasks()[dicom_series_];
-        mask_collection_->loadData(true, true);
+        mask_collection_ = active_seg_->getMask(dicom_series_);
+        mask_collection_->loadData(true);
 
         if (mask_collection_->getIsValidated()) {
             tmp_mask_ = mask_collection_->getValidated().copy();
@@ -142,16 +145,8 @@ Rendering::EditMask::EditMask()
 
     // Reset the view if there is a request
     reset_viewer_listener_.callback = [=](Event_ptr& event) {
-        if (dicom_series_ != nullptr) {
-            dicom_series_->cancelPendingJobs();
-            dicom_series_->unloadData();
-            dicom_series_ = nullptr;
-            image_.reset();
-            image_widget_.setImage(image_);
-        }
-        if (active_seg_ != nullptr) {
-            active_seg_->clear();
-        }
+        unload_dicom();
+        unload_mask();
     };
     reset_viewer_listener_.filter = "dataset/dicom/reset";
 
@@ -209,7 +204,7 @@ Rendering::EditMask::EditMask()
 }
 
 Rendering::EditMask::~EditMask() {
-    unload();
+    unload_mask();
     EventQueue::getInstance().unsubscribe(&load_dicom_);
     EventQueue::getInstance().unsubscribe(&reload_seg_);
     EventQueue::getInstance().unsubscribe(&load_segmentation_);
@@ -236,14 +231,20 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
     }
 
     if (dicom_series_ != nullptr) {
+        if (ImGui::Button("Close image")) {
+            unload_mask();
+            unload_dicom();
+            ImGui::End();
+            return;
+        }
         if (prev_dicom_ != nullptr) {
+            ImGui::SameLine();
             if (ImGui::Button("Previous")) {
                 previous();
             }
         }
         if (next_dicom_ != nullptr) {
-            if (prev_dicom_ != nullptr)
-                ImGui::SameLine();
+            ImGui::SameLine();
             if (ImGui::Button("Next")) {
                 next();
             }
@@ -275,7 +276,16 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
         if (active_seg_ != nullptr) {
             color = active_seg_->getMaskColor();
         }
-        image_.setImageFromHU(tmp_dicom_.data, (float)dicom_series_->getWW(), (float)dicom_series_->getWC(), core::Image::FILTER_NEAREST, tmp_mask_.getData(), color);
+        if (dicom_series_ != nullptr)
+            std::cout << "Reset image " << dicom_series_->getCurrentDicom().data.rows << std::endl;
+            image_.setImageFromHU(
+                dicom_series_->getCurrentDicom().data,
+                (float)dicom_series_->getWW(),
+                (float)dicom_series_->getWC(), 
+                core::Image::FILTER_NEAREST, 
+                tmp_mask_.getData(), 
+                color
+            );
     }
 
 
@@ -326,7 +336,8 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
                         build_hu_mask_ = false;
                         prev_hu_max_ = hu_max_;
                         prev_hu_min_ = hu_min_;
-                        ::core::segmentation::buildHuMask(tmp_dicom_.data, thresholded_hu_, hu_min_, hu_max_);
+                        if (dicom_series_ != nullptr)
+                            ::core::segmentation::buildHuMask(dicom_series_->getCurrentDicom().data, thresholded_hu_, hu_min_, hu_max_);
                     }
                 }
                 if (active_button_ == &brush_select_b_) {
@@ -402,7 +413,8 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
                         text += name + ", ";
                     }
                     text = text.substr(0, text.size() - 2);
-                    ImGui::Text("Currently validated by: %s", text.c_str());
+                    ImGui::SameLine();
+                    ImGui::Text("Validated by: %s", text.c_str());
                 }
 
                 if (username.empty()) {
@@ -450,7 +462,7 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
                     (crop.y0 + (crop.y1 - crop.y0) * (mouse_pos.y - dimensions.ypos) / dimensions.height) * image_.height() - 1
                 };
                 if (pos.x >= 0 && pos.y >= 0 && pos.x < image_.width() && pos.y < image_.height()) {
-                    int value = tmp_dicom_.data.at<short int>((int)pos.y, (int)pos.x);
+                    int value = dicom_series_->getCurrentDicom().data.at<short int>((int)pos.y, (int)pos.x);
                     ImGui::BeginTooltip();
                     ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
                     ImGui::Text("At %d;%d, %d HU", (int)pos.x, (int)pos.y, value);
@@ -477,6 +489,7 @@ void Rendering::EditMask::accept_drag_and_drop() {
             auto data = drag_and_drop.returnData();
             loadDicom(data);
             active_button_ = nullptr;
+            drag_and_drop.giveData(nullptr);
         }
         ImGui::EndDragDropTarget();
     }

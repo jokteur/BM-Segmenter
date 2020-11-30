@@ -142,29 +142,29 @@ void Rendering::DicomPreview::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensi
     ImGui::EndChild();
 }
 
-void Rendering::DicomPreview::selectCase(int idx) {
+void Rendering::DicomPreview::set_case(int idx) {
     series_node_->data.loadCase(idx, false, [=](const core::Dicom& dicom) {
         image_.setImageFromHU(dicom.data, (float)series_node_->data.getWW(), (float)series_node_->data.getWC());
         image_widget_.setImage(image_);
         reset_image_ = true;
-        series_node_->data.cleanData();
+        series_node_->data.unloadCase(case_idx);
+        case_idx = idx;
     });
 }
 
 void Rendering::DicomPreview::loadSeries(std::shared_ptr<::core::dataset::SeriesNode> series_node, const ::core::dataset::Case& aCase) {
     case_ = aCase;
     if (series_node_ != nullptr) {
-        series_node_->data.unloadData();
+        series_node_->data.unloadCase(case_idx);
     }
     series_node_ = series_node;
-    selectCase(0);
+    set_case(0);
 }
 
 void Rendering::DicomPreview::setCase(float percentage) {
     int idx = (int)(percentage * (float)(series_node_->data.size() - 1));
     if (idx != case_idx) {
-        selectCase(idx);
-        case_idx = idx;
+        set_case(idx);
         reset_image_ = true;
     }
 }
@@ -199,7 +199,7 @@ void Rendering::DicomPreview::set_crop(ImVec2 crop_x, ImVec2 crop_y, bool lock) 
             is_crop_locked = true;
 
         series_node_->data.setCrops(crop_x_, crop_y_);
-        selectCase(case_idx);
+        set_case(case_idx);
         reset_image_ = true;
     }
 }
@@ -213,6 +213,6 @@ void Rendering::DicomPreview::set_window(int width, int center, bool lock) {
         reset_image_ = true;
         if (lock)
             is_window_locked = true;
-        selectCase(case_idx);
+        set_case(case_idx);
     }
 }

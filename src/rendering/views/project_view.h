@@ -19,7 +19,8 @@ namespace Rendering {
             drawables_.push_back(dataset);
             drawables_.push_back(mask);
         }
-        ~ProjectView() override = default;
+        ~ProjectView() override {
+        };
 
     };
 }

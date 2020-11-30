@@ -8,12 +8,19 @@ Rendering::CloseProjectModal::CloseProjectModal()
 }
 
 void Rendering::CloseProjectModal::setProject(const std::shared_ptr<::core::project::Project>& project) {
+    if (project == nullptr) {
+        std::cout << "You should derefererefnec this" << std::endl;
+        project_ = nullptr;
+        draw_fct = [](bool&, bool&, bool&) {};
+        return;
+    }
     project_ = project;
 
     draw_fct = [project = project_, this](bool& show, bool& enter, bool& escape) {
 
         if (project->isSaved()) {
             show = false;
+            std::cout << "Close project" << std::endl;
             project_manager_.removeProject(project);
             return;
         }

@@ -56,7 +56,7 @@ namespace core {
 
 			Mask const copy() const;
 
-			bool empty() { return is_empty_; }
+			bool empty() const { return is_empty_; }
 
 			/**
 			 * Returns the opencv matrix that represent the mask 
@@ -76,12 +76,12 @@ namespace core {
 			/**
 			 * Returns the width of the mask
 			*/
-			int rows() { return rows_; }
+			int rows() const { return rows_; }
 
 			/**
 			 * Returns the width of the mask
 			*/
-			int cols() { return cols_; }
+			int cols() const { return cols_; }
 		};
 
 		/**
@@ -109,6 +109,8 @@ namespace core {
 			bool keep_ = false;
 			bool is_loading_ = false;
 
+			int ref_counter_ = 0;
+
 			Mask prediction_;
 			Mask validated_;
 		public:
@@ -119,7 +121,11 @@ namespace core {
 			void push(const Mask& mask);
 			void push_new();
 
-			std::string loadData(bool keep = false, bool immediate = false, const std::function<void(const Mask&, const Mask&, const Mask&)>& when_finished_fct = [](const Mask&, const Mask&, const Mask&) {});
+			std::string loadData(
+				bool immediate = false, 
+				const std::function<void(const Mask&, const Mask&, const Mask&)>& when_finished_fct = [](const Mask&, const Mask&, const Mask&) {},
+				Job::jobPriority priority = Job::JOB_PRIORITY_NORMAL
+			);
 			void unloadData(bool force = false);
 			bool isValid() { return is_valid_; }
 

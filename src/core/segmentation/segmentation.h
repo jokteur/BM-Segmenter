@@ -36,6 +36,7 @@ namespace core {
 			std::string getDescription() { return description_; }
 
 			std::map<std::shared_ptr<DicomSeries>, std::shared_ptr<MaskCollection>>& getMasks() { return segmentations_; }
+			std::shared_ptr<MaskCollection> getMask(std::shared_ptr<DicomSeries> dicom);
 
 			void setMaskColor(const ImVec4 color) { color_ = color; }
 			void setMaskColor(const std::vector<float> color);

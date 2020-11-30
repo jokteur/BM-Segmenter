@@ -54,7 +54,7 @@ Rendering::DicomViewer::DicomViewer()
     reset_tree_listener_.callback = [=](Event_ptr& event) {
         if (series_node_ != nullptr) {
             series_node_->data.cancelPendingJobs();
-            series_node_->data.unloadData();
+            series_node_->data.unloadAll();
             series_node_ = nullptr;
             image_.reset();
             image_widget_.setImage(image_);
@@ -440,7 +440,7 @@ void Rendering::DicomViewer::set_views() {
 void Rendering::DicomViewer::loadSeries(const dataset::SeriesPayload &data) {
     if (series_node_ != nullptr) {
         series_node_->data.cancelPendingJobs();
-        series_node_->data.unloadData();
+        series_node_->data.unloadAll();
     }
     // Reset things
     windowing_button_.setState(false);

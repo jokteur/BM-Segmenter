@@ -8,8 +8,10 @@
 #include "opencv2/opencv.hpp"
 
 #include "core/image.h"
-#include "core/dataset/explore.h"
 #include "core/dicom.h"
+#include "core/dataset/explore.h"
+#include "core/segmentation/segmentation.h"
+
 #include "events.h"
 #include "rendering/drawables.h"
 #include "rendering/ui/widgets/image_simple.h"
@@ -29,8 +31,11 @@ namespace Rendering {
         SimpleImage image_widget_;
         ::core::Image image_;
         std::shared_ptr<::core::DicomSeries> dicom_ = nullptr;
+        std::shared_ptr<::core::segmentation::MaskCollection> mask_collection_ = nullptr;
 
         bool reset_image_ = false;
+
+        static int load_counter;
 
         int prev_ww_ = 400;
         int prev_wc_ = 40;
@@ -45,6 +50,8 @@ namespace Rendering {
         ImVec2 prev_crop_x_ = ImVec2(0, 100);
         ImVec2 prev_crop_y_ = ImVec2(0, 100);
 
+        std::shared_ptr<::core::segmentation::Segmentation> active_seg_ = nullptr;
+
         Listener job_listener_;
         jobId waiting_on_;
 
@@ -54,13 +61,15 @@ namespace Rendering {
         bool allow_scroll_ = false;
         int case_idx = 0;
         
-        double __num = 235.654885342;
+        double __hack = 235.654885342;
 
         void set_case(int idx);
         void set_crop(ImVec2 crop_x, ImVec2 crop_y, bool lock = false);
         void set_window(int width, int center, bool lock = false);
 
         void init();
+
+        void setAndLoadMask();
 
         void popup_context_menu();
 
@@ -87,10 +96,12 @@ namespace Rendering {
         */
         void unload();
 
+        void setSegmentation(std::shared_ptr<::core::segmentation::Segmentation> segmentation);
+
         /**
-         * If the image has been unload before, call reload to show the widget again
+         * If the image has been unloaded before, call reload to show the widget again
         */
-        void reload();
+        void load();
 
         //void setWindowing(int width, int center, bool force = false);
 

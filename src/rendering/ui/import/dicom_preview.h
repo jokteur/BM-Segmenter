@@ -51,7 +51,7 @@ namespace Rendering {
         bool allow_scroll_ = false;
         int case_idx = 0;
 
-        void selectCase(int idx);
+        void set_case(int idx);
         void set_crop(ImVec2 crop_x, ImVec2 crop_y, bool lock = false);
         void set_window(int width, int center, bool lock = false);
 

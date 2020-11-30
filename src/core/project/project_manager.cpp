@@ -25,13 +25,13 @@ namespace core {
             current_project_ = project;
         }
 
-        void ProjectManager::removeProject(std::shared_ptr<Project> project) {
+        void ProjectManager::removeProject(const std::shared_ptr<Project>& project) {
             auto it = projects_.find(project);
             if (it != projects_.end()) {
                 projects_.erase(it);
             }
             current_project_ = nullptr;
-            for (auto& prj : projects_) {
+            for (auto prj : projects_) {
                 current_project_ = prj;
                 break;
             }
@@ -109,10 +109,16 @@ namespace core {
                 users.push_back(user);
             }
 
-            std::shared_ptr<Project> new_project =  std::make_shared<Project>(name, description);
+            std::shared_ptr<Project> new_project = std::make_shared<Project>(name, description);
             new_project->setSaveFile(filename);
             new_project->setUsers(users);
             new_project->setSavedState();
+
+            //std::string err = new_project->getDataset().load(filename);
+
+            //if (!err.empty()) {
+            //    throw ProjectManagerError(err);
+            //}
 
 
             projects_.insert(new_project);

@@ -11,6 +11,11 @@ namespace core {
 		{
 		}
 
+		std::shared_ptr<MaskCollection> Segmentation::getMask(std::shared_ptr<DicomSeries> dicom) {
+			addDicom(dicom);
+			return segmentations_[dicom];
+		}
+
 		void Segmentation::setMaskColor(const std::vector<float> color) {
 			color_.x = color[0];
 			color_.y = color[1];

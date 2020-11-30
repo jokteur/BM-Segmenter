@@ -53,7 +53,7 @@ namespace core {
             /**
              * Removes project from manager whenever saved or not 
             */
-            void removeProject(std::shared_ptr<Project> project);
+            void removeProject(const std::shared_ptr<Project>& project);
 
             /**
              * Returns the number of current projects
@@ -87,13 +87,6 @@ namespace core {
              * @return true if successful, false if not
              */
             static bool saveProjectToFile(const std::shared_ptr<Project>& project, const std::string &filename);
-
-            /**
-             * Returns only the name of a project without opening it completely
-             * @param filename path of the project
-             * @return name of the project
-             */
-            std::string &getNameFromFile(const std::string &filename);
 
             /**
              * Iterator function for C++14 usage of for(auto p: ProjectManager)

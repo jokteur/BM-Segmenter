@@ -51,6 +51,8 @@ namespace core {
         bool is_set = false;
     };
 
+    std::pair<std::string, std::string> parse_dicom_id(const std::string& id);
+
     class DicomSeries {
     public:
         enum file_format { F_DICOM, F_NP };
@@ -64,6 +66,10 @@ namespace core {
         int window_width_ = 400; // Window width
         int window_center_ = 40; // Window center
         file_format format_ = F_DICOM;
+        
+        std::map<int, int> ref_counter_;
+
+        static int num_loaded_;
 
         DicomCoordinate current_coordinate_;
 
@@ -74,6 +80,12 @@ namespace core {
 
         void free_memory(int index);
         void reload();
+
+        void set_ref(int idx);
+        void add_one_to_ref(int idx);
+        void remove_one_to_ref(int idx);
+
+        jobId load_case(int index, bool force_replace, bool keep_previous, const std::function<void(const Dicom&)>& when_finished_fct = [](const Dicom&) {});
 
         void init();
     public:
@@ -88,8 +100,10 @@ namespace core {
         void loadAll(bool force_load = false);
         jobId loadCase(float percentage, bool force_replace = false, const std::function<void(const Dicom&)>& when_finished_fct = [](const Dicom&) {});
         jobId loadCase(int index, bool force_replace = false, const std::function<void(const Dicom&)>& when_finished_fct = [](const Dicom&) {});
-        void unloadData(bool keep_current = false);
-        void cleanData();
+
+        void unloadCase(int index = -1);
+        void unloadAll(bool keep_current = false);
+        void forceClean();
         void cancelPendingJobs();
 
         ImVec2 getCropX() { return crop_x_; }
@@ -105,7 +119,6 @@ namespace core {
         int getCurrentIndex() const { return selected_index_; }
         std::string getId() { return id_; }
         Dicom& getCurrentDicom();
-        void eraseCurrent();
 
         std::vector<std::string>& getPaths() { return images_path_; }
 
@@ -119,7 +132,6 @@ namespace core {
         bool isReady();
     };
 
-    std::pair<std::string, std::string> parse_dicom_id(const std::string& id);
 
     struct OrderDicom {
         bool operator()(const std::shared_ptr<DicomSeries>& dicom1, const std::shared_ptr <DicomSeries>& dicom2) const;

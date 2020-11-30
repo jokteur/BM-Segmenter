@@ -83,6 +83,8 @@ bool core::Image::setImageFromHU(const cv::Mat& mat, float window_width, float w
         data = mask.data;
     }
 
+    int sum = 0;
+
     for(int row = 0; row < mat.rows; ++row) {
         auto p = mat.ptr<short int>(row);
 
@@ -109,11 +111,14 @@ bool core::Image::setImageFromHU(const cv::Mat& mat, float window_width, float w
                 tmp_array[4 * i + 2] = (char)gray;
             }
             tmp_array[4 * i + 3] = 255;
+
+            sum += tmp_array[4 * i] + tmp_array[4 * i + 1] + tmp_array[4 * i + 2];
             i++;
             p++;
         }
-
     }
+    std::cout << sum << std::endl;
+
     load_texture_from_memory(tmp_array, mat.cols, mat.rows, filtering);
     delete [] tmp_array;
     return false;

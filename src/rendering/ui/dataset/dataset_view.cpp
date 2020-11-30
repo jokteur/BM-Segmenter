@@ -1,5 +1,7 @@
 #include "dataset_view.h"
 
+#include <algorithm>
+
 #include "drag_and_drop.h"
 #include "rendering/ui/widgets/util.h"
 
@@ -62,10 +64,16 @@ void Rendering::DatasetView::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
                     if (idx == 0) {
                         EventQueue::getInstance().post(Event_ptr(new ::core::segmentation::SelectSegmentationEvent(nullptr)));
                         active_seg_ = nullptr;
+                        for (auto& preview : dicom_previews_) {
+                            preview.second.setSegmentation(nullptr);
+                        }
                     }
                     else {
                         EventQueue::getInstance().post(Event_ptr(new ::core::segmentation::SelectSegmentationEvent(seg_map_.at(idx - 1))));
                         active_seg_ = seg_map_.at(idx - 1);
+                        for (auto& preview : dicom_previews_) {
+                            preview.second.setSegmentation(active_seg_);
+                        }
                     }
                 });
             }
@@ -88,6 +96,19 @@ void Rendering::DatasetView::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
                     }
                     else {
                         EventQueue::getInstance().post(Event_ptr(new Event("dataset/group/select/" + std::to_string(idx - 1))));
+
+                        // Unload all dicoms that are not in the group
+                        auto group_dicoms = groups_[idx - 1].getOrderedDicoms();
+                        auto all_dicoms = project->getDataset().getOrderedDicoms();
+
+                        std::sort(group_dicoms.begin(), group_dicoms.end());
+                        std::sort(all_dicoms.begin(), all_dicoms.end());
+
+                        std::vector<std::shared_ptr<::core::DicomSeries>> to_unload;
+                        std::set_difference(all_dicoms.begin(), all_dicoms.end(), group_dicoms.begin(), group_dicoms.end(), std::back_inserter(to_unload));
+                        for (auto dicom : to_unload) {
+                            dicom_previews_[dicom].unload();
+                        }
                     }
                 });
             }
@@ -133,9 +154,9 @@ void Rendering::DatasetView::preview_widget(Preview& preview, float width, ImVec
     }
 
     auto& dim = preview.getDimensions();
-    float margin = 3 * width;
+    float margin = 2 * width;
     if (dim.ypos - sub_window_dim.ypos < sub_window_dim.height + margin && dim.ypos - sub_window_dim.ypos > -margin)
-        preview.reload();
+        preview.load();
     else
         preview.unload();
 
