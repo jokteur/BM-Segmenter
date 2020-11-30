@@ -20,7 +20,6 @@ void Rendering::EditMask::unload_dicom() {
         dicom_series_->cancelPendingJobs();
         dicom_series_->unloadCase();
         dicom_series_ = nullptr;
-        std::cout << "Unload dicom" << std::endl;
         image_.reset();
     }
 }
@@ -37,7 +36,6 @@ void Rendering::EditMask::loadDicom(const std::shared_ptr<core::DicomSeries> dic
 void Rendering::EditMask::loadCase(int idx) {
     if (dicom_series_ != nullptr) {
         dicom_series_->loadCase(0, false, [this](const core::Dicom& dicom) {
-            std::cout << "Set load case " << dicom.data.rows << std::endl;
             image_.setImageFromHU(dicom.data, (float)dicom_series_->getWW(), (float)dicom_series_->getWC());
             image_widget_.setImage(image_);
             dicom_dimensions_.x = dicom.data.rows;
@@ -262,6 +260,10 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
         else {
             ImGui::Text("(this image does not belong to group `%s`)", groups[group_idx_].getName().c_str());
         }
+        if (active_seg_ != nullptr) {
+            ImGui::SameLine();
+            ImGui::Text("(%s)", active_seg_->getName().c_str());
+        }
         if (prev_dicom_ != nullptr || next_dicom_ != nullptr) {
             ImGui::Separator();
         }
@@ -277,7 +279,6 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
             color = active_seg_->getMaskColor();
         }
         if (dicom_series_ != nullptr)
-            std::cout << "Reset image " << dicom_series_->getCurrentDicom().data.rows << std::endl;
             image_.setImageFromHU(
                 dicom_series_->getCurrentDicom().data,
                 (float)dicom_series_->getWW(),
@@ -321,7 +322,7 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
                 }
             }
 
-            if (active_button_ != nullptr && active_button_ != &validate_b_) {
+            if (active_button_ != nullptr && active_button_ != &validate_b_ && !is_validated) {
                 ImGui::SameLine();
                 ImGui::Text("Use Ctrl + Mouse to zoom and pan");
                 Widgets::NewLine(3.f);
@@ -346,6 +347,9 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
                 Widgets::NewLine(3.f);
             }
             else if (active_button_ == &validate_b_ || is_validated) {
+                active_button_ = &validate_b_;
+                active_button_->setState(true);
+
                 image_widget_.setImageDrag(SimpleImage::IMAGE_NORMAL_INTERACT);
                 image_widget_.setInteractiveZoom(SimpleImage::IMAGE_NORMAL_INTERACT);
 
@@ -458,8 +462,8 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
             if (Widgets::check_hitbox(mouse_pos, dimensions)) {
                 Crop crop = image_widget_.getCrop();
                 ImVec2 pos = {
-                    (crop.x0 + (crop.x1 - crop.x0) * (mouse_pos.x - dimensions.xpos) / dimensions.width) * image_.width() - 1,
-                    (crop.y0 + (crop.y1 - crop.y0) * (mouse_pos.y - dimensions.ypos) / dimensions.height) * image_.height() - 1
+                    (crop.x0 + (crop.x1 - crop.x0) * (mouse_pos.x - dimensions.xpos) / dimensions.width) * image_.width(),
+                    (crop.y0 + (crop.y1 - crop.y0) * (mouse_pos.y - dimensions.ypos) / dimensions.height) * image_.height()
                 };
                 if (pos.x >= 0 && pos.y >= 0 && pos.x < image_.width() && pos.y < image_.height()) {
                     int value = dicom_series_->getCurrentDicom().data.at<short int>((int)pos.y, (int)pos.x);
