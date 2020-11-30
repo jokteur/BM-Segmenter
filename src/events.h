@@ -116,7 +116,7 @@ struct Listener {
 class EventQueue {
 private:
     std::queue<Event_ptr> event_queue_;
-    std::mutex event_mutex_;
+    std::recursive_mutex event_mutex_;
     std::set<Listener*> listeners_;
     std::recursive_mutex listeners_mutex_;
 

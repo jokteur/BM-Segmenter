@@ -29,7 +29,6 @@ void Rendering::EditMask::loadDicom(const std::shared_ptr<core::DicomSeries> dic
     unload_mask();
 
     dicom_series_ = dicom;
-
     loadCase(0);
 }
 
@@ -380,6 +379,7 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
                     if (ImGui::Button("Unvalidate (all)")) {
                         mask_collection_->removeAllValidatedBy();
                         mask_collection_->saveCollection();
+                        mask_changed();
                     }
                     ImGui::PopStyleColor();
                 }
@@ -391,6 +391,7 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
                             if (ImGui::Button((("Unvalidate (only " + project->getCurrentUser() + ")").c_str()))) {
                                 mask_collection_->removeValidatedBy(username);
                                 mask_collection_->saveCollection();
+                                mask_changed();
                             }
                             ImGui::PopStyleColor();
                         }
@@ -406,6 +407,7 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
                             }
                             mask_collection_->setValidatedBy(username);
                             mask_collection_->saveCollection();
+                            mask_changed();
                         }
                         ImGui::PopStyleColor();
                     }
@@ -603,6 +605,7 @@ void Rendering::EditMask::set_mask() {
         auto& collections = active_seg_->getMasks();
         mask_collection_->push(tmp_mask_.copy());
         mask_collection_->saveCollection();
+        mask_changed();
         reset_image_ = true;
     }
 }
@@ -612,6 +615,7 @@ void Rendering::EditMask::undo() {
         auto& collections = active_seg_->getMasks();
         tmp_mask_ = mask_collection_->undo().copy();
         mask_collection_->saveCollection();
+        mask_changed();
         reset_image_ = true;
     }
 }
@@ -621,8 +625,13 @@ void Rendering::EditMask::redo() {
         auto& collections = active_seg_->getMasks();
         tmp_mask_ = mask_collection_->redo().copy();
         mask_collection_->saveCollection();
+        mask_changed();
         reset_image_ = true;
     }
+}
+
+void Rendering::EditMask::mask_changed() {
+    EventQueue::getInstance().post(Event_ptr(new Event("mask/changed/" + dicom_series_->getId())));
 }
 
 void Rendering::EditMask::lasso_widget(Rect& dimensions) {

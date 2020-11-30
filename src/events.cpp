@@ -62,7 +62,7 @@ void EventQueue::unsubscribe(Listener *listener) {
 
 void EventQueue::post(Event_ptr event) {
     {
-        std::lock_guard<std::mutex> guard(event_mutex_);
+        std::lock_guard<std::recursive_mutex> guard(event_mutex_);
         event_queue_.push(event);
     }
     if (event.get()->isAcknowledgable()) {
@@ -74,7 +74,7 @@ void EventQueue::post(Event_ptr event) {
 
 void EventQueue::pollEvents() {
     {
-        std::lock_guard<std::mutex> event_guard(event_mutex_);
+        std::lock_guard<std::recursive_mutex> event_guard(event_mutex_);
         while (!event_queue_.empty()) {
             std::shared_ptr<Event> event = event_queue_.front();
 

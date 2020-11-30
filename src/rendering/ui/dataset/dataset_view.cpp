@@ -7,6 +7,9 @@
 
 Rendering::DatasetView::DatasetView() {
 	auto& project = project_manager_.getCurrentProject();
+
+    validated_.setImage("assets/validated_dark.png");
+    edited_.setImage("assets/edited_dark.png");
 }
 
 Rendering::DatasetView::~DatasetView() {
@@ -22,7 +25,7 @@ void Rendering::DatasetView::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
             dicoms_ = project->getDataset().getDicoms();
             dicom_previews_.clear();
             for (auto& dicom : dicoms_) {
-                dicom_previews_.emplace(std::move(std::make_pair(dicom, Preview())));
+                dicom_previews_.emplace(std::move(std::make_pair(dicom, Preview(validated_, edited_))));
             }
             for (auto &dic : dicom_previews_) {
                 dic.second.setSeries(dic.first);
@@ -125,6 +128,7 @@ void Rendering::DatasetView::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
         ImGui::Columns(num_cols_);
         float width = ImGui::GetContentRegionAvailWidth();
         // Show all cases
+        col_count_ = 0;
         if (group_idx_ == 0) {
             for (auto& dicom : dicoms_) {
                 preview_widget(dicom_previews_[dicom], width, mouse_pos, sub_window_dim, dicom, window, parent_dimension);
@@ -144,7 +148,31 @@ void Rendering::DatasetView::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
 void Rendering::DatasetView::preview_widget(Preview& preview, float width, ImVec2 mouse_pos, Rect sub_window_dim, std::shared_ptr<::core::DicomSeries> dicom, GLFWwindow* window, Rect& parent_dimension) {
     // Title
     auto pair = ::core::parse_dicom_id(dicom->getId().c_str());
+
+    if (col_count_ % num_cols_ == 0)
+        ImGui::Separator();
+
+    col_count_++;
+
     ImGui::Text("%s", pair.first.c_str());
+    
+    if (active_seg_ != nullptr) {
+        auto state = preview.getMaskState();
+        switch (state) {
+        case Preview::VALIDATED:
+            ImGui::SameLine();
+            ImGui::TextColored(ImVec4(0.f, 0.8f, 0.0f, 1.f), "(V)");
+            break;
+        case Preview::PREDICTED:
+            ImGui::SameLine();
+            ImGui::TextColored(ImVec4(0.3f, 0.4f, 0.7f, 1.f), "(P)");
+            break;
+        case Preview::CURRENT:
+            ImGui::SameLine();
+            ImGui::TextColored(ImVec4(0.7f, 0.5f, 0.0f, 1.f), "(E)");
+            break;
+        }
+    }
 
     if (Widgets::check_hitbox(mouse_pos, sub_window_dim)) {
         //preview.setAllowScroll(true);

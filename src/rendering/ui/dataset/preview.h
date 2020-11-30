@@ -21,7 +21,10 @@ namespace Rendering {
      * Little widget class for previewing dicom images
      */
     class Preview : public AbstractLayout {
+    public:
+        enum mask_state { VALIDATED, PREDICTED, CURRENT, NOTHING };
     private:
+
         static int instance_number;
         bool is_valid_ = false;
         bool is_loaded_ = false;
@@ -32,6 +35,14 @@ namespace Rendering {
         ::core::Image image_;
         std::shared_ptr<::core::DicomSeries> dicom_ = nullptr;
         std::shared_ptr<::core::segmentation::MaskCollection> mask_collection_ = nullptr;
+        ::core::segmentation::Mask mask;
+
+        mask_state state_ = NOTHING;
+
+        ::core::Image& validated_;
+        ::core::Image& edited_;
+        SimpleImage validated_widget_;
+        SimpleImage edited_widget_;
 
         bool reset_image_ = false;
 
@@ -51,6 +62,8 @@ namespace Rendering {
         ImVec2 prev_crop_y_ = ImVec2(0, 100);
 
         std::shared_ptr<::core::segmentation::Segmentation> active_seg_ = nullptr;
+
+        Listener mask_listener_;
 
         Listener job_listener_;
         jobId waiting_on_;
@@ -75,6 +88,7 @@ namespace Rendering {
 
     public:
         Preview();
+        Preview(::core::Image& validated, ::core::Image& edited);
 
         Preview(const Preview& other);
 
@@ -90,6 +104,8 @@ namespace Rendering {
         void ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) override;
 
         void setSize(const ImVec2& size) { size_ = size; }
+
+        mask_state getMaskState() { return state_; }
 
         /**
          * Unloads the image in the widget from the memory

@@ -125,6 +125,7 @@ namespace Rendering {
         void set_mask();
         void undo();
         void redo();
+        void mask_changed();
 
 
         void lasso_widget(Rect& dimensions);

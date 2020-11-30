@@ -56,6 +56,8 @@ namespace core {
 
 			Mask const copy() const;
 
+			void setNotEmpty() { is_empty_ = false; }
+
 			bool empty() const { return is_empty_; }
 
 			/**
@@ -123,7 +125,7 @@ namespace core {
 
 			std::string loadData(
 				bool immediate = false, 
-				const std::function<void(const Mask&, const Mask&, const Mask&)>& when_finished_fct = [](const Mask&, const Mask&, const Mask&) {},
+				const std::function<void(Mask&, Mask&, Mask&)>& when_finished_fct = [](Mask&, Mask&, Mask&) {},
 				Job::jobPriority priority = Job::JOB_PRIORITY_NORMAL
 			);
 			void unloadData(bool force = false);

@@ -27,6 +27,11 @@ namespace Rendering {
         int group_idx_ = 0;
         Widgets::Selectable group_select_;
 
+        int col_count_ = 0;
+
+        ::core::Image validated_;
+        ::core::Image edited_;
+
         std::shared_ptr<::core::segmentation::Segmentation> active_seg_ = nullptr;
         std::map<int, std::shared_ptr<::core::segmentation::Segmentation>> seg_map_;
         Widgets::Selectable seg_select_;
