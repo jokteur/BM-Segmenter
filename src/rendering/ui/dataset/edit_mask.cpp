@@ -3,6 +3,8 @@
 #include "edit_mask.h"
 #include "util.h"
 
+#include "animation_util.h"
+
 #include "drag_and_drop.h"
 #include "rendering/ui/widgets/util.h"
 
@@ -15,21 +17,24 @@ void Rendering::EditMask::unload_mask() {
     }
 }
 
-void Rendering::EditMask::unload_dicom() {
+void Rendering::EditMask::unload_dicom(bool no_reset) {
     if (dicom_series_ != nullptr) {
         dicom_series_->cancelPendingJobs();
         dicom_series_->unloadCase();
-        dicom_series_ = nullptr;
-        image_.reset();
+        if (!no_reset) {
+            dicom_series_ = nullptr;
+            image_.reset();
+        }
     }
 }
 
-void Rendering::EditMask::loadDicom(const std::shared_ptr<core::DicomSeries> dicom) {
-    unload_dicom();
+void Rendering::EditMask::loadDicom(const std::shared_ptr<core::DicomSeries> dicom, bool no_reset) {
+    unload_dicom(no_reset);
     unload_mask();
 
     dicom_series_ = dicom;
     loadCase(0);
+    push_animation();
 }
 
 void Rendering::EditMask::loadCase(int idx) {
@@ -590,13 +595,13 @@ void Rendering::EditMask::set_NextPrev_buttons() {
 
 void Rendering::EditMask::next() {
     if (next_dicom_ != nullptr) {
-        loadDicom(next_dicom_);
+        loadDicom(next_dicom_, true);
     }
 }
 
 void Rendering::EditMask::previous() {
     if (prev_dicom_ != nullptr) {
-        loadDicom(prev_dicom_);
+        loadDicom(prev_dicom_, true);
     }
 }
 

@@ -30,12 +30,15 @@ namespace Rendering {
         bool is_loaded_ = false;
 
         std::string identifier_;
+        const char* identifier_c_str_;
 
         SimpleImage image_widget_;
         ::core::Image image_;
         std::shared_ptr<::core::DicomSeries> dicom_ = nullptr;
         std::shared_ptr<::core::segmentation::MaskCollection> mask_collection_ = nullptr;
         ::core::segmentation::Mask mask;
+
+        bool no_draw_ = false;
 
         mask_state state_ = NOTHING;
 
@@ -106,6 +109,8 @@ namespace Rendering {
         void setSize(const ImVec2& size) { size_ = size; }
 
         mask_state getMaskState() { return state_; }
+
+        void setNoDraw() { no_draw_ = true; }
 
         /**
          * Unloads the image in the widget from the memory

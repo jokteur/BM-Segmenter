@@ -79,7 +79,7 @@ void Rendering::ProjectInfo::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
 									drag_and_drop.giveData(dicom);
 									int a = 0; // Dummy int
 									ImGui::SetDragDropPayload("_DICOM_PAYLOAD", &a, sizeof(a));
-									ImGui::Text("%s", ::core::parse_dicom_id(dicom->getId()).first.c_str());
+									ImGui::Text("%s", dicom->getIdPair().first.c_str());
 									ImGui::EndDragDropSource();
 								}
 

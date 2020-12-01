@@ -66,6 +66,12 @@ Rendering::Application::Application(std::string main_window_title, uint16_t main
         windows_.push_back(std::move(main_window));
         main_window_ = &windows_[0];
     }
+
+    push_animation_.filter = "push_animation";
+    push_animation_.callback = [=](Event_ptr event) {
+        last_time_ = std::chrono::system_clock::now();
+    };
+    event_queue_.subscribe(&push_animation_);
 }
 
 void Rendering::Application::init_glfw() {
@@ -149,7 +155,13 @@ bool Rendering::Application::loop() {
         ImGuiIO& io = ImGui::GetIO(); (void)io;
         main_window = *main_window_->getGLFWwindow_ptr().lock();
 
-        glfwPollEvents();
+        auto time_since_push = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - last_time_);
+        if (time_since_push.count() < 500) {
+            glfwPollEvents();
+        }
+        else {
+            glfwWaitEvents();
+        }
         event_queue_.pollEvents();
         KeyboardShortCut::dispatchShortcuts();
 
@@ -207,6 +219,7 @@ Rendering::Application::~Application() {
     if(!app_state_.error) {
         shutdown();
     }
+    event_queue_.unsubscribe(&push_animation_);
 }
 
 Rendering::Window &Rendering::Application::getMainWindow() {

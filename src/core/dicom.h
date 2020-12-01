@@ -60,6 +60,7 @@ namespace core {
         std::vector<Dicom> data_;
         std::vector<std::string> images_path_;
         std::string id_;
+        std::pair<std::string, std::string> id_pair_;
         std::vector<DicomCoordinate> coordinates_;
         ImVec2 crop_x_ = ImVec2(0, 100);
         ImVec2 crop_y_ = ImVec2(0, 100);
@@ -68,6 +69,7 @@ namespace core {
         file_format format_ = F_DICOM;
         
         std::map<int, int> ref_counter_;
+
 
         static int num_loaded_;
 
@@ -95,7 +97,7 @@ namespace core {
         ~DicomSeries();
 
         void setPaths(const std::vector<std::string> &paths);
-        void setId(const std::string& id) { id_ = id; }
+        void setId(const std::string& id);
 
         void loadAll(bool force_load = false);
         jobId loadCase(float percentage, bool force_replace = false, const std::function<void(const Dicom&)>& when_finished_fct = [](const Dicom&) {});
@@ -117,7 +119,9 @@ namespace core {
 
         std::vector<Dicom>& getData() { return data_; }
         int getCurrentIndex() const { return selected_index_; }
+
         std::string getId() { return id_; }
+        std::pair<std::string, std::string> getIdPair() { return id_pair_; }
         Dicom& getCurrentDicom();
 
         std::vector<std::string>& getPaths() { return images_path_; }

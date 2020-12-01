@@ -19,7 +19,7 @@ namespace Rendering {
         dimensions_ = Rect(ImVec2(-10000, -10000), ImVec2());
 
         mask_listener_.filter = "nothing";
-
+        identifier_c_str_ = identifier_.c_str();
     }
 
     Preview::Preview(::core::Image& validated, ::core::Image& edited) :
@@ -53,89 +53,102 @@ namespace Rendering {
     }
 
     void Preview::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) {
-        // Window ImGui intro
-        auto& io = ImGui::GetIO();
-        io.ConfigWindowsMoveFromTitleBarOnly = true;
-        // Remove all padding for the child window
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-        ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(0, 0));
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1);
-        const int num_pop = 3;
-        ImGui::BeginChild(identifier_.c_str(), ImVec2(int(size_.x), int(size_.y)), true, ImGuiWindowFlags_NoScrollbar);
-        ImGui::PopStyleVar(num_pop);
-
-        // Calculate the available dimensions
-        ImVec2 content = ImGui::GetContentRegionAvail();
-        ImVec2 window_pos = ImGui::GetWindowPos();
-        ImVec2 mouse_pos = ImGui::GetMousePos();
-        dimensions_.xpos = window_pos.x;
-        dimensions_.ypos = window_pos.y;
-        dimensions_.width = content.x;
-        dimensions_.height = content.y;
-        Rect image_dimensions = image_widget_.getDimensions();
-
-        if (reset_image_) {
-            reset_image_ = false;
-            if (dicom_ != nullptr && active_seg_ != nullptr) {
-                image_.setImageFromHU(
-                    dicom_->getData()[case_idx].data,
-                    (float)dicom_->getWW(),
-                    (float)dicom_->getWC(),
-                    core::Image::FILTER_NEAREST,
-                    mask.getData(),
-                    active_seg_->getMaskColor()
-                );
-                image_widget_.setImage(image_);
-            }
-            else if (active_seg_ == nullptr) {
-                image_.setImageFromHU(
-                    dicom_->getData()[case_idx].data,
-                    (float)dicom_->getWW(),
-                    (float)dicom_->getWC(),
-                    core::Image::FILTER_NEAREST
-                );
-                image_widget_.setImage(image_);
-            }
-            image_widget_.setDragSourceFunction([this] {
-                if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
-                    auto& drag_and_drop = DragAndDrop<std::shared_ptr<::core::DicomSeries>>::getInstance();
-                    drag_and_drop.giveData(dicom_);
-
-                    int a = 0; // Dummy int
-                    ImGui::SetDragDropPayload("_DICOM_PAYLOAD", &a, sizeof(a));
-                    ImGui::Text("%s", ::core::parse_dicom_id(dicom_->getId()).first.c_str());
-                    ImGui::PushID("Image_Drag_Drop");
-                    ImGui::Image(
-                        image_.texture(),
-                        ImVec2(128, 128)
-                    );
-                    EventQueue::getInstance().post(Event_ptr(new Event("global/no_action")));
-                    ImGui::PopID();
-                    ImGui::EndDragDropSource();
-                }
-                });
-        }
-
-        // Interaction with the mouse cursor
-        if (allow_scroll_ && Widgets::check_hitbox(mouse_pos, image_dimensions)) {
-            float percentage = (mouse_pos.x - image_dimensions.xpos) / image_dimensions.width;
-            if (percentage >= 0.f && percentage <= 1.f)
-                setCase(percentage);
+        if (no_draw_) {
+            ImGui::BeginChild(identifier_c_str_, ImVec2(int(size_.x), int(size_.y)));
+            ImVec2 content = ImGui::GetContentRegionAvail();
+            ImVec2 window_pos = ImGui::GetWindowPos();
+            dimensions_.xpos = window_pos.x;
+            dimensions_.ypos = window_pos.y;
+            dimensions_.width = content.x;
+            dimensions_.height = content.y;
         }
         else {
-            setCase(0.f);
-        }
+            // Window ImGui intro
+            auto& io = ImGui::GetIO();
+            io.ConfigWindowsMoveFromTitleBarOnly = true;
+            // Remove all padding for the child window
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+            ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(0, 0));
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1);
+            const int num_pop = 3;
+            ImGui::BeginChild(identifier_.c_str(), ImVec2(int(size_.x), int(size_.y)), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+            ImGui::PopStyleVar(num_pop);
 
-        // Draw the image
-        if (image_.isImageSet()) {
-            image_widget_.setAutoScale(true);
-            image_widget_.ImGuiDraw(window, dimensions_);
-        }
-        if (ImGui::BeginPopupContextItem(identifier_.c_str())) {
-            popup_context_menu();
-            ImGui::EndPopup();
+            // Calculate the available dimensions
+            ImVec2 content = ImGui::GetContentRegionAvail();
+            ImVec2 window_pos = ImGui::GetWindowPos();
+            dimensions_.xpos = window_pos.x;
+            dimensions_.ypos = window_pos.y;
+            dimensions_.width = content.x;
+            dimensions_.height = content.y;
+
+            ImVec2 mouse_pos = ImGui::GetMousePos();
+            Rect image_dimensions = image_widget_.getDimensions();
+
+            if (reset_image_) {
+                reset_image_ = false;
+                if (dicom_ != nullptr && active_seg_ != nullptr) {
+                    image_.setImageFromHU(
+                        dicom_->getData()[case_idx].data,
+                        (float)dicom_->getWW(),
+                        (float)dicom_->getWC(),
+                        core::Image::FILTER_NEAREST,
+                        mask.getData(),
+                        active_seg_->getMaskColor()
+                    );
+                    image_widget_.setImage(image_);
+                }
+                else if (active_seg_ == nullptr) {
+                    image_.setImageFromHU(
+                        dicom_->getData()[case_idx].data,
+                        (float)dicom_->getWW(),
+                        (float)dicom_->getWC(),
+                        core::Image::FILTER_NEAREST
+                    );
+                    image_widget_.setImage(image_);
+                }
+                image_widget_.setDragSourceFunction([this] {
+                    if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
+                        auto& drag_and_drop = DragAndDrop<std::shared_ptr<::core::DicomSeries>>::getInstance();
+                        drag_and_drop.giveData(dicom_);
+
+                        int a = 0; // Dummy int
+                        ImGui::SetDragDropPayload("_DICOM_PAYLOAD", &a, sizeof(a));
+                        ImGui::Text("%s", ::core::parse_dicom_id(dicom_->getId()).first.c_str());
+                        ImGui::PushID("Image_Drag_Drop");
+                        ImGui::Image(
+                            image_.texture(),
+                            ImVec2(128, 128)
+                        );
+                        EventQueue::getInstance().post(Event_ptr(new Event("global/no_action")));
+                        ImGui::PopID();
+                        ImGui::EndDragDropSource();
+                    }
+                    });
+            }
+
+            // Interaction with the mouse cursor
+            if (allow_scroll_ && Widgets::check_hitbox(mouse_pos, image_dimensions)) {
+                float percentage = (mouse_pos.x - image_dimensions.xpos) / image_dimensions.width;
+                if (percentage >= 0.f && percentage <= 1.f)
+                    setCase(percentage);
+            }
+            else {
+                setCase(0.f);
+            }
+
+            // Draw the image
+            if (image_.isImageSet()) {
+                image_widget_.setAutoScale(true);
+                image_widget_.ImGuiDraw(window, dimensions_);
+            }
+            if (ImGui::BeginPopupContextItem(identifier_.c_str())) {
+                popup_context_menu();
+                ImGui::EndPopup();
+            }
         }
         ImGui::EndChild();
+        no_draw_ = false;
     }
 
     void Preview::unload() {

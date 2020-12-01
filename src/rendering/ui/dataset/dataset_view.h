@@ -22,12 +22,19 @@ namespace Rendering {
         core::dataset::dicom_set dicoms_;
 
         std::map<std::shared_ptr<::core::DicomSeries>, Preview> dicom_previews_;
+        std::map<std::shared_ptr<::core::DicomSeries>, Rect> dicom_sizes_;
 
         std::vector<::core::dataset::Group> groups_;
         int group_idx_ = 0;
         Widgets::Selectable group_select_;
 
         int col_count_ = 0;
+
+        bool reset_draw_ = true;
+        Rect prev_window_dim_;
+
+        float true_height_ = 0.f;
+        bool calc_height = false;
 
         ::core::Image validated_;
         ::core::Image edited_;
@@ -38,7 +45,7 @@ namespace Rendering {
 
         int num_cols_ = 3;
 
-        void preview_widget(Preview& preview, float width, ImVec2 mouse_pos, Rect sub_window_dim, std::shared_ptr<::core::DicomSeries> dicom, GLFWwindow* window, Rect& parent_dimension);
+        inline void preview_widget(Preview& preview, float width, ImVec2 mouse_pos, Rect sub_window_dim, std::shared_ptr<::core::DicomSeries> dicom, GLFWwindow* window, Rect& parent_dimension);
     public:
         /**
          * Initializes the listener and subscribes to the queue

@@ -106,9 +106,9 @@ namespace Rendering {
         int group_idx_ = -1;
 
         void unload_mask();
-        void unload_dicom();
+        void unload_dicom(bool no_reset = false);
 
-        void loadDicom(const std::shared_ptr<::core::DicomSeries> dicom);
+        void loadDicom(const std::shared_ptr<::core::DicomSeries> dicom, bool no_reset = false);
         void loadCase(int idx);
 
         void load_segmentation(std::shared_ptr<::core::segmentation::Segmentation> seg);

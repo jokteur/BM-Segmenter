@@ -20,9 +20,15 @@ namespace core {
         init();
     }
 
+    void DicomSeries::setId(const std::string& id) {
+        id_ = id;
+        id_pair_ = parse_dicom_id(id);
+    }
+
     void DicomSeries::init() {
         cancelPendingJobs();
         data_.clear();
+        id_pair_ = parse_dicom_id(id_);
         for (auto& _ : images_path_) {
             data_.emplace_back(Dicom());
         }

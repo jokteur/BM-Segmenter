@@ -26,10 +26,12 @@ void Rendering::DatasetView::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
             dicom_previews_.clear();
             for (auto& dicom : dicoms_) {
                 dicom_previews_.emplace(std::move(std::make_pair(dicom, Preview(validated_, edited_))));
+                dicom_sizes_.emplace(std::make_pair(dicom, Rect(ImVec2(-10000, -10000), ImVec2(0, 0))));
             }
             for (auto &dic : dicom_previews_) {
                 dic.second.setSeries(dic.first);
             }
+            std::cout << "Build previews" << std::endl;
         }
 
         // Interaction for the column viewing
@@ -96,9 +98,11 @@ void Rendering::DatasetView::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
                     group_idx_ = idx; 
                     if (idx == 0) {
                         EventQueue::getInstance().post(Event_ptr(new Event("dataset/group/select/all")));
+                        reset_draw_ = true;
                     }
                     else {
                         EventQueue::getInstance().post(Event_ptr(new Event("dataset/group/select/" + std::to_string(idx - 1))));
+                        reset_draw_ = true;
 
                         // Unload all dicoms that are not in the group
                         auto group_dicoms = groups_[idx - 1].getOrderedDicoms();
@@ -123,6 +127,20 @@ void Rendering::DatasetView::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
         ImVec2 content = ImGui::GetContentRegionAvail();
         ImVec2 window_pos = ImGui::GetWindowPos();
         Rect sub_window_dim(window_pos, content);
+
+        auto& io = ImGui::GetIO();
+
+        if (prev_window_dim_.xpos != sub_window_dim.xpos
+            || prev_window_dim_.ypos != sub_window_dim.ypos
+            || prev_window_dim_.width != sub_window_dim.width
+            || prev_window_dim_.height != prev_window_dim_.height) {
+            prev_window_dim_ = sub_window_dim;
+            reset_draw_ = true;
+            calc_height = true;
+        }
+        if (io.MouseWheel && Widgets::check_hitbox(ImGui::GetMousePos(), sub_window_dim)) {
+            reset_draw_ = true;
+        }
         ImVec2 mouse_pos = ImGui::GetMousePos();
 
         ImGui::Columns(num_cols_);
@@ -139,41 +157,14 @@ void Rendering::DatasetView::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
                 preview_widget(dicom_previews_[dicom], width, mouse_pos, sub_window_dim, dicom, window, parent_dimension);
             }
         }
+        reset_draw_ = false;
         ImGui::Columns(1);
         ImGui::EndChild();
 	}
 	ImGui::End();
 }
 
-void Rendering::DatasetView::preview_widget(Preview& preview, float width, ImVec2 mouse_pos, Rect sub_window_dim, std::shared_ptr<::core::DicomSeries> dicom, GLFWwindow* window, Rect& parent_dimension) {
-    // Title
-    auto pair = ::core::parse_dicom_id(dicom->getId().c_str());
-
-    if (col_count_ % num_cols_ == 0)
-        ImGui::Separator();
-
-    col_count_++;
-
-    ImGui::Text("%s", pair.first.c_str());
-    
-    if (active_seg_ != nullptr) {
-        auto state = preview.getMaskState();
-        switch (state) {
-        case Preview::VALIDATED:
-            ImGui::SameLine();
-            ImGui::TextColored(ImVec4(0.f, 0.8f, 0.0f, 1.f), "(V)");
-            break;
-        case Preview::PREDICTED:
-            ImGui::SameLine();
-            ImGui::TextColored(ImVec4(0.3f, 0.4f, 0.7f, 1.f), "(P)");
-            break;
-        case Preview::CURRENT:
-            ImGui::SameLine();
-            ImGui::TextColored(ImVec4(0.7f, 0.5f, 0.0f, 1.f), "(E)");
-            break;
-        }
-    }
-
+inline void Rendering::DatasetView::preview_widget(Preview& preview, float width, ImVec2 mouse_pos, Rect sub_window_dim, std::shared_ptr<::core::DicomSeries> dicom, GLFWwindow* window, Rect& parent_dimension) {    
     if (Widgets::check_hitbox(mouse_pos, sub_window_dim)) {
         //preview.setAllowScroll(true);
     }
@@ -183,13 +174,49 @@ void Rendering::DatasetView::preview_widget(Preview& preview, float width, ImVec
 
     auto& dim = preview.getDimensions();
     float margin = 2 * width;
-    if (dim.ypos - sub_window_dim.ypos < sub_window_dim.height + margin && dim.ypos - sub_window_dim.ypos > -margin)
+
+    bool draw = dim.ypos - sub_window_dim.ypos < sub_window_dim.height + margin && dim.ypos - sub_window_dim.ypos > -margin;
+    if (draw)
         preview.load();
     else
         preview.unload();
 
     // Image widget
-    preview.setSize(ImVec2(width * 0.98, width * 0.98));
-    preview.ImGuiDraw(window, parent_dimension);
+    float widget_size = width * 0.98;
+    preview.setSize(ImVec2(widget_size, widget_size));
+
+    if (col_count_ % num_cols_ == 0)
+        ImGui::Separator();
+
+    // Title
+    if (draw) {
+        ImGui::Text("%s", dicom->getIdPair().first.c_str());
+
+        if (active_seg_ != nullptr) {
+            auto state = preview.getMaskState();
+            switch (state) {
+            case Preview::VALIDATED:
+                ImGui::SameLine();
+                ImGui::TextColored(ImVec4(0.f, 0.8f, 0.0f, 1.f), "(V)");
+                break;
+            case Preview::PREDICTED:
+                ImGui::SameLine();
+                ImGui::TextColored(ImVec4(0.3f, 0.4f, 0.7f, 1.f), "(P)");
+                break;
+            case Preview::CURRENT:
+                ImGui::SameLine();
+                ImGui::TextColored(ImVec4(0.7f, 0.5f, 0.0f, 1.f), "(E)");
+                break;
+            }
+        }
+
+        preview.ImGuiDraw(window, parent_dimension);
+    }
+    else {
+
+        preview.ImGuiDraw(window, parent_dimension);
+    }
+
+    col_count_++;
     ImGui::NextColumn();
 }

@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <chrono>
 
 #include "jobscheduler.h"
 #include "rendering/keyboard_shortcuts.h"
@@ -29,6 +30,9 @@ namespace Rendering {
         // All singletons
         JobScheduler &scheduler_;
         EventQueue &event_queue_;
+        Listener push_animation_;
+        
+        std::chrono::system_clock::time_point last_time_;
 
         // ImGui configs flags
         int configFlags_ = 0;
