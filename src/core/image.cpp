@@ -74,9 +74,6 @@ bool core::Image::setImageFromHU(const cv::Mat& mat, float window_width, float w
     int i = 0;
 
     bool draw_mask = false;
-    if (mask.rows > 0) {
-        std::cout << "Draw mask" << std::endl;
-    }
     if (mask.rows == mat.rows && mask.cols == mat.cols) {
         draw_mask = true;
     }

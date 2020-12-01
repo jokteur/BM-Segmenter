@@ -133,7 +133,7 @@ namespace core {
 			push(mask);
 		}
 
-		std::string MaskCollection::loadData(bool immediate, const std::function<void(Mask&, Mask&, Mask&)>& when_finished_fct, Job::jobPriority priority) {
+		std::string MaskCollection::loadData(bool immediate, bool clear_history, const std::function<void(Mask&, Mask&, Mask&)>& when_finished_fct, Job::jobPriority priority) {
 			//is_valid_ = true;
 			jobId id;
 
@@ -145,7 +145,8 @@ namespace core {
 
 					auto& dict = script.attr("load_mask_collection")(basename_path_).cast<py::dict>();
 
-					clearHistory();
+					if (clear_history)
+						clearHistory();
 
 					if (dict.contains("current")) {
 						Mask mask;
@@ -153,7 +154,10 @@ namespace core {
 						mask.setNotEmpty();
 						mask.setState(Mask::MASK_EDITED);
 						mask.updateDimensions();
-						push(mask);
+						if (clear_history)
+							push(mask);
+						else
+							current_ = mask;
 					}
 					if (dict.contains("predicted")) {
 						npy_buffer_to_cv(dict["predicted"], prediction_.getData());
@@ -184,7 +188,10 @@ namespace core {
 			};
 
 			jobResultFct when_finished = [=](const std::shared_ptr<JobResult>& result) {
-				when_finished_fct(getCurrent(true), prediction_, validated_);
+				if (clear_history)
+					when_finished_fct(getCurrent(true), prediction_, validated_);
+				else
+					when_finished_fct(current_, prediction_, validated_);
 			};
 
 			if (immediate) {

@@ -38,7 +38,6 @@ namespace core {
             data_[index].data = cv::Mat();
             data_[index].is_set = false;
             num_loaded_--;
-            std::cout << "[" << parse_dicom_id(id_).first << "] free / Dicom Lefts: " << num_loaded_ << std::endl;
         }
     }
     void DicomSeries::cancelPendingJobs() {
@@ -101,7 +100,6 @@ namespace core {
                         selected_index_ = index;
                         add_one_to_ref(index); // Add one reference to this index, only if the job is finished
                         num_loaded_++;
-                        std::cout << "[" << parse_dicom_id(id_).first << "] loaded / Dicom Lefts: " << num_loaded_ << std::endl;
                     }
                 }
                 else {

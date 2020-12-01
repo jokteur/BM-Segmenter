@@ -159,7 +159,7 @@ namespace Rendering {
         if (dicom_ != nullptr && is_loaded_ && active_seg_ != nullptr) {
             mask_collection_ = active_seg_->getMask(dicom_);
             mask_collection_->loadData(
-                false,
+                false, false,
                 [=](seg::Mask& current, seg::Mask& prediction, seg::Mask& validated) {
                     if (__hack == 235.654885342) {
                         if (mask_collection_ != nullptr) { // In the mean time, the mask_collection_ may already have been unloaded

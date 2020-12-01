@@ -96,8 +96,6 @@ namespace core {
 
 			iterator it_;
 			std::list<Mask> history_;
-			
-			iterator current_;
 
 			std::string basename_path_;
 			std::set<std::string> validated_by_;
@@ -113,6 +111,7 @@ namespace core {
 
 			int ref_counter_ = 0;
 
+			Mask current_;
 			Mask prediction_;
 			Mask validated_;
 		public:
@@ -125,6 +124,7 @@ namespace core {
 
 			std::string loadData(
 				bool immediate = false, 
+				bool clear_history = true,
 				const std::function<void(Mask&, Mask&, Mask&)>& when_finished_fct = [](Mask&, Mask&, Mask&) {},
 				Job::jobPriority priority = Job::JOB_PRIORITY_NORMAL
 			);
