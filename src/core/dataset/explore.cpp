@@ -3,6 +3,7 @@
 #include "log.h"
 #include "jobscheduler.h"
 #include "util.h"
+#include "rendering/animation_util.h"
 
 namespace core {
     namespace dataset {
@@ -45,8 +46,9 @@ namespace core {
                         std::string message = std::string("Searching in '")
                                               + tuple[0].cast<std::string>()
                                               + std::string((found ? "', found DICOM(s)" : "'"));
-
+                        Rendering::push_animation();
                         event_queue_.post(Event_ptr(new LogEvent("dicom_search", message)));
+                        
                         if (!errors.empty()) {
                             status = EXPLORE_PARTIAL_SUCCESS;
                             event_queue_.post(Event_ptr(new LogEvent("dicom_error", errors)));

@@ -111,8 +111,57 @@ namespace core {
 			}
 		}
 
+		int MaskCollection::global_counter_ = 0;
+
+		inline int MaskCollection::get_num_refs() {
+			int count = 0;
+			for (auto& pair : ref_counter_)
+				count += pair.second;
+			return count;
+		}
+
+		void MaskCollection::add_one_to_ref(const std::string& id) {
+			set_ref(id);
+			ref_counter_[id]++;
+		}
+
+		void MaskCollection::remove_one_to_ref(const std::string& id){
+			set_ref(id);
+			ref_counter_[id]--;
+			if (ref_counter_[id] < 0) {
+				std::cout << "Removed one ref too much" << std::endl;
+			}
+		}
+
+		void MaskCollection::set_ref(const std::string& id) {
+			if (ref_counter_.find(id) == ref_counter_.end()) {
+				ref_counter_[id] = 0;
+			}
+		}
+
 		MaskCollection::MaskCollection(int rows, int cols, int max_size) : rows_(rows), cols_(cols), max_size_(max_size) {
 			it_ = history_.end();
+		}
+
+		MaskCollection::MaskCollection(const MaskCollection& other) {
+			basename_path_ = other.basename_path_;
+			validated_by_ = other.validated_by_;
+			rows_ = other.rows_;
+			cols_ = other.cols_;
+			max_size_ = other.max_size_;
+			is_valid_ = other.is_valid_;
+			keep_ = other.keep_;
+			is_loading_ = other.is_loading_;
+
+			ref_counter_ = other.ref_counter_;
+			tmp_ = other.tmp_;
+			prediction_ = other.prediction_;
+			validated_ = other.validated_;
+		}
+
+		MaskCollection::~MaskCollection() {
+			history_.clear();
+			cancelPendingJobs();
 		}
 
 		void MaskCollection::push(const Mask& mask) {
@@ -133,20 +182,33 @@ namespace core {
 			push(mask);
 		}
 
-		std::string MaskCollection::loadData(bool immediate, bool clear_history, const std::function<void(Mask&, Mask&, Mask&)>& when_finished_fct, Job::jobPriority priority) {
+		std::string MaskCollection::loadData(bool immediate, bool clear_history, const std::string& id, const std::function<void()>& when_finished_fct, Job::jobPriority priority) {
 			//is_valid_ = true;
-			jobId id;
+
+			{
+				std::lock_guard<std::recursive_mutex> guard(ref_mutex_);
+				if (is_set_) {
+					if (!id.empty()) {
+						add_one_to_ref(id);
+					}
+					when_finished_fct();
+					return "";
+				}
+			}
+			if (!immediate) {
+				cancelPendingJobs(true, id);
+			}
 
 			jobFct job = [=](float& progress, bool& abort) -> std::shared_ptr<JobResult> {
 				auto result = std::make_shared<JobResult>();
+
 				auto state = PyGILState_Ensure();
 				try {
 					py::module script = py::module::import("python.scripts.segmentation");
 
 					auto& dict = script.attr("load_mask_collection")(basename_path_).cast<py::dict>();
 
-					if (clear_history)
-						clearHistory();
+					clearHistory();
 
 					if (dict.contains("current")) {
 						Mask mask;
@@ -154,10 +216,7 @@ namespace core {
 						mask.setNotEmpty();
 						mask.setState(Mask::MASK_EDITED);
 						mask.updateDimensions();
-						if (clear_history)
-							push(mask);
-						else
-							current_ = mask;
+						push(mask);
 					}
 					if (dict.contains("predicted")) {
 						npy_buffer_to_cv(dict["predicted"], prediction_.getData());
@@ -176,7 +235,10 @@ namespace core {
 					for (auto& user : users) {
 						setValidatedBy(user);
 					}
-					ref_counter_++;
+
+					is_valid_ = true;
+					global_counter_++;
+					//std::cout << "loaded " << std::to_string(global_counter_) << std::endl;
 				}
 				catch (const std::exception& e) {
 					py::print(e.what());
@@ -188,10 +250,12 @@ namespace core {
 			};
 
 			jobResultFct when_finished = [=](const std::shared_ptr<JobResult>& result) {
-				if (clear_history)
-					when_finished_fct(getCurrent(true), prediction_, validated_);
-				else
-					when_finished_fct(current_, prediction_, validated_);
+				std::lock_guard<std::recursive_mutex> guard(ref_mutex_); 
+				is_set_ = true;
+				if (!id.empty()) {
+					add_one_to_ref(id);
+				}
+				when_finished_fct();
 			};
 
 			if (immediate) {
@@ -200,27 +264,61 @@ namespace core {
 				auto& res = job(a, b);
 				if (!res->err.empty())
 					std::cout << "Error:" << res->err << std::endl;
+				when_finished(res);
 				return res->err;
 			}
 			else {
-				JobScheduler::getInstance().addJob("dicom_to_image", job, when_finished, priority);
+				auto& job_ref = JobScheduler::getInstance().addJob("dicom_to_image", job, when_finished, priority);
+				pending_jobs_.insert(job_ref->id);
 			}
 			return "";
 		}
 
-		void MaskCollection::unloadData(bool force) {
-			if (ref_counter_ > 0)
-				ref_counter_--;
+		void MaskCollection::unloadData(bool force, const std::string& id) {
+			std::lock_guard<std::recursive_mutex> guard(ref_mutex_);
 
-			if (ref_counter_ == 0 || force) {
-				ref_counter_ = 0;
+			cancelPendingJobs(true);
+
+			int count = get_num_refs();
+			if (count > 0 && !id.empty()) {
+				remove_one_to_ref(id);
+			}
+
+			if (count == 0 || force) {
+				//std::cout << "unload " << std::to_string(global_counter_) << std::endl;
 				prediction_ = Mask();
 				validated_ = Mask();
+				tmp_ = Mask();
 				rows_ = 0;
 				cols_ = 0;
 				clearHistory();
+				is_set_ = false;
 				is_valid_ = false;
 			}
+		}
+
+		Mask MaskCollection::getTmp() {
+			Mask ret = tmp_;
+			tmp_ = Mask();
+			return tmp_;
+		}
+
+		void MaskCollection::cancelPendingJobs(bool no_ref_counting, const std::string& id) {
+			std::lock_guard<std::recursive_mutex> guard(ref_mutex_);
+			int count = get_num_refs();
+			if (!no_ref_counting && !id.empty()) {
+				remove_one_to_ref(id);
+			}
+			if (count == 0) {
+				for (auto& id : pending_jobs_) {
+					JobScheduler::getInstance().stopJob(id);
+				}
+				pending_jobs_.clear();
+			}
+		}
+
+		int MaskCollection::numPendingJobs() {
+			return pending_jobs_.size();
 		}
 
 		std::string MaskCollection::saveCollection(const std::string& basename) {
@@ -246,6 +344,7 @@ namespace core {
 					users.push_back(user);
 				}
 				seg.attr("save_mask_collection")(users, current.getData(), validated_.getData(), prediction_.getData(), basename_path_);
+				is_set_ = true;
 			}
 			catch (const std::exception& e) {
 				std::cout << e.what() << std::endl;

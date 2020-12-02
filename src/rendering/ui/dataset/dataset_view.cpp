@@ -10,9 +10,20 @@ Rendering::DatasetView::DatasetView() {
 
     validated_.setImage("assets/validated_dark.png");
     edited_.setImage("assets/edited_dark.png");
+
+    // Mainly used for changing colors
+    reload_seg_.callback = [=](Event_ptr& event) {
+        for (auto& preview : dicom_previews_) {
+            preview.second.setSegmentation(active_seg_);
+        }
+    };
+    reload_seg_.filter = "segmentation/reload";
+
+    EventQueue::getInstance().subscribe(&reload_seg_);
 }
 
 Rendering::DatasetView::~DatasetView() {
+    EventQueue::getInstance().unsubscribe(&reload_seg_);
 }
 
 void Rendering::DatasetView::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) {
@@ -31,7 +42,6 @@ void Rendering::DatasetView::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
             for (auto &dic : dicom_previews_) {
                 dic.second.setSeries(dic.first);
             }
-            std::cout << "Build previews" << std::endl;
         }
 
         // Interaction for the column viewing
@@ -173,12 +183,13 @@ inline void Rendering::DatasetView::preview_widget(Preview& preview, float width
     }
 
     auto& dim = preview.getDimensions();
-    float margin = 2 * width;
+    float margin = 3 * width;
+    float margin_less = 2 * width;
 
-    bool draw = dim.ypos - sub_window_dim.ypos < sub_window_dim.height + margin && dim.ypos - sub_window_dim.ypos > -margin;
+    bool draw = dim.ypos - sub_window_dim.ypos < sub_window_dim.height + margin && dim.ypos - sub_window_dim.ypos > -margin_less;
     if (draw)
         preview.load();
-    else
+    else if (dim.ypos - sub_window_dim.ypos >= sub_window_dim.height + margin || dim.ypos - sub_window_dim.ypos <= -margin)
         preview.unload();
 
     // Image widget
@@ -209,11 +220,9 @@ inline void Rendering::DatasetView::preview_widget(Preview& preview, float width
                 break;
             }
         }
-
         preview.ImGuiDraw(window, parent_dimension);
     }
     else {
-
         preview.ImGuiDraw(window, parent_dimension);
     }
 

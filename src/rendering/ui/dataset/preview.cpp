@@ -22,12 +22,11 @@ namespace Rendering {
         identifier_c_str_ = identifier_.c_str();
     }
 
-    Preview::Preview(::core::Image& validated, ::core::Image& edited) :
-    validated_(validated), edited_(edited) {
+    Preview::Preview(::core::Image& validated, ::core::Image& edited) {
         init();
     }
 
-    Preview::Preview(const Preview& other) : validated_(other.validated_), edited_(other.edited_) {
+    Preview::Preview(const Preview& other) {
         init();
         if (other.dicom_ != nullptr)
             other.dicom_->cancelPendingJobs();
@@ -35,11 +34,11 @@ namespace Rendering {
         is_valid_ = other.is_valid_;
     }
 
-    Preview::Preview() : validated_(::core::Image()), edited_(::core::Image()) {
+    Preview::Preview() {
         init();
     }
 
-    Preview::Preview(const Preview&& other) : validated_(other.validated_), edited_(other.edited_) {
+    Preview::Preview(const Preview&& other) {
         init();
         if (other.dicom_ != nullptr)
             other.dicom_->cancelPendingJobs();
@@ -88,12 +87,32 @@ namespace Rendering {
             if (reset_image_) {
                 reset_image_ = false;
                 if (dicom_ != nullptr && active_seg_ != nullptr) {
+                    auto& collection = active_seg_->getMask(dicom_);
+                    seg::Mask* mask;
+                    auto& tmp = collection->getCurrent(true);
+                    if (collection->getIsValidated()) {
+                        mask = &collection->getValidated();
+                        state_ = VALIDATED;
+                    }
+                    else if (!collection->getPrediction().empty()) {
+                        mask = &collection->getPrediction();
+                        state_ = PREDICTED;
+                    }
+                    else if (!tmp.empty()) {
+                        mask = &tmp;
+                        state_ = CURRENT;
+                    }
+                    else {
+                        mask = &tmp;
+                        state_ = NOTHING;
+                    }
+
                     image_.setImageFromHU(
                         dicom_->getData()[case_idx].data,
                         (float)dicom_->getWW(),
                         (float)dicom_->getWC(),
                         core::Image::FILTER_NEAREST,
-                        mask.getData(),
+                        mask->getData(),
                         active_seg_->getMaskColor()
                     );
                     image_widget_.setImage(image_);
@@ -151,69 +170,62 @@ namespace Rendering {
         no_draw_ = false;
     }
 
+    void Preview::load() {
+        if (!is_loaded_) {
+            set_case(0);
+            load_counter++;
+        }
+    }
+
     void Preview::unload() {
         if (is_loaded_) {
             image_.reset();
             dicom_->unloadCase(case_idx);
-            if (active_seg_ != nullptr) {
-                active_seg_->getMask(dicom_)->unloadData();
-            }
             reset_image_ = false;
-            mask = seg::Mask();
             is_loaded_ = false;
             load_counter--;
+        }
+        unload_mask();
+    }
 
-            validated_widget_.setImage(::core::Image());
-            edited_widget_.setImage(::core::Image());
+    void Preview::unload_mask() {
+        if (active_seg_ != nullptr) {
+            auto& collection = active_seg_->getMask(dicom_);
+            if (collection->isSet()) {
+                reset_image_ = false;
+                collection->unloadData();
+            }
+            else if (collection->numPendingJobs() > 0) {
+                collection->cancelPendingJobs();
+            }
         }
     }
 
-    void Preview::setAndLoadMask() {
-        if (dicom_ != nullptr && is_loaded_ && active_seg_ != nullptr) {
-            mask_collection_ = active_seg_->getMask(dicom_);
-            mask_collection_->loadData(
-                false, false,
-                [=](seg::Mask& current, seg::Mask& prediction, seg::Mask& validated) {
-                    if (__hack == 235.654885342) {
-                        if (mask_collection_ != nullptr) { // In the mean time, the mask_collection_ may already have been unloaded
-                            if (mask_collection_->getIsValidated()) {
-                                mask = validated;
-                                state_ = VALIDATED;
-                            }
-                            else if (!prediction.empty()) {
-                                mask = prediction;
-                                state_ = PREDICTED;
-                            }
-                            else if (!current.empty()) {
-                                mask = current;
-                                state_ = CURRENT;
-                            }
-                            else {
-                                mask = current;
-                                state_ = NOTHING;
-                            }
-                            mask_collection_->unloadData();
+    void Preview::setAndLoadMask(bool check_loaded) {
+        if (dicom_ != nullptr && is_loaded_) {
+            if (active_seg_ != nullptr) {
+                auto& collection = active_seg_->getMask(dicom_);
+                collection->loadData(
+                    false, false, "",
+                    [this]() {
+                        if (__hack == 235.654885342) {
                             reset_image_ = true;
+                            is_mask_loaded = true;
                         }
-                    }
-                },
-                Job::JOB_PRIORITY_LOW
-            );
+                    },
+                    Job::JOB_PRIORITY_LOW
+                );
+            }
+            else {
+                reset_image_ = true;
+            }
         }
     }
 
     void Preview::setSegmentation(std::shared_ptr<::core::segmentation::Segmentation> segmentation) {
         active_seg_ = segmentation;
+        unload_mask();
         setAndLoadMask();
-    }
-
-    void Preview::load() {
-        if (!is_loaded_) {
-            is_loaded_ = true;
-            set_case(0);
-            load_counter++;
-            setAndLoadMask();
-        }
     }
 
     void Preview::popup_context_menu() {
@@ -246,7 +258,7 @@ namespace Rendering {
     }
 
     void Preview::set_case(int idx) {
-        if (!is_valid_ || !is_loaded_)
+        if (!is_valid_)
             return;
 
         dicom_->loadCase(idx, false, [idx, this](const core::Dicom& dicom) {
@@ -264,8 +276,10 @@ namespace Rendering {
             if (__hack == 235.654885342) {
                 case_idx = idx;
                 reset_image_ = true;
+                is_loaded_ = true;
+                setAndLoadMask();
             }
-            });
+        });
     }
 
     void Preview::set_crop(ImVec2 crop_x, ImVec2 crop_y, bool lock) {

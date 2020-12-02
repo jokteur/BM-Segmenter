@@ -30,6 +30,8 @@ namespace Rendering {
 
         int col_count_ = 0;
 
+        Listener reload_seg_;
+
         bool reset_draw_ = true;
         Rect prev_window_dim_;
 

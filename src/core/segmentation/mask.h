@@ -3,6 +3,7 @@
 #include <string>
 #include <list>
 #include <memory>
+#include <mutex>
 
 #include "opencv2/opencv.hpp"
 #include "python/py_api.h"
@@ -105,18 +106,33 @@ namespace core {
 			int max_size_ = 40;
 
 			bool is_valid_ = false;
+			bool is_set_ = false;
 			bool is_validated_ = false;
 			bool keep_ = false;
 			bool is_loading_ = false;
 
-			int ref_counter_ = 0;
+			static int global_counter_;
 
-			Mask current_;
+			//int ref_counter_ = 0;
+			std::map<std::string, int> ref_counter_;
+			std::recursive_mutex ref_mutex_;
+
+			std::set<jobId> pending_jobs_;
+
+			Mask tmp_;
 			Mask prediction_;
 			Mask validated_;
+
+			inline int get_num_refs();
+			void add_one_to_ref(const std::string& id);
+			void remove_one_to_ref(const std::string& id);
+			void set_ref(const std::string& id);
 		public:
 			MaskCollection() = default;
 			MaskCollection(int rows, int cols, int max_size = 40);
+			MaskCollection(const MaskCollection& other);
+
+			~MaskCollection();
 			//MaskCollection(const std::string& filename);
 
 			void push(const Mask& mask);
@@ -125,18 +141,26 @@ namespace core {
 			std::string loadData(
 				bool immediate = false, 
 				bool clear_history = true,
-				const std::function<void(Mask&, Mask&, Mask&)>& when_finished_fct = [](Mask&, Mask&, Mask&) {},
+				const std::string& id = "",
+				const std::function<void()>& when_finished_fct = []() {},
 				Job::jobPriority priority = Job::JOB_PRIORITY_NORMAL
 			);
-			void unloadData(bool force = false);
+			void unloadData(bool force = false, const std::string& id = "");
+			
+			Mask getTmp();
+
 			bool isValid() { return is_valid_; }
+			void cancelPendingJobs(bool no_ref_counting = false, const std::string& id = "");
+			int numPendingJobs();
 
 			MaskCollection copy();
 
 			void clearHistory();
 
-			void setDimensions(int rows, int cols) { rows_ = rows; cols_ = cols; }
+			void setDimensions(int rows, int cols) { rows_ = rows; cols_ = cols; is_set_ = true; }
 			void setDimensions(std::shared_ptr<DicomSeries> dicom);
+
+			bool isSet() { return is_set_; }
 
 			/**
 			 * Goes back into the history of the mask collection

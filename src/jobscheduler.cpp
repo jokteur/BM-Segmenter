@@ -74,7 +74,7 @@ void JobScheduler::worker_fct(JobScheduler::Worker &worker) {
         bool execute_job = false;
         // Search for a pending job
         {
-            std::lock_guard<std::mutex> guard(jobs_mutex_);
+            std::lock_guard<std::recursive_mutex> guard(jobs_mutex_);
             // Get the most urgent job from the priority queue
             job_ref = priority_queue_.top();
             current_job = *job_ref.it;
@@ -96,7 +96,7 @@ void JobScheduler::worker_fct(JobScheduler::Worker &worker) {
                 worker.state = WORKER_STATE_WORKING;
                 auto result = current_job->fct(current_job->progress, current_job->abort);
                 {
-                    std::lock_guard<std::mutex> guard(jobs_mutex_);
+                    std::lock_guard<std::recursive_mutex> guard(jobs_mutex_);
                     if (current_job->abort) {
                         current_job->state = Job::JOB_STATE_ABORTED;
                         current_job->success = result->success;
@@ -110,7 +110,7 @@ void JobScheduler::worker_fct(JobScheduler::Worker &worker) {
                 }
             }
             catch (std::exception &e) {
-                std::lock_guard<std::mutex> guard(jobs_mutex_);
+                std::lock_guard<std::recursive_mutex> guard(jobs_mutex_);
                 current_job->state = Job::JOB_STATE_ERROR;
                 current_job->exception = e;
                 finalize_jobs_list_.push_back(current_job);
@@ -118,7 +118,7 @@ void JobScheduler::worker_fct(JobScheduler::Worker &worker) {
             post_event(current_job);
         }
         {
-            std::lock_guard<std::mutex> guard(jobs_mutex_);
+            std::lock_guard<std::recursive_mutex> guard(jobs_mutex_);
             remove_job_from_list(job_ref);
         }
     }
@@ -132,7 +132,7 @@ std::shared_ptr<Job> & JobScheduler::addJob(std::string name, jobFct &function, 
     job.priority = priority;
     job.result_fct = result_fct;
 
-    std::lock_guard<std::mutex> guard(jobs_mutex_);
+    std::lock_guard<std::recursive_mutex> guard(jobs_mutex_);
     jobs_list_.emplace_back(std::make_shared<Job>(job));
 
     JobReference jobReference;
@@ -144,7 +144,7 @@ std::shared_ptr<Job> & JobScheduler::addJob(std::string name, jobFct &function, 
 }
 
 bool JobScheduler::stopJob(jobId jobId) {
-    std::lock_guard<std::mutex> guard(jobs_mutex_);
+    std::lock_guard<std::recursive_mutex> guard(jobs_mutex_);
     for (auto &job : jobs_list_) {
         if (job->id == jobId) {
             job->abort = true;
@@ -165,7 +165,7 @@ void JobScheduler::clean() {
 
 
 Job JobScheduler::getJobInfo(jobId id) {
-    std::lock_guard<std::mutex> guard(jobs_mutex_);
+    std::lock_guard<std::recursive_mutex> guard(jobs_mutex_);
     for (auto &job : jobs_list_) {
         if(job->id == id) {
             Job return_job;
@@ -188,7 +188,7 @@ Job JobScheduler::getJobInfo(jobId id) {
 }
 
 bool JobScheduler::isBusy() {
-    std::lock_guard<std::mutex> guard(jobs_mutex_);
+    std::lock_guard<std::recursive_mutex> guard(jobs_mutex_);
     for (auto &job : jobs_list_) {
         if(job->state == Job::JOB_STATE_PENDING || job->state == Job::JOB_STATE_RUNNING)
             return true;
@@ -197,7 +197,7 @@ bool JobScheduler::isBusy() {
 }
 
 void JobScheduler::cancelAllPendingJobs() {
-    std::lock_guard<std::mutex> guard(jobs_mutex_);
+    std::lock_guard<std::recursive_mutex> guard(jobs_mutex_);
     for (auto &job : jobs_list_) {
         if(job->state == Job::JOB_STATE_PENDING) {
             job->abort = true;
@@ -206,7 +206,7 @@ void JobScheduler::cancelAllPendingJobs() {
 }
 
 void JobScheduler::abortAll() {
-    std::lock_guard<std::mutex> guard(jobs_mutex_);
+    std::lock_guard<std::recursive_mutex> guard(jobs_mutex_);
     for (auto &job : jobs_list_) {
         job->abort = true;
     }
@@ -226,7 +226,7 @@ void JobScheduler::remove_job_from_list(JobReference &jobReference) {
 }
 
 void JobScheduler::finalizeJobs() {
-    std::lock_guard<std::mutex> guard(jobs_mutex_);
+    std::lock_guard<std::recursive_mutex> guard(jobs_mutex_);
     for (auto& job : finalize_jobs_list_) {
         job->result_fct(job->result);
     }

@@ -141,8 +141,6 @@ namespace core {
             if (ref_counter_[index] == 0)
                 free_memory(index);
         }
-        else {
-        }
     }
 
     void DicomSeries::unloadAll(bool keep_current) {

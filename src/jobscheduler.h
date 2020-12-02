@@ -194,7 +194,7 @@ private:
     std::mutex kill_mutex_;
 
     std::list<std::shared_ptr<Job>> jobs_list_;
-    std::mutex jobs_mutex_;
+    std::recursive_mutex jobs_mutex_;
     std::vector<std::shared_ptr<Job>> finalize_jobs_list_;
     std::priority_queue<JobReference, std::vector<JobReference>, JobReference> priority_queue_;
     Semaphore semaphore_;

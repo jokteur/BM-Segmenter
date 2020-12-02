@@ -28,6 +28,8 @@ namespace Rendering {
         static int instance_number;
         bool is_valid_ = false;
         bool is_loaded_ = false;
+        bool is_mask_loaded = false;
+        bool load_mask_ = false;
 
         std::string identifier_;
         const char* identifier_c_str_;
@@ -36,18 +38,14 @@ namespace Rendering {
         ::core::Image image_;
         std::shared_ptr<::core::DicomSeries> dicom_ = nullptr;
         std::shared_ptr<::core::segmentation::MaskCollection> mask_collection_ = nullptr;
-        ::core::segmentation::Mask mask;
+        //::core::segmentation::Mask mask;
 
         bool no_draw_ = false;
 
         mask_state state_ = NOTHING;
 
-        ::core::Image& validated_;
-        ::core::Image& edited_;
-        SimpleImage validated_widget_;
-        SimpleImage edited_widget_;
-
         bool reset_image_ = false;
+        bool set_mask_ = false;
 
         static int load_counter;
 
@@ -85,7 +83,8 @@ namespace Rendering {
 
         void init();
 
-        void setAndLoadMask();
+        void setAndLoadMask(bool check_loaded = true);
+        void unload_mask();
 
         void popup_context_menu();
 

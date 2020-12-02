@@ -13,7 +13,7 @@ int Rendering::EditMask::instance_number = 0;
 
 void Rendering::EditMask::unload_mask() {
     if (mask_collection_ != nullptr) {
-        mask_collection_->unloadData(true);
+        mask_collection_->unloadData(true, "edit_mask");
     }
 }
 
@@ -57,25 +57,33 @@ void Rendering::EditMask::load_segmentation(std::shared_ptr<::core::segmentation
 }
 
 bool Rendering::EditMask::load_mask() {
-    if (active_seg_ != nullptr && dicom_series_ != nullptr) {
-        mask_collection_ = active_seg_->getMask(dicom_series_);
-        mask_collection_->loadData(true);
+    if (dicom_series_ != nullptr) {
+        if (active_seg_ != nullptr) {
+            mask_collection_ = active_seg_->getMask(dicom_series_);
+            mask_collection_->loadData(true, true, "edit_mask");
 
-        if (mask_collection_->getIsValidated()) {
-            tmp_mask_ = mask_collection_->getValidated().copy();
-        }
-        else {
-            if (mask_collection_->size() == 0) {
-                tmp_mask_ = ::core::segmentation::Mask(dicom_dimensions_.x, dicom_dimensions_.y);
-                mask_collection_->setDimensions(dicom_dimensions_.x, dicom_dimensions_.y);
-                set_mask();
+            if (mask_collection_->getIsValidated()) {
+                tmp_mask_ = mask_collection_->getValidated().copy();
             }
             else {
-                tmp_mask_ = mask_collection_->getCurrent().copy();
+                if (mask_collection_->size() == 0) {
+                    tmp_mask_ = ::core::segmentation::Mask(dicom_dimensions_.x, dicom_dimensions_.y);
+                    mask_collection_->setDimensions(dicom_dimensions_.x, dicom_dimensions_.y);
+                    set_mask();
+                }
+                else {
+                    tmp_mask_ = mask_collection_->getCurrent().copy();
+                }
             }
+            reset_image_ = true;
+            build_hu_mask_ = true;
         }
-        reset_image_ = true;
-        build_hu_mask_ = true;
+        else {
+            image_.setImageFromHU(
+                dicom_series_->getCurrentDicom().data,
+                (float)dicom_series_->getWW(),
+                (float)dicom_series_->getWC());
+        }
     }
     return active_seg_ != nullptr;
 }
