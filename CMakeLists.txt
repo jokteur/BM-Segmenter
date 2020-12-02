@@ -19,6 +19,16 @@ add_compile_definitions(HAVE_SNPRINTF)
 # -----
 find_package(OpenGL REQUIRED)
 
+set(BM_LOG_DEBUG OFF CACHE BOOL "Collect log for debugging")
+set(BM_PRINT_DEBUG OFF CACHE BOOL "If LOG_DEBUG is on, print the log to the std")
+
+if (${BM_LOG_DEBUG})    
+    add_compile_definitions(LOG_DEBUG)
+endif()
+if (${BM_PRINT_DEBUG})    
+    add_compile_definitions(PRINT_DEBUG)
+endif()
+
 set(ENKITS_BUILD_EXAMPLES OFF CACHE BOOL  "Build basic example applications" )
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL  "GLFW lib only" )
 set(GLFW_BUILD_TESTS OFF CACHE BOOL  "GLFW lib only" )

@@ -1,4 +1,5 @@
 #include "dataset_view.h"
+#include "log.h"
 
 #include <algorithm>
 
@@ -54,6 +55,7 @@ void Rendering::DatasetView::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
             if (ImGui::Button(" -###explorer_preview_button_minus")) {
                 if (num_cols_ > 1)
                     num_cols_--;
+                DEBUG("change columns");
             }
             ImGui::SameLine();
             if (ImGui::Button("+###explorer_preview_button_plus")) {

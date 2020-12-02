@@ -3,6 +3,7 @@
 
 #include <string>
 #include <utility>
+#include <mutex>
 
 #include "events.h"
 
@@ -19,5 +20,25 @@ public:
 };
 #define LOGEVENT_PTRCAST(job) (reinterpret_cast<LogEvent*>((job)))
 
+class DebugLogger {
+private:
+    std::vector<std::string> logs_;
+    std::string out_file_;
+    bool print_std_;
+    Listener event_listener_;
+
+public:
+    DebugLogger(const std::string& out, bool print_std = false);
+    ~DebugLogger();
+
+};
+
+void debug_event(const std::string& file, const std::string& func, const std::string& str);
+
+#ifdef LOG_DEBUG
+#define DEBUG(str) debug_event(__FILE__, __FUNCSIG__, (str))
+#else
+#define DEBUG(str) ;
+#endif
 
 #endif //BM_SEGMENTER_LOG_H

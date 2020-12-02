@@ -8,11 +8,14 @@
 #include "drag_and_drop.h"
 #include "rendering/ui/widgets/util.h"
 
+#include "log.h"
+
 int Rendering::EditMask::instance_number = 0;
 
 
 void Rendering::EditMask::unload_mask() {
     if (mask_collection_ != nullptr) {
+        DEBUG("Unload mask");
         mask_collection_->unloadData(true, "edit_mask");
     }
 }
@@ -21,6 +24,7 @@ void Rendering::EditMask::unload_dicom(bool no_reset) {
     if (dicom_series_ != nullptr) {
         dicom_series_->cancelPendingJobs();
         dicom_series_->unloadCase();
+        DEBUG("Unload dicom " + dicom_series_->getIdPair().first);
         if (!no_reset) {
             dicom_series_ = nullptr;
             image_.reset();
@@ -33,6 +37,7 @@ void Rendering::EditMask::loadDicom(const std::shared_ptr<core::DicomSeries> dic
     unload_mask();
 
     dicom_series_ = dicom;
+    DEBUG("Set dicom " + dicom->getIdPair().first);
     loadCase(0);
     push_animation();
 }
@@ -44,6 +49,7 @@ void Rendering::EditMask::loadCase(int idx) {
             image_widget_.setImage(image_);
             dicom_dimensions_.x = dicom.data.rows;
             dicom_dimensions_.y = dicom.data.cols;
+            DEBUG("Dicom loaded " + dicom_series_->getIdPair().first);
             load_mask();
         });
         set_NextPrev_buttons();
@@ -51,6 +57,12 @@ void Rendering::EditMask::loadCase(int idx) {
 }
 
 void Rendering::EditMask::load_segmentation(std::shared_ptr<::core::segmentation::Segmentation> seg) {
+#ifdef LOG_DEBUG
+    if (seg != nullptr)
+        DEBUG("Load segmentation " + seg->getName());
+    else
+        DEBUG("Load no segmentation");
+#endif
     unload_mask();
     active_seg_ = seg;
     load_mask();

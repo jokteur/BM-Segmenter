@@ -10,6 +10,7 @@
 #include "rendering/window.h"
 #include "events.h"
 #include "imgui.h"
+#include "log.h"
 
 //compatibility with older versions of Visual Studio
 #if defined(_MSC_VER) && (_MSC_VER >= 1900) && !defined(IMGUI_DISABLE_WIN32_FUNCTIONS)
@@ -43,6 +44,13 @@ namespace Rendering {
             const char* glsl_version;
         };
         state app_state_;
+
+#if defined(LOG_DEBUG) && defined(PRINT_DEBUG)
+        DebugLogger debug_logger_ = DebugLogger("log.out", true);
+#endif
+#if defined(LOG_DEBUG) && !defined(PRINT_DEBUG)
+        DebugLogger debug_logger_ = DebugLogger("log.out", false);
+#endif
 
         /**
          * Inits GLFW and throw an exception if failed

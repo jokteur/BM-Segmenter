@@ -150,6 +150,7 @@ bool Rendering::Application::loop() {
     if (!app_state_.imgui_init)
         throw CannotStartLoopError();
 
+
     GLFWwindow* main_window;
     do {
         ImGuiIO& io = ImGui::GetIO(); (void)io;
