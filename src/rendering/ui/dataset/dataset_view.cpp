@@ -55,12 +55,13 @@ void Rendering::DatasetView::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
             if (ImGui::Button(" -###explorer_preview_button_minus")) {
                 if (num_cols_ > 1)
                     num_cols_--;
-                DEBUG("change columns");
+                BM_DEBUG("add one column (layout)");
             }
             ImGui::SameLine();
             if (ImGui::Button("+###explorer_preview_button_plus")) {
                 if (num_cols_ < 5)
                     num_cols_++;
+                BM_DEBUG("remove one column (layout)");
             }
         }
 
@@ -93,6 +94,7 @@ void Rendering::DatasetView::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
                         }
                     }
                 });
+                BM_DEBUG("generate segmentation list");
             }
             seg_select_.ImGuiDraw("Select segmentation");
         }
@@ -111,6 +113,7 @@ void Rendering::DatasetView::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
                     if (idx == 0) {
                         EventQueue::getInstance().post(Event_ptr(new Event("dataset/group/select/all")));
                         reset_draw_ = true;
+                        BM_DEBUG("Select Show all dicoms");
                     }
                     else {
                         EventQueue::getInstance().post(Event_ptr(new Event("dataset/group/select/" + std::to_string(idx - 1))));
@@ -128,8 +131,10 @@ void Rendering::DatasetView::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
                         for (auto dicom : to_unload) {
                             dicom_previews_[dicom].unload();
                         }
+                        BM_DEBUG("Select group " + groups_[idx - 1].getName());
                     }
                 });
+                BM_DEBUG("generate group selection options");
             }
             group_select_.ImGuiDraw("Select group");
         }
@@ -178,10 +183,10 @@ void Rendering::DatasetView::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
 
 inline void Rendering::DatasetView::preview_widget(Preview& preview, float width, ImVec2 mouse_pos, Rect sub_window_dim, std::shared_ptr<::core::DicomSeries> dicom, GLFWwindow* window, Rect& parent_dimension) {    
     if (Widgets::check_hitbox(mouse_pos, sub_window_dim)) {
-        //preview.setAllowScroll(true);
+        preview.setAllowScroll(true);
     }
     else {
-        //preview.setAllowScroll(false);
+        preview.setAllowScroll(false);
     }
 
     auto& dim = preview.getDimensions();
@@ -202,9 +207,8 @@ inline void Rendering::DatasetView::preview_widget(Preview& preview, float width
         ImGui::Separator();
 
     // Title
+    ImGui::Text("%s", dicom->getIdPair().first.c_str());
     if (draw) {
-        ImGui::Text("%s", dicom->getIdPair().first.c_str());
-
         if (active_seg_ != nullptr) {
             auto state = preview.getMaskState();
             switch (state) {

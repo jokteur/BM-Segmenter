@@ -36,9 +36,9 @@ public:
 void debug_event(const std::string& file, const std::string& func, const std::string& str);
 
 #ifdef LOG_DEBUG
-#define DEBUG(str) debug_event(__FILE__, __FUNCSIG__, (str))
+#define BM_DEBUG(str) debug_event(__FILE__, __FUNCSIG__, (str))
 #else
-#define DEBUG(str) ;
+#define BM_DEBUG(str) ;
 #endif
 
 #endif //BM_SEGMENTER_LOG_H

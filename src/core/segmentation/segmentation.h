@@ -9,10 +9,10 @@
 
 #include "core/dicom.h"
 #include "core/segmentation/mask.h"
+#include "core/segmentation/ml.h"
 
 namespace core {
 	namespace segmentation {
-
 
 		class Segmentation {
 		private:
@@ -23,6 +23,7 @@ namespace core {
 			ImVec4 color_ = { 1.f, 0.f, 0.f, 0.5f };
 
 			std::map<std::shared_ptr<DicomSeries>, std::shared_ptr<MaskCollection>> segmentations_;
+			std::vector<std::shared_ptr<ML_Model>> models_;
 		public:
 			Segmentation(const std::string& name, const std::string& description, ImVec4 color = { 1.f, 0.f, 0.f, 0.5f });
 			Segmentation() = default;
@@ -43,6 +44,9 @@ namespace core {
 			void setMaskColor(const float color[4]);
 
 			ImVec4& getMaskColor() { return color_; }
+
+			void addModel(std::shared_ptr<ML_Model> model) { models_.push_back(model); }
+			std::vector<std::shared_ptr<ML_Model>>& getModels() { return models_; }
 
 			/**
 			 * Unload from memory all masks that may be present

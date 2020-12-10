@@ -6,6 +6,8 @@
 #include "first_include.h"
 #include "imgui.h"
 
+#include "rendering/ui/segmentation/create_model.h"
+
 #include "rendering/drawables.h"
 #include "core/project/project_manager.h"
 #include "core/segmentation/segmentation.h"
@@ -21,6 +23,7 @@ namespace Rendering {
         ::core::project::ProjectManager& project_manager_ = ::core::project::ProjectManager::getInstance();
 
         NewSegmentationModal new_segmentation_;
+        CreateModelModal new_model_;
         Shortcut enter_shortcut_;
 
         std::vector<std::string> user_names_;

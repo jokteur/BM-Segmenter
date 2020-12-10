@@ -4,6 +4,8 @@
 #include "rendering/views/project_view.h"
 #include "settings.h"
 
+#include "log.h"
+
 namespace dataset = ::core::dataset;
 
 Rendering::ExploreFolder::ExploreFolder(ImGuiID docking_id) : AbstractLayout(docking_id) {
@@ -11,6 +13,7 @@ Rendering::ExploreFolder::ExploreFolder(ImGuiID docking_id) : AbstractLayout(doc
         auto log = LOGEVENT_PTRCAST(event.get());
         std::string message = log->getMessage() + "\n";
         log_buffer_.append(message.c_str());
+        BM_DEBUG("Dicom search: " + message);
     };
     log_listener_.filter = "log/dicom_search";
 
@@ -18,6 +21,7 @@ Rendering::ExploreFolder::ExploreFolder(ImGuiID docking_id) : AbstractLayout(doc
         auto log = LOGEVENT_PTRCAST(event.get());
         std::string message = log->getMessage() + "\n";
         error_buffer_.append(message.c_str());
+        BM_DEBUG("Dicom error: " + message);
     };
     error_listener_.filter = "log/dicom_error";
 
@@ -36,6 +40,7 @@ void Rendering::ExploreFolder::ImGuiDraw(GLFWwindow *window, Rect &parent_dimens
     ImGui::Begin("Find dicoms in folder");
     if (explorer_->getStatus() == ::core::dataset::Explore::EXPLORE_WORKING) {
         if (ImGui::Button("Stop search")) {
+            BM_DEBUG("Stop search");
             JobScheduler::getInstance().stopJob(explorer_->getJobReference());
         }
         ImGui::SameLine();
@@ -55,6 +60,8 @@ void Rendering::ExploreFolder::ImGuiDraw(GLFWwindow *window, Rect &parent_dimens
                 EventQueue::getInstance().post(Event_ptr(new Event("dataset/dicom/reset")));
                 explorer_->findDicoms(outPath);
                 path_ = outPath;
+
+                BM_DEBUG("Begin folder exploration");
             } else if (result == NFD_ERROR) {
                 show_error_modal("Error: find dicoms",
                                  "An error has occurred when opening the folder.",
@@ -249,6 +256,7 @@ void Rendering::ExploreFolder::ImGuiDraw(GLFWwindow *window, Rect &parent_dimens
 
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, .1f, 0.f, 1.f));
     if (ImGui::Button("Cancel import")) {
+        BM_DEBUG("Cancel import, go back to project");
         JobScheduler::getInstance().stopJob(explorer_->getJobReference());
         close_view_ = true;
     }
@@ -257,6 +265,7 @@ void Rendering::ExploreFolder::ImGuiDraw(GLFWwindow *window, Rect &parent_dimens
         ImGui::SameLine();
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.1f, .8f, 0.f, 1.f));
         if (ImGui::Button("Import data to project")) {
+            BM_DEBUG("Open import modal");
             import_modal_.showModal(explorer_->getCases());
         }
         ImGui::PopStyleColor();
@@ -275,6 +284,7 @@ Rendering::ExploreFolder::~ExploreFolder() {
 void Rendering::ExploreFolder::build_tree() {
     if (build_tree_) {
         // Build tree, first look which nodes should be drawn
+        BM_DEBUG("Build tree");
         ::core::dataset::build_tree(explorer_->getCases(), case_filter_, study_filter_, series_filter_);
         if (is_new_tree_)
             EventQueue::getInstance().post(Event_ptr(new ::core::dataset::ExplorerBuildEvent(explorer_->getCases())));

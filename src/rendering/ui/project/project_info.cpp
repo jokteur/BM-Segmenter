@@ -4,6 +4,9 @@
 #include "rendering/views/explore_view.h"
 #include "rendering/views/default_view.h"
 #include "rendering/ui/widgets/util.h"
+#include "rendering/animation_util.h"
+
+#include "log.h"
 
 Rendering::ProjectInfo::ProjectInfo() {
 	enter_shortcut_.keys = { KEY_ENTER };
@@ -20,7 +23,7 @@ void Rendering::ProjectInfo::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
 	if (project != nullptr) {
 		if (!is_set_ && !project->getSaveFile().empty()) {
 			is_set_ = true;
-			std::cout << "Set dataset" << std::endl;
+			BM_DEBUG("Set project and load segmentations");
 			auto err = project->getDataset().load(project->getSaveFile());
 			if (!err.empty()) {
 				show_error_modal("Error when opening the project", "An error occured when opening the project's dataset.", err.c_str());
@@ -85,6 +88,7 @@ void Rendering::ProjectInfo::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
 
 								if (ImGui::BeginPopupContextItem()) {
 									if (ImGui::Selectable("Remove dicom from group")) {
+										BM_DEBUG("Remove dicom " + dicom->getIdPair().first + "from group " + group.getName());
 										group.removeDicom(dicom);
 										dataset.save(project->getSaveFile());
 									}
@@ -105,6 +109,7 @@ void Rendering::ProjectInfo::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
 							"Please save by going to Files -> Save or use Ctrl+S");
 					}
 					else {
+						BM_DEBUG("Set import view");
 						EventQueue::getInstance().post(Event_ptr(new SetViewEvent(std::make_unique<ExploreView>())));
 					}
 				}
@@ -123,8 +128,10 @@ void Rendering::ProjectInfo::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
 					bool leaf = ImGui::TreeNodeEx(&seg, ImGuiTreeNodeFlags_Framed, "%s", seg->getName().c_str());
 					ImGui::PopStyleColor();
 					if (leaf) {
+						// Segmentation color
 						ImGui::Text("Overlay color (mask color):"); ImGui::SameLine();
 						ImGui::ColorButton("Overlay color (with alpha)", color, ImGuiColorEditFlags_AlphaPreviewHalf);
+
 						if (ImGui::BeginPopupContextItem("Change color", 0)) {
 							static float edit_col[4] = { color.x, color.y, color.z, color.w };
 							ImGui::ColorPicker4("color", edit_col, ImGuiColorEditFlags_AlphaPreviewHalf);
@@ -136,11 +143,24 @@ void Rendering::ProjectInfo::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
 							}
 							ImGui::EndPopup();
 						}
+
+						ImGui::Separator();
+
+						// Models
+						ImGui::Text("Models");
+						if (ImGui::Button("New model")) {
+							BM_DEBUG("New model modal");
+							push_animation();
+							new_model_.showModal(seg);
+						}
+
 						ImGui::TreePop();
 					}
 				}
 				Widgets::NewLine(5.f);
 				if (ImGui::Button("Create segmentation")) {
+					BM_DEBUG("New segmentation modal");
+					push_animation();
 					new_segmentation_.showModal(project);
 				}
 				Widgets::NewLine(5.f);
@@ -165,6 +185,7 @@ void Rendering::ProjectInfo::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
 					KeyboardShortCut::ignoreNormalShortcuts();
 
 					if ((ImGui::Button("OK") || confirm_) && !current_user_.empty()) {
+						BM_DEBUG("Create user");
 						project->setCurrentUser(current_user_);
 						current_user_ = "";
 						ImGui::CloseCurrentPopup();

@@ -2,6 +2,8 @@
 #include "ui/widgets/util.h"
 #include "settings.h"
 
+#include "log.h"
+
 Rendering::ExplorerPreview::ExplorerPreview(ImVec2 init_size) : init_size_(init_size) {
     build_tree_listener_.callback = [=](Event_ptr &event) {
         auto explorer = reinterpret_cast<::core::dataset::ExplorerBuildEvent*>(event.get());
@@ -24,17 +26,20 @@ Rendering::ExplorerPreview::ExplorerPreview(ImVec2 init_size) : init_size_(init_
                 }
             }
         }
+        BM_DEBUG("Build tree");
     };
     build_tree_listener_.filter = "dataset/explorer/build";
 
     filter_tree_listener_.callback = [=](Event_ptr &event) {
         auto filters = reinterpret_cast<::core::dataset::ExplorerFilterEvent*>(event.get());
         ::core::dataset::build_tree(cases_, filters->caseFilter(), filters->studyFilter(), filters->seriesFilter());
+        BM_DEBUG("Filter tree");
     };
     filter_tree_listener_.filter = "dataset/explorer/filter";
 
     reset_tree_listener_.callback = [=](Event_ptr& event) {
         cases_ = std::make_shared<std::vector<core::dataset::PatientNode>>();
+        BM_DEBUG("Reset tree");
     };
     reset_tree_listener_.filter = "dataset/dicom/reset";
 
@@ -64,11 +69,13 @@ void Rendering::ExplorerPreview::ImGuiDraw(GLFWwindow *window, Rect &parent_dime
         if (ImGui::Button(" -###explorer_preview_button_minus")) {
             if (num_cols_ > 1)
                 num_cols_--;
+            BM_DEBUG("Add one column (layout)");
         }
         ImGui::SameLine();
         if (ImGui::Button("+###explorer_preview_button_plus")) {
             if (num_cols_ < 5)
                 num_cols_++;
+            BM_DEBUG("Remove one column (layout)");
         }
         if (ImGui::CollapsingHeader("Edit all images###explore_preview_edit")) {
             ImGui::SameLine();
@@ -79,12 +86,14 @@ void Rendering::ExplorerPreview::ImGuiDraw(GLFWwindow *window, Rect &parent_dime
             ImGui::DragFloatRange2("Crop in x", &crop_x_.x, &crop_x_.y, 1.f, 0.0f, 100.0f, "Left: %.1f %%", "Right: %.1f %%");
             ImGui::DragFloatRange2("Crop in y", &crop_y_.x, &crop_y_.y, 1.f, 0.0f, 100.0f, "Top: %.1f %%", "Bottom: %.1f %%");
             if (ImGui::Button("Apply crop###explore_apply_crop")) {
+                BM_DEBUG("Apply crop on all images");
                 for (auto& preview : dicom_previews_) {
                     preview.second.setCrop(crop_x_, crop_y_, false);
                 }
             }
             ImGui::SameLine();
             if (ImGui::Button("Force crop on all images")) {
+                BM_DEBUG("Force apply crop on all images");
                 for (auto& preview : dicom_previews_) {
                     preview.second.setCrop(crop_x_, crop_y_, true);
                 }
@@ -94,12 +103,14 @@ void Rendering::ExplorerPreview::ImGuiDraw(GLFWwindow *window, Rect &parent_dime
             ImGui::DragInt("Window center###explore_preview_wc", &window_center_, 0.5, -1000, 3000, "%d HU");
             ImGui::DragInt("Window width###explore_preview_ww", &window_width_, 0.5, 1, 3000, "%d HU");
             if (ImGui::Button("Apply window###explore_apply_window")) {
+                BM_DEBUG("Apply window on all images");
                 for (auto& preview : dicom_previews_) {
                     preview.second.setWindowing(window_width_, window_center_, false);
                 }
             }
             ImGui::SameLine();
             if (ImGui::Button("Force window on all images")) {
+                BM_DEBUG("Force apply window on all images");
                 for (auto& preview : dicom_previews_) {
                     preview.second.setWindowing(window_width_, window_center_, true);
                 }

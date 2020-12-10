@@ -15,7 +15,7 @@ int Rendering::EditMask::instance_number = 0;
 
 void Rendering::EditMask::unload_mask() {
     if (mask_collection_ != nullptr) {
-        DEBUG("Unload mask");
+        BM_DEBUG("Unload mask");
         mask_collection_->unloadData(true, "edit_mask");
     }
 }
@@ -24,7 +24,7 @@ void Rendering::EditMask::unload_dicom(bool no_reset) {
     if (dicom_series_ != nullptr) {
         dicom_series_->cancelPendingJobs();
         dicom_series_->unloadCase();
-        DEBUG("Unload dicom " + dicom_series_->getIdPair().first);
+        BM_DEBUG("Unload dicom " + dicom_series_->getIdPair().first);
         if (!no_reset) {
             dicom_series_ = nullptr;
             image_.reset();
@@ -37,7 +37,7 @@ void Rendering::EditMask::loadDicom(const std::shared_ptr<core::DicomSeries> dic
     unload_mask();
 
     dicom_series_ = dicom;
-    DEBUG("Set dicom " + dicom->getIdPair().first);
+    BM_DEBUG("Set dicom " + dicom->getIdPair().first);
     loadCase(0);
     push_animation();
 }
@@ -49,7 +49,7 @@ void Rendering::EditMask::loadCase(int idx) {
             image_widget_.setImage(image_);
             dicom_dimensions_.x = dicom.data.rows;
             dicom_dimensions_.y = dicom.data.cols;
-            DEBUG("Dicom loaded " + dicom_series_->getIdPair().first);
+            BM_DEBUG("Dicom loaded " + dicom_series_->getIdPair().first);
             load_mask();
         });
         set_NextPrev_buttons();
@@ -59,9 +59,9 @@ void Rendering::EditMask::loadCase(int idx) {
 void Rendering::EditMask::load_segmentation(std::shared_ptr<::core::segmentation::Segmentation> seg) {
 #ifdef LOG_DEBUG
     if (seg != nullptr)
-        DEBUG("Load segmentation " + seg->getName());
+        BM_DEBUG("Load segmentation " + seg->getName());
     else
-        DEBUG("Load no segmentation");
+        BM_DEBUG("Load no segmentation");
 #endif
     unload_mask();
     active_seg_ = seg;
@@ -402,6 +402,7 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
                 if (is_validated) {
                     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, .1f, 0.f, 0.7f));
                     if (ImGui::Button("Unvalidate (all)")) {
+                        BM_DEBUG("Unvalidate (all)");
                         mask_collection_->removeAllValidatedBy();
                         mask_collection_->saveCollection();
                         mask_changed();
@@ -414,6 +415,7 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
                             ImGui::SameLine();
                             ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.7f, .5f, 0.3f, 0.7f));
                             if (ImGui::Button((("Unvalidate (only " + project->getCurrentUser() + ")").c_str()))) {
+                                BM_DEBUG("Unvalidate (only)");
                                 mask_collection_->removeValidatedBy(username);
                                 mask_collection_->saveCollection();
                                 mask_changed();
@@ -427,6 +429,7 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
 
                         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.1f, .8f, 0.f, 0.7f));
                         if (ImGui::Button(("Validate (by " + project->getCurrentUser() + ")").c_str())) {
+                            BM_DEBUG("Validate");
                             if (!is_validated) {
                                 mask_collection_->setValidated(tmp_mask_);
                             }
@@ -515,6 +518,7 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
 
 void Rendering::EditMask::accept_drag_and_drop() {
     if (ImGui::BeginDragDropTarget()) {
+        BM_DEBUG("Accept drag and drop");
         if (ImGui::AcceptDragDropPayload("_DICOM_PAYLOAD")) {
             auto& drag_and_drop = DragAndDrop<std::shared_ptr<::core::DicomSeries>>::getInstance();
             auto data = drag_and_drop.returnData();
@@ -615,18 +619,34 @@ void Rendering::EditMask::set_NextPrev_buttons() {
 
 void Rendering::EditMask::next() {
     if (next_dicom_ != nullptr) {
+        BM_DEBUG("Select next");
         loadDicom(next_dicom_, true);
     }
 }
 
 void Rendering::EditMask::previous() {
     if (prev_dicom_ != nullptr) {
+        BM_DEBUG("Select previous");
         loadDicom(prev_dicom_, true);
     }
 }
 
 void Rendering::EditMask::set_mask() {
     if (active_seg_ != nullptr && mask_collection_ != nullptr) {
+#ifdef LOG_DEBUG
+        std::string msg = "Set mask "
+            + std::to_string(info_b_.isActive())
+            + std::to_string(lasso_select_b_.isActive())
+            + std::to_string(brush_select_b_.isActive())
+            + std::to_string(validate_b_.isActive())
+            + " "
+            + std::to_string(add_sub_option_) + " "
+            + std::to_string(brush_size_) + " "
+            + std::to_string(threshold_hu_) + " "
+            + std::to_string(hu_min_) + " "
+            + std::to_string(hu_max_);
+        BM_DEBUG(msg);
+#endif
         auto& collections = active_seg_->getMasks();
         mask_collection_->push(tmp_mask_.copy());
         mask_collection_->saveCollection();
@@ -637,6 +657,7 @@ void Rendering::EditMask::set_mask() {
 
 void Rendering::EditMask::undo() {
     if (active_seg_ != nullptr && mask_collection_ != nullptr) {
+        BM_DEBUG("Undo mask");
         auto& collections = active_seg_->getMasks();
         tmp_mask_ = mask_collection_->undo().copy();
         mask_collection_->saveCollection();
@@ -646,6 +667,7 @@ void Rendering::EditMask::undo() {
 }
 
 void Rendering::EditMask::redo() {
+    BM_DEBUG("Redo mask");
     if (active_seg_ != nullptr && mask_collection_ != nullptr) {
         auto& collections = active_seg_->getMasks();
         tmp_mask_ = mask_collection_->redo().copy();

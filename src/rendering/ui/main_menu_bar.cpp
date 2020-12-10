@@ -6,6 +6,8 @@
 #include "rendering/views/project_view.h"
 #include "rendering/views/default_view.h"
 
+#include "log.h"
+
 namespace project_n = ::core::project;
 
 void Rendering::MainMenuBar::ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) {
@@ -82,9 +84,11 @@ void Rendering::MainMenuBar::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
 void Rendering::MainMenuBar::file_menu()  {
 
     if (ImGui::MenuItem("New project", Shortcuts::new_project_shortcut.description)) {
+        BM_DEBUG("New project menu");
         new_project_modal_.showModal();
     }
     if (ImGui::MenuItem("Open project", Shortcuts::open_project_shortcut.description)) {
+        BM_DEBUG("Open project menu");
         open_file();
     }
     if (ImGui::BeginMenu("Open Recent"))
@@ -96,6 +100,7 @@ void Rendering::MainMenuBar::file_menu()  {
         else {
             for(auto &filename : recent_projects) {
                 if (ImGui::MenuItem(filename.c_str())) {
+                    BM_DEBUG("Open recent project menu");
                     open_file(filename);
                     EventQueue::getInstance().post(Event_ptr(new SetViewEvent(std::make_unique<ProjectView>())));
                 }
@@ -145,9 +150,11 @@ void Rendering::MainMenuBar::settings_menu(){
     if (ImGui::BeginMenu("Theme")) {
         bool is_dark_theme = settings_.getCurrentTheme() == Settings::SETTINGS_DARK_THEME;
         if (ImGui::MenuItem("Dark", "", is_dark_theme)) {
+            BM_DEBUG("Change setting to dark");
             settings_.setStyle(Settings::SETTINGS_DARK_THEME);
         }
         if (ImGui::MenuItem("Light", "", !is_dark_theme)) {
+            BM_DEBUG("Change setting to light");
             settings_.setStyle(Settings::SETTINGS_LIGHT_THEME);
         }
         ImGui::EndMenu();
@@ -160,6 +167,7 @@ void Rendering::MainMenuBar::settings_menu(){
             }
             ImGui::SameLine();
             if(ImGui::Button("Ok") || escape || enter) {
+                BM_DEBUG("Set UI size");
                 Settings::getInstance().saveSettings();
                 show = false;
             }
@@ -187,9 +195,11 @@ void Rendering::MainMenuBar::open_file(std::string filename) {
         auto project = project_manager_.openProjectFromFile(filename);
         project_manager_.setCurrentProject(project);
         Settings::getInstance().addRecentFile(filename);
+        BM_DEBUG("Project opened");
 
     }
     catch (std::exception &e) {
+        BM_DEBUG(std::string("Open project error") + e.what());
         show_error_modal("Load project error",
                          "An error occured when loading the project ''\n",
                          e.what());
@@ -262,9 +272,11 @@ void Rendering::MainMenuBar::save_project() {
         }
 
         if (proceed) {
+            BM_DEBUG("Save project");
             save(project, out_path);
         }
         else {
+            BM_DEBUG(std::string("The program failed to set up the workspace") + str_err);
             show_error_modal("Could not save project",
                 "The program failed to set up the workspace at the given path",
                 str_err);
@@ -286,12 +298,15 @@ void Rendering::MainMenuBar::save_project_under() {
 }
 
 void Rendering::MainMenuBar::save(const std::shared_ptr<project_n::Project>& project, const std::string& filename) {
+    BM_DEBUG("Save project");
     bool result = project_manager_.saveProjectToFile(project, filename);
     if (!result) {
+        BM_DEBUG("Could not save project");
         error_msg = "Error when saving '" + project->getName() + "', please try again";
         Modals::getInstance().setModal("Error",  error_fct, ImGuiWindowFlags_AlwaysAutoResize);
     }
     else {
+        BM_DEBUG("Project saved");
         Settings::getInstance().addRecentFile(filename);
     }
 }

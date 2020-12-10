@@ -4,6 +4,7 @@
 #include "rendering/views/project_view.h"
 #include "rendering/ui/modales/error_message.h"
 #include "rendering/keyboard_shortcuts.h"
+#include "rendering/animation_util.h"
 
 namespace Rendering {
     ImportDataModal::ImportDataModal() : project_manager_(::core::project::ProjectManager::getInstance()) {
@@ -159,6 +160,7 @@ namespace Rendering {
                         "Importing...", 
                         [=, &dataset, &show](bool& show_, bool& enter_, bool& escape_) {
                             auto& job_info = JobScheduler::getInstance().getJobInfo(job_id_);
+                            push_animation();
 
                             const ImU32 col = ImGui::GetColorU32(ImGuiCol_ButtonHovered);
                             const ImU32 bg = ImGui::GetColorU32(ImGuiCol_Button);
