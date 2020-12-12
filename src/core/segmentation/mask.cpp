@@ -114,6 +114,7 @@ namespace core {
 		int MaskCollection::global_counter_ = 0;
 
 		inline int MaskCollection::get_num_refs() {
+			std::lock_guard<std::recursive_mutex> lock(ref_mutex_);
 			int count = 0;
 			for (auto& pair : ref_counter_)
 				count += pair.second;
@@ -121,11 +122,13 @@ namespace core {
 		}
 
 		void MaskCollection::add_one_to_ref(const std::string& id) {
+			std::lock_guard<std::recursive_mutex> lock(ref_mutex_);
 			set_ref(id);
 			ref_counter_[id]++;
 		}
 
 		void MaskCollection::remove_one_to_ref(const std::string& id){
+			std::lock_guard<std::recursive_mutex> lock(ref_mutex_);
 			set_ref(id);
 			ref_counter_[id]--;
 			if (ref_counter_[id] < 0) {
@@ -134,6 +137,7 @@ namespace core {
 		}
 
 		void MaskCollection::set_ref(const std::string& id) {
+			std::lock_guard<std::recursive_mutex> lock(ref_mutex_);
 			if (ref_counter_.find(id) == ref_counter_.end()) {
 				ref_counter_[id] = 0;
 			}
@@ -165,6 +169,7 @@ namespace core {
 		}
 
 		void MaskCollection::push(const Mask& mask) {
+			std::lock_guard<std::recursive_mutex> lock(ref_mutex_);
 			if (!history_.empty() && it_ != history_.end()) {
 				history_.erase(it_, history_.end());
 			}
@@ -204,6 +209,7 @@ namespace core {
 
 				auto state = PyGILState_Ensure();
 				try {
+					std::lock_guard<std::recursive_mutex> lock(ref_mutex_);
 					py::module script = py::module::import("python.scripts.segmentation");
 
 					auto& dict = script.attr("load_mask_collection")(basename_path_).cast<py::dict>();
@@ -237,8 +243,6 @@ namespace core {
 					}
 
 					is_valid_ = true;
-					global_counter_++;
-					//std::cout << "loaded " << std::to_string(global_counter_) << std::endl;
 				}
 				catch (const std::exception& e) {
 					py::print(e.what());
@@ -286,6 +290,7 @@ namespace core {
 
 			if (count == 0 || force) {
 				//std::cout << "unload " << std::to_string(global_counter_) << std::endl;
+				std::lock_guard<std::recursive_mutex> lock(ref_mutex_);
 				prediction_ = Mask();
 				validated_ = Mask();
 				tmp_ = Mask();
@@ -369,15 +374,19 @@ namespace core {
 		}
 
 		void MaskCollection::clearHistory() {
-			history_.clear();
-			it_ = history_.end();
-			is_valid_ = false;
+			std::lock_guard<std::recursive_mutex> lock(ref_mutex_);
+			if (is_valid_) {
+				history_.clear();
+				it_ = history_.end();
+				is_valid_ = false;
+			}
 		}
 
 		void MaskCollection::setDimensions(std::shared_ptr<DicomSeries> dicom) {
 			if (!dicom->getData().empty()) {
 				auto& data = dicom->getData()[0].data;
 				if (data.rows > 0 && data.cols > 0) {
+					std::lock_guard<std::recursive_mutex> lock(ref_mutex_);
 					rows_ = data.rows;
 					cols_ = data.cols;
 					is_valid_ = true;
@@ -385,11 +394,20 @@ namespace core {
 				}
 			}
 			dicom->loadCase(0, false, [this, &dicom](const core::Dicom& dicom_res) {
+				std::lock_guard<std::recursive_mutex> lock(ref_mutex_);
 				rows_ = dicom_res.data.rows;
 				cols_ = dicom_res.data.cols;
 				is_valid_ = true;
 				dicom->unloadCase(0);
 				});
+		}
+
+		void MaskCollection::lock() {
+			ref_mutex_.lock();
+		}
+
+		void MaskCollection::unlock() {
+			ref_mutex_.unlock();
 		}
 
 		Mask& MaskCollection::undo() {

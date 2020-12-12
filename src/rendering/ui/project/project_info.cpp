@@ -8,6 +8,40 @@
 
 #include "log.h"
 
+void Rendering::ProjectInfo::build_seg_colors(std::shared_ptr<::core::project::Project> project) {
+	for (auto color_ptr : colors_) {
+		delete[] color_ptr;
+	}
+
+	colors_.clear();
+
+	for (auto& seg : project->getSegmentations()) {
+		auto& color = seg->getMaskColor();
+		float* color_ = new float[4];
+		color_[0] = color.x;
+		color_[1] = color.y;
+		color_[2] = color.z;
+		color_[3] = color.w;
+		colors_.push_back(color_);
+	}
+}
+
+void Rendering::ProjectInfo::send_reload_seg_event(std::shared_ptr<::core::project::Project> project) {
+	auto time_since_last_evt = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - last_reload_evt_);
+
+	if (time_since_last_evt.count() > 500 && color_changed_) {
+		last_reload_evt_ = std::chrono::system_clock::now();
+
+		jobFct job = [=](float& progress, bool& abort) -> std::shared_ptr<JobResult> {
+			project->saveSegmentations();
+			EventQueue::getInstance().post(Event_ptr(new ::core::segmentation::ReloadSegmentationEvent()));
+			return std::make_shared<JobResult>();
+		};
+		JobScheduler::getInstance().addJob("reload_segmentation", job);
+		color_changed_ = false;
+	}
+}
+
 Rendering::ProjectInfo::ProjectInfo() {
 	enter_shortcut_.keys = { KEY_ENTER };
 	enter_shortcut_.name = "enter";
@@ -16,11 +50,22 @@ Rendering::ProjectInfo::ProjectInfo() {
 	};
 }
 
+Rendering::ProjectInfo::~ProjectInfo() {
+	for (auto color_ptr : colors_) {
+		delete[] color_ptr;
+	}
+}
+
 void Rendering::ProjectInfo::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) {
 	auto project = project_manager_.getCurrentProject();
 	ImGui::Begin("Project information");
 
 	if (project != nullptr) {
+
+		// We don't want to spam the reload events
+		// This function throttles the events that are sended
+		send_reload_seg_event(project);
+
 		if (!is_set_ && !project->getSaveFile().empty()) {
 			is_set_ = true;
 			BM_DEBUG("Set project and load segmentations");
@@ -122,29 +167,20 @@ void Rendering::ProjectInfo::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
 				Widgets::NewLine(5.f);
 				ImGui::Text("Segmentations:");
 				Widgets::NewLine(5.f);
+				int i = 0;
+
+				if (project->getSegmentations().size() != colors_.size()) {
+					build_seg_colors(project);
+				}
+
 				for (auto& seg : project->getSegmentations()) {
 					auto& color = seg->getMaskColor();
 					ImGui::PushStyleColor(ImGuiCol_Header, seg->getMaskColor());
-					bool leaf = ImGui::TreeNodeEx(&seg, ImGuiTreeNodeFlags_Framed, "%s", seg->getName().c_str());
+					bool open = ImGui::CollapsingHeader(seg->getName().c_str());
 					ImGui::PopStyleColor();
-					if (leaf) {
+					if (open) {
 						// Segmentation color
-						ImGui::Text("Overlay color (mask color):"); ImGui::SameLine();
-						ImGui::ColorButton("Overlay color (with alpha)", color, ImGuiColorEditFlags_AlphaPreviewHalf);
-
-						if (ImGui::BeginPopupContextItem("Change color", 0)) {
-							static float edit_col[4] = { color.x, color.y, color.z, color.w };
-							ImGui::ColorPicker4("color", edit_col, ImGuiColorEditFlags_AlphaPreviewHalf);
-							ImVec4 new_color = { edit_col[0], edit_col[1], edit_col[2], edit_col[3] };
-							if (new_color.x != color.x || new_color.y != color.y || new_color.z != color.z || new_color.w != color.w) {
-								seg->setMaskColor(edit_col);
-								EventQueue::getInstance().post(Event_ptr(new ::core::segmentation::ReloadSegmentationEvent()));
-								project->saveSegmentations();
-							}
-							ImGui::EndPopup();
-						}
-
-						ImGui::Separator();
+						auto col = colors_[i];
 
 						// Models
 						ImGui::Text("Models");
@@ -154,10 +190,17 @@ void Rendering::ProjectInfo::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
 							new_model_.showModal(seg);
 						}
 
-						ImGui::TreePop();
+						ImGui::Separator();
+						ImGui::Text("Color:");
+						ImGui::ColorPicker4(("Color for " + seg->getName()).c_str(), col, ImGuiColorEditFlags_AlphaPreviewHalf);
+						if (col[0] != color.x || col[1] != color.y || col[2] != color.z || col[3] != color.w) {
+							seg->setMaskColor(ImVec4(col[0], col[1], col[2], col[3]));
+							color_changed_ = true;
+						}
 					}
+					i++;
 				}
-				Widgets::NewLine(5.f);
+				Widgets::NewLine(7.f);
 				if (ImGui::Button("Create segmentation")) {
 					BM_DEBUG("New segmentation modal");
 					push_animation();

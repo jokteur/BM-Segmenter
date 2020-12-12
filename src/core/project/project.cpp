@@ -76,8 +76,8 @@ namespace core {
         }
 
         std::string Project::saveSegmentations() {
+            auto state = PyGILState_Ensure();
             for (auto& seg : segmentations_) {
-                auto state = PyGILState_Ensure();
                 try {
                     py::module scripts = py::module::import("python.scripts.segmentation");
                     auto color = seg->getMaskColor();
@@ -89,8 +89,8 @@ namespace core {
                     PyGILState_Release(state);
                     return e.what();
                 }
-                PyGILState_Release(state);
             }
+            PyGILState_Release(state);
             return "";
         }
         std::string Project::loadSegmentations() {

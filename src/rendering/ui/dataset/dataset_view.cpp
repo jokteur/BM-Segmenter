@@ -207,8 +207,8 @@ inline void Rendering::DatasetView::preview_widget(Preview& preview, float width
         ImGui::Separator();
 
     // Title
-    ImGui::Text("%s", dicom->getIdPair().first.c_str());
     if (draw) {
+        ImGui::Text("%s", dicom->getIdPair().first.c_str());
         if (active_seg_ != nullptr) {
             auto state = preview.getMaskState();
             switch (state) {
@@ -226,9 +226,12 @@ inline void Rendering::DatasetView::preview_widget(Preview& preview, float width
                 break;
             }
         }
+        preview.setNoDraw(false);
         preview.ImGuiDraw(window, parent_dimension);
     }
     else {
+        ImGui::Text("");
+        preview.setNoDraw(true);
         preview.ImGuiDraw(window, parent_dimension);
     }
 

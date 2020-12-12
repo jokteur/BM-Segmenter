@@ -66,6 +66,7 @@ set(OpenCV_LIBS opencv_core opencv_imgproc opencv_imgcodecs)
 find_package(Torch REQUIRED)
 #message("${TORCH_CXX_FLAGS}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
+include_directories(${})
 
 # The following code block is suggested to be used on Windows.
 # According to https://github.com/pytorch/pytorch/issues/25457,
@@ -126,6 +127,7 @@ set(imgui_src
         ${imgui_DIR}/imgui_demo.cpp
         ${imgui_DIR}/imgui_draw.cpp
         ${imgui_DIR}/imgui_widgets.cpp
+        ${imgui_DIR}/imgui_tables.cpp
         ${imgui_DIR}/misc/cpp/imgui_stdlib.cpp
         ${imgui_DIR}/misc/cpp/imgui_stdlib.h)
 include_directories(thirdparty/imgui)

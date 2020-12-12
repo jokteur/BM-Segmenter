@@ -81,11 +81,15 @@ bool Rendering::EditMask::load_mask() {
                 if (mask_collection_->size() == 0) {
                     tmp_mask_ = ::core::segmentation::Mask(dicom_dimensions_.x, dicom_dimensions_.y);
                     mask_collection_->setDimensions(dicom_dimensions_.x, dicom_dimensions_.y);
-                    set_mask();
+                    //set_mask();
                 }
                 else {
                     tmp_mask_ = mask_collection_->getCurrent().copy();
                 }
+            }
+            if (tmp_mask_.rows() == 0 || tmp_mask_.cols() == 0) {
+                tmp_mask_ = ::core::segmentation::Mask(dicom_dimensions_.x, dicom_dimensions_.y);
+                mask_collection_->setDimensions(dicom_dimensions_.x, dicom_dimensions_.y);
             }
             reset_image_ = true;
             build_hu_mask_ = true;
@@ -366,7 +370,7 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
                     }
                 }
                 if (active_button_ == &brush_select_b_) {
-                    ImGui::SliderFloat("Brush size", &brush_size_, 1, 200, "%.1f px", 2.f);
+                    ImGui::SliderFloat("Brush size", &brush_size_, 1, 200, "%.1f px", ImGuiSliderFlags_Logarithmic);
                 }
                 Widgets::NewLine(3.f);
             }

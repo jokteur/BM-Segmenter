@@ -160,6 +160,9 @@ namespace core {
 			void setDimensions(int rows, int cols) { rows_ = rows; cols_ = cols; is_set_ = true; }
 			void setDimensions(std::shared_ptr<DicomSeries> dicom);
 
+			void lock();
+			void unlock();
+
 			bool isSet() { return is_set_; }
 
 			/**

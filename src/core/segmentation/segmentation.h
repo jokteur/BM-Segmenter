@@ -27,6 +27,7 @@ namespace core {
 		public:
 			Segmentation(const std::string& name, const std::string& description, ImVec4 color = { 1.f, 0.f, 0.f, 0.5f });
 			Segmentation() = default;
+			~Segmentation();
 
 			void setFilename(const std::string& filename) { filename_ = filename; }
 			void setStrippedName(const std::string& name) { stripped_name_ = name; }

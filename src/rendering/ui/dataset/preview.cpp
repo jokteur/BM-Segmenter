@@ -86,44 +86,15 @@ namespace Rendering {
 
             if (reset_image_) {
                 reset_image_ = false;
-                if (dicom_ != nullptr && active_seg_ != nullptr) {
-                    auto& collection = active_seg_->getMask(dicom_);
-                    seg::Mask* mask;
-                    auto& tmp = collection->getCurrent(true);
-                    if (collection->getIsValidated()) {
-                        mask = &collection->getValidated();
-                        state_ = VALIDATED;
+                if (dicom_ != nullptr) {
+                    if (active_seg_ == nullptr) {
+                        image_.setImageFromHU(
+                            dicom_->getData()[case_idx].data,
+                            (float)dicom_->getWW(),
+                            (float)dicom_->getWC(),
+                            core::Image::FILTER_NEAREST
+                        );
                     }
-                    else if (!collection->getPrediction().empty()) {
-                        mask = &collection->getPrediction();
-                        state_ = PREDICTED;
-                    }
-                    else if (!tmp.empty()) {
-                        mask = &tmp;
-                        state_ = CURRENT;
-                    }
-                    else {
-                        mask = &tmp;
-                        state_ = NOTHING;
-                    }
-
-                    image_.setImageFromHU(
-                        dicom_->getData()[case_idx].data,
-                        (float)dicom_->getWW(),
-                        (float)dicom_->getWC(),
-                        core::Image::FILTER_NEAREST,
-                        mask->getData(),
-                        active_seg_->getMaskColor()
-                    );
-                    image_widget_.setImage(image_);
-                }
-                else if (active_seg_ == nullptr) {
-                    image_.setImageFromHU(
-                        dicom_->getData()[case_idx].data,
-                        (float)dicom_->getWW(),
-                        (float)dicom_->getWC(),
-                        core::Image::FILTER_NEAREST
-                    );
                     image_widget_.setImage(image_);
                 }
                 image_widget_.setDragSourceFunction([this] {
@@ -167,7 +138,6 @@ namespace Rendering {
             }
         }
         ImGui::EndChild();
-        no_draw_ = false;
     }
 
     void Preview::load() {
@@ -209,6 +179,7 @@ namespace Rendering {
                     false, false, "",
                     [this]() {
                         if (__hack == 235.654885342) {
+                            set_image();
                             reset_image_ = true;
                             is_mask_loaded = true;
                         }
@@ -219,6 +190,49 @@ namespace Rendering {
             else {
                 reset_image_ = true;
             }
+        }
+    }
+
+    void Preview::set_image() {
+        auto& collection = active_seg_->getMask(dicom_);
+        seg::Mask* mask;
+        // Sometimes, the mask has not loaded in time, and the collection
+        // is not valid yet
+        if (!collection->isValid()) {
+            image_.setImageFromHU(
+                dicom_->getData()[case_idx].data,
+                (float)dicom_->getWW(),
+                (float)dicom_->getWC(),
+                core::Image::FILTER_NEAREST
+            );
+        }
+        else {
+            auto& tmp = collection->getCurrent(true);
+            if (collection->getIsValidated()) {
+                mask = &collection->getValidated();
+                state_ = VALIDATED;
+            }
+            else if (!collection->getPrediction().empty()) {
+                mask = &collection->getPrediction();
+                state_ = PREDICTED;
+            }
+            else if (!tmp.empty()) {
+                mask = &tmp;
+                state_ = CURRENT;
+            }
+            else {
+                mask = &tmp;
+                state_ = NOTHING;
+            }
+
+            image_.setImageFromHU(
+                dicom_->getData()[case_idx].data,
+                (float)dicom_->getWW(),
+                (float)dicom_->getWC(),
+                core::Image::FILTER_NEAREST,
+                mask->getData(),
+                active_seg_->getMaskColor()
+            );
         }
     }
 

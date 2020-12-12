@@ -11,6 +11,10 @@ namespace core {
 		{
 		}
 
+		Segmentation::~Segmentation() {
+			std::cout << "Destroy" << std::endl;
+		}
+
 		std::shared_ptr<MaskCollection> Segmentation::getMask(std::shared_ptr<DicomSeries> dicom) {
 			addDicom(dicom);
 			return segmentations_[dicom];

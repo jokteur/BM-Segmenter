@@ -84,6 +84,7 @@ namespace Rendering {
         void init();
 
         void setAndLoadMask(bool check_loaded = true);
+        void set_image();
         void unload_mask();
 
         void popup_context_menu();
@@ -109,7 +110,7 @@ namespace Rendering {
 
         mask_state getMaskState() { return state_; }
 
-        void setNoDraw() { no_draw_ = true; }
+        void setNoDraw(bool no_draw) { no_draw_ = no_draw; }
 
         /**
          * Unloads the image in the widget from the memory

@@ -1,7 +1,9 @@
 #pragma once
 
 #include <vector>
+#include <chrono>
 #include <string>
+#include <chrono>
 #include <map>
 #include "first_include.h"
 #include "imgui.h"
@@ -33,11 +35,20 @@ namespace Rendering {
         int user_idx_ = 0;
         int user_prev_idx_ = 0;
 
+        bool color_changed_ = false;
+        std::chrono::system_clock::time_point last_reload_evt_;
+
+        std::vector<float*> colors_;
+
         bool is_set_ = false;
         bool set_tree_closed_ = true;
+
+        void build_seg_colors(std::shared_ptr<::core::project::Project> project);
+
+        void send_reload_seg_event(std::shared_ptr<::core::project::Project> project);
     public:
         ProjectInfo();
-        ~ProjectInfo() override = default;
+        ~ProjectInfo();
 
         void ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) override;
     };
