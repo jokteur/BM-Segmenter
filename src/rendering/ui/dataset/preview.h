@@ -73,7 +73,8 @@ namespace Rendering {
         bool is_window_locked = false;
 
         bool allow_scroll_ = false;
-        int case_idx = 0;
+        int case_idx_ = 0;
+        int tmp_case_idx_ = 0;
         
         double __hack = 235.654885342;
 
@@ -83,7 +84,7 @@ namespace Rendering {
 
         void init();
 
-        void setAndLoadMask(bool check_loaded = true);
+        void setAndLoadMask(int idx, bool check_loaded = true);
         void set_image();
         void unload_mask();
 

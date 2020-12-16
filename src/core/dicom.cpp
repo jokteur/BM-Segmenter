@@ -52,9 +52,9 @@ namespace core {
         pending_jobs_.clear();
     }
 
-    void DicomSeries::loadAll(bool force_load) {
+    void DicomSeries::loadAll(const std::function<void(const Dicom&)>& when_finished_fct) {
         for (int i = 0; i < data_.size(); i++) {
-            load_case(i, false, true);
+            load_case(i, false, true, when_finished_fct);
         }
         load_all_ = true;
     }

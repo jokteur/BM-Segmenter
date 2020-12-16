@@ -89,7 +89,7 @@ namespace Rendering {
                 if (dicom_ != nullptr) {
                     if (active_seg_ == nullptr) {
                         image_.setImageFromHU(
-                            dicom_->getData()[case_idx].data,
+                            dicom_->getData()[case_idx_].data,
                             (float)dicom_->getWW(),
                             (float)dicom_->getWC(),
                             core::Image::FILTER_NEAREST
@@ -150,7 +150,7 @@ namespace Rendering {
     void Preview::unload() {
         if (is_loaded_) {
             image_.reset();
-            dicom_->unloadCase(case_idx);
+            dicom_->unloadCase(case_idx_);
             reset_image_ = false;
             is_loaded_ = false;
             load_counter--;
@@ -171,7 +171,7 @@ namespace Rendering {
         }
     }
 
-    void Preview::setAndLoadMask(bool check_loaded) {
+    void Preview::setAndLoadMask(int idx, bool check_loaded) {
         if (dicom_ != nullptr && is_loaded_) {
             if (active_seg_ != nullptr) {
                 auto& collection = active_seg_->getMask(dicom_);
@@ -200,7 +200,7 @@ namespace Rendering {
         // is not valid yet
         if (!collection->isValid()) {
             image_.setImageFromHU(
-                dicom_->getData()[case_idx].data,
+                dicom_->getData()[case_idx_].data,
                 (float)dicom_->getWW(),
                 (float)dicom_->getWC(),
                 core::Image::FILTER_NEAREST
@@ -226,7 +226,7 @@ namespace Rendering {
             }
 
             image_.setImageFromHU(
-                dicom_->getData()[case_idx].data,
+                dicom_->getData()[case_idx_].data,
                 (float)dicom_->getWW(),
                 (float)dicom_->getWC(),
                 core::Image::FILTER_NEAREST,
@@ -239,7 +239,7 @@ namespace Rendering {
     void Preview::setSegmentation(std::shared_ptr<::core::segmentation::Segmentation> segmentation) {
         active_seg_ = segmentation;
         unload_mask();
-        setAndLoadMask();
+        setAndLoadMask(case_idx_);
     }
 
     void Preview::popup_context_menu() {
@@ -266,7 +266,9 @@ namespace Rendering {
             return;
 
         int idx = (int)(percentage * (float)(dicom_->size() - 1));
-        if (idx != case_idx) {
+        if (idx != tmp_case_idx_) {
+            tmp_case_idx_ = idx;
+            std::cout << idx << " " << percentage << std::endl;
             set_case(idx);
         }
     }
@@ -288,10 +290,10 @@ namespace Rendering {
             // What are the chances that __num will contain exactly this sequence (defined when constructed):
             // 0100000001101101011101001111010011010010000110101101000010100010 ?
             if (__hack == 235.654885342) {
-                case_idx = idx;
+                case_idx_ = idx;
                 reset_image_ = true;
                 is_loaded_ = true;
-                setAndLoadMask();
+                setAndLoadMask(idx);
             }
         });
     }
@@ -312,7 +314,7 @@ namespace Rendering {
             is_valid_ = true;
             mask_listener_.callback = [=](Event_ptr event) {
                 if (is_loaded_)
-                    setAndLoadMask();
+                    setAndLoadMask(case_idx_);
             };
             mask_listener_.filter = "mask/changed/" + dicom->getId();
             EventQueue::getInstance().subscribe(&mask_listener_);

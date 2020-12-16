@@ -99,7 +99,7 @@ namespace core {
         void setPaths(const std::vector<std::string> &paths);
         void setId(const std::string& id);
 
-        void loadAll(bool force_load = false);
+        void loadAll(const std::function<void(const Dicom&)>& when_finished_fct = [](const Dicom&) {});
         jobId loadCase(float percentage, bool force_replace = false, const std::function<void(const Dicom&)>& when_finished_fct = [](const Dicom&) {});
         jobId loadCase(int index, bool force_replace = false, const std::function<void(const Dicom&)>& when_finished_fct = [](const Dicom&) {});
 

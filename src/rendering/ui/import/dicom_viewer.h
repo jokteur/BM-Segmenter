@@ -49,11 +49,12 @@ namespace Rendering {
         ::core::Dicom sagittal_matrix_;
         ::core::Dicom coronal_matrix_;
 
-        bool load_finish_ = false;
-        bool sagittal_ready_ = false;
-        bool coronal_ready_ = false;
+        int num_images_loaded_ = 0;
+        bool is_load_finished_ = false;
+        bool is_sagittal_ready_ = false;
+        bool is_coronal_ready_ = false;
 
-        bool reset_image_ = false;
+        bool reset_axial_image_ = false;
         bool views_set_ = false;
 
         bool display_reference_lines_ = true;
@@ -77,13 +78,24 @@ namespace Rendering {
         void loadSeries(const ::core::dataset::SeriesPayload& data);
         void loadCase(int idx);
 
-        void set_views();
+        void set_side_views();
         void set_image();
 
         void build_views();
 
+        // ImGui windows
+        void header_window(GLFWwindow* window, Rect& parent_dimension);
+        void axial_view_window(GLFWwindow* window, Rect& parent_dimension);
+        void side_view_windows(GLFWwindow* window, Rect& parent_dimension);
+
+        void button_logic();
+        void windowing_widget_logic();
+        void point_select_widget_logic();
+        void display_reference_lines();
+
         static Line calculate_line_coord(const Rect &dimensions, const Crop &crop, float position, bool horizontal);
-        static void marker_context_menu(int button);
+
+        void context_menu();
 
         void accept_drag_and_drop();
 
