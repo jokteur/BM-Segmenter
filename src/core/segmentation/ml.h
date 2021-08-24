@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include <torch/torch.h>
+//#include <torch/torch.h>
 
 namespace core {
 	namespace segmentation {

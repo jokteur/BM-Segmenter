@@ -13,6 +13,7 @@
 #include "rendering/drawables.h"
 #include "rendering/ui/widgets/image_simple.h"
 #include "rendering/ui/widgets/image_button.h"
+#include "rendering/ui/widgets/util.h"
 
 namespace Rendering {
     struct Line {
@@ -46,6 +47,13 @@ namespace Rendering {
         Listener listener_;
         Listener reset_tree_listener_;
 
+        Widgets::Selectable markers_select_;
+        Widgets::Selectable markers_type = Widgets::Selectable({ "Axial", "Coronal", "Sagittal" }, [](int) {});
+        bool rebuild_markers_select_ = false;
+        std::string marker_name_input_;
+        float marker_color_input_[3] = {0.9f, 0.9f, 0.9f};
+
+
         ::core::Dicom sagittal_matrix_;
         ::core::Dicom coronal_matrix_;
 
@@ -54,12 +62,16 @@ namespace Rendering {
         bool is_sagittal_ready_ = false;
         bool is_coronal_ready_ = false;
 
+        bool is_context_menu_open = false;
+        bool tmp_context_menu_open = false;
+
         bool reset_axial_image_ = false;
         bool views_set_ = false;
 
         bool display_reference_lines_ = true;
 
         bool active_dragging_ = false;
+        bool tmp_deactivate_tool_ = false;
         ImVec2 drag_delta_;
 
         ::core::DicomCoordinate coordinate;
@@ -75,8 +87,13 @@ namespace Rendering {
         int previous_select_ = 0;
         int image_size_ = 0;
 
+        int tmp_WW_ = 400;
+        int tmp_WC_ = 40;
+
         void loadSeries(const ::core::dataset::SeriesPayload& data);
         void loadCase(int idx);
+
+        int calculate_case_idx(float position);
 
         void set_side_views();
         void set_image();
@@ -90,12 +107,15 @@ namespace Rendering {
 
         void button_logic();
         void windowing_widget_logic();
+        void windowing_options();
         void point_select_widget_logic();
+        void point_select_options();
         void display_reference_lines();
 
         static Line calculate_line_coord(const Rect &dimensions, const Crop &crop, float position, bool horizontal);
 
-        void context_menu();
+        bool begin_popup(const Rect& window_dimensions);
+        void context_menu(const Rect& window_dimensions);
 
         void accept_drag_and_drop();
 

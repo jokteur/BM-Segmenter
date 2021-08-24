@@ -52,6 +52,7 @@ namespace Rendering {
             std::function<void(int idx)> idx_fct_;
 
             std::vector<std::string> options_;
+            std::vector<ImVec4> colors_;
             int which_ = -1;
             int idx_ = 0;
             int prev_idx_ = 0;
@@ -59,13 +60,16 @@ namespace Rendering {
             void build(std::vector<std::string> options);
         public:
             Selectable() {}
-            Selectable(const std::vector<std::string>& options, std::function<void(std::string)> on_select);
-            Selectable(const std::vector<std::string>& options, std::function<void(int)> on_select);
+            Selectable(const std::vector<std::string>& options, std::function<void(std::string)> on_select, const std::vector<ImVec4>& colors = {});
+            Selectable(const std::vector<std::string>& options, std::function<void(int)> on_select, const std::vector<ImVec4>& colors = {});
 
-            void setOptions(const std::vector<std::string>& options, std::function<void(std::string)> on_select);
-            void setOptions(const std::set<std::string>& options, std::function<void(std::string)> on_select);
-            void setOptions(std::vector<std::string> options, std::function<void(int)> on_select);
-            void setOptions(std::set<std::string> options, std::function<void(int)> on_select);
+            void setOptions(const std::vector<std::string>& options, std::function<void(std::string)> on_select, const std::vector<ImVec4>& colors = {});
+            void setOptions(const std::set<std::string>& options, std::function<void(std::string)> on_select, const std::vector<ImVec4>& colors = {});
+            void setOptions(std::vector<std::string> options, std::function<void(int)> on_select, const std::vector<ImVec4>& colors = {});
+            void setOptions(std::set<std::string> options, std::function<void(int)> on_select, const std::vector<ImVec4>& colors = {});
+
+            int getCurrentIdx() { return idx_; }
+            std::string getCurrentOption() { return options_[idx_]; }
 
             void setIdx(int idx);
 

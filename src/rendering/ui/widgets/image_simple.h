@@ -38,6 +38,8 @@ namespace Rendering {
         const float max_zoom_ = 20.f;
 
         static int instance_number;
+        std::string window_id_;
+
         Crop crop_;
         ImVec2 size_;
 
@@ -88,6 +90,8 @@ namespace Rendering {
                              size_(size) {
             instance_number++;
             identifier_ = std::to_string(instance_number) + std::string("ImageSimple");
+            window_id_ = std::string("Image") + identifier_;
+
         }
 
         SimpleImage(const SimpleImage& other) = default;
@@ -105,6 +109,9 @@ namespace Rendering {
          * start and end of the crop
          */
         Crop& getCrop() { return crop_; }
+
+        const std::string& getWindowID() { return window_id_; }
+        const std::string& getImageID() { return identifier_; }
 
         /**
          * Set the size of the image viewport

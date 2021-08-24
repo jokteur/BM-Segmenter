@@ -212,7 +212,7 @@ namespace Rendering {
                 mask = &collection->getValidated();
                 state_ = VALIDATED;
             }
-            else if (!collection->getPrediction().empty()) {
+            else if (!collection->getPrediction().empty() && tmp.empty()) {
                 mask = &collection->getPrediction();
                 state_ = PREDICTED;
             }

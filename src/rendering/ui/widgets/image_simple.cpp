@@ -75,7 +75,7 @@ void Rendering::SimpleImage::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
         }
     }
 
-    ImGui::BeginChild((std::string("Image") + identifier_).c_str(), child_size, border_, flags_);
+    ImGui::BeginChild(window_id_.c_str(), child_size, border_, flags_);
 
     ImVec2 window_pos = ImGui::GetWindowPos();
     dimensions_.xpos = window_pos.x;

@@ -5,6 +5,8 @@
 #include <condition_variable>
 #include <chrono>
 
+#include "log.h"
+
 jobResultFct JobScheduler::no_op_fct = [] (const std::shared_ptr<JobResult>&) {};
 
 /*
@@ -113,6 +115,8 @@ void JobScheduler::worker_fct(JobScheduler::Worker &worker) {
                 std::lock_guard<std::recursive_mutex> guard(jobs_mutex_);
                 current_job->state = Job::JOB_STATE_ERROR;
                 current_job->exception = e;
+                BM_DEBUG(e.what());
+                current_job->result = std::make_shared<JobResult>();
                 finalize_jobs_list_.push_back(current_job);
             }
             post_event(current_job);

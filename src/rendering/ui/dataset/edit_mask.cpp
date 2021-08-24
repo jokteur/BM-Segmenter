@@ -78,11 +78,17 @@ bool Rendering::EditMask::load_mask() {
                 tmp_mask_ = mask_collection_->getValidated().copy();
             }
             else {
-                if (mask_collection_->size() == 0) {
+                // No edited mask but a prediction is available
+                if (mask_collection_->size() == 0 && !mask_collection_->getPrediction().empty()) {
+                    tmp_mask_ = mask_collection_->getPrediction().copy();
+                }
+                // No edited mask and no prediction
+                else if (mask_collection_->size() == 0) {
                     tmp_mask_ = ::core::segmentation::Mask(dicom_dimensions_.x, dicom_dimensions_.y);
                     mask_collection_->setDimensions(dicom_dimensions_.x, dicom_dimensions_.y);
                     //set_mask();
                 }
+                // Edited mask
                 else {
                     tmp_mask_ = mask_collection_->getCurrent().copy();
                 }
@@ -347,6 +353,17 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
                 if (!mask_collection_->isCursorEnd()) {
                     ImGui::SameLine();
                     redo_b_.ImGuiDraw(window, dimensions_);
+                }
+                if (!mask_collection_->getPrediction().empty()) {
+                    // Make the option to revert the mask to prediction
+                    ImGui::SameLine();
+                    if (ImGui::Button("Revert to ML pred.")) {
+                        mask_collection_->clearHistory(true);
+                        tmp_mask_ = mask_collection_->getPrediction().copy();
+                        mask_collection_->saveCollection();
+                        mask_changed();
+                        reset_image_ = true;
+                    }
                 }
             }
 

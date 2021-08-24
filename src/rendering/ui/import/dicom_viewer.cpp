@@ -1,10 +1,13 @@
 #include "dicom_viewer.h"
 #include "log.h"
 
+#include "imgui_stdlib.h"
+
 #include "core/dataset/dicom_to_image.h"
 #include "core/dataset/extract_view_from_dicom.h"
 #include "core/project/project_manager.h"
 
+#include "rendering/ui/modales/error_message.h"
 #include "rendering/drag_and_drop.h"
 #include "rendering/ui/widgets/util.h"
 #include "rendering/ui/widgets/progress_bar.h"
@@ -88,6 +91,7 @@ void Rendering::DicomViewer::ImGuiDraw(GLFWwindow *window, Rect &parent_dimensio
     header_window(window, parent_dimension);
     axial_view_window(window, parent_dimension);
     side_view_windows(window, parent_dimension);
+    tmp_context_menu_open = false;
 }
 
 void Rendering::DicomViewer::loadCase(int idx) {
@@ -96,55 +100,78 @@ void Rendering::DicomViewer::loadCase(int idx) {
     });
 }
 
+int Rendering::DicomViewer::calculate_case_idx(float position) {
+    if (position >= 1.f)
+        return (float)series_node_->data.size();
+    return (int)(position * ((float)series_node_->data.size())) + 1;
+}
+
 void Rendering::DicomViewer::build_views() {
     if (series_node_ == nullptr || series_node_->data.size() < 5) {
         return;
     }
-    //views_set_ = false;
+    views_set_ = false;
 
-    //sagittal_ready_ = false;
-    //coronal_ready_ = false;
+    is_sagittal_ready_ = false;
+    is_coronal_ready_ = false;
 
-    //// Sagittal
-    //jobResultFct fct = [=] (const std::shared_ptr<JobResult> &result) {
-    //    auto view_result = std::dynamic_pointer_cast<::core::dataset::DicomViewResult>(result);
-    //    sagittal_matrix_ = view_result->image;
+    // Sagittal
+    jobResultFct fct = [=] (const std::shared_ptr<JobResult> &result) {
+        auto view_result = std::dynamic_pointer_cast<::core::dataset::DicomViewResult>(result);
+        if (view_result == nullptr) {
+            BM_DEBUG("Failed to build sagittal view");
+            return;
+        }
+        sagittal_matrix_ = view_result->image;
 
-    //    // Resize to correct aspect ratio
-    //    float sag_aspect = sagittal_matrix_.pixel_spacing.y / sagittal_matrix_.slice_thickness;
-    //    cv::Mat mat;
-    //    cv::resize(
-    //            sagittal_matrix_.data,
-    //            mat,
-    //            cv::Size((int)((float)sagittal_matrix_.data.rows*sag_aspect), sagittal_matrix_.data.cols),
-    //            0,
-    //            0,
-    //            cv::INTER_CUBIC);
-    //    sagittal_matrix_.data = mat;
+        if (sagittal_matrix_.data.rows <= 0 || sagittal_matrix_.data.cols <= 0) {
+            return;
+        }
 
-    //    sagittal_ready_ = true;
-    //};
-    //dataset::extract_view(series_node_->data.getData(), fct, sagittal_x_, false);
-    //// Coronal
-    //jobResultFct fct2 = [=] (const std::shared_ptr<JobResult> &result) {
-    //    auto view_result = std::dynamic_pointer_cast<::core::dataset::DicomViewResult>(result);
-    //    coronal_matrix_ = view_result->image;
+        // Resize to correct aspect ratio
+        float sag_aspect = sagittal_matrix_.pixel_spacing.y / sagittal_matrix_.slice_thickness;
+        cv::Mat mat;
+        cv::resize(
+                sagittal_matrix_.data,
+                mat,
+                cv::Size((int)((float)sagittal_matrix_.data.rows*sag_aspect), sagittal_matrix_.data.cols),
+                0,
+                0,
+                cv::INTER_CUBIC);
+        sagittal_matrix_.data = mat;
 
-    //    // Resize to correct aspect ratio
-    //    float cor_aspect = coronal_matrix_.slice_thickness / coronal_matrix_.pixel_spacing.x;
-    //    cv::Mat mat;
-    //    cv::resize(
-    //            coronal_matrix_.data,
-    //            mat,
-    //            cv::Size(coronal_matrix_.data.rows, (int)((float)coronal_matrix_.data.cols*cor_aspect)),
-    //            0,
-    //            0,
-    //            cv::INTER_CUBIC);
+        is_sagittal_ready_ = true;
+    };
+    dataset::extract_view(series_node_->data.getData(), fct, sagittal_x_, false);
 
-    //    coronal_matrix_.data = mat;
-    //    coronal_ready_ = true;
-    //};
-    //dataset::extract_view(series_node_->data.getData(), fct2, coronal_x_, true);
+    // Coronal
+    jobResultFct fct2 = [=] (const std::shared_ptr<JobResult> &result) {
+        auto view_result = std::dynamic_pointer_cast<::core::dataset::DicomViewResult>(result);
+        if (view_result == nullptr) {
+            BM_DEBUG("Failed to build coronal view");
+            return;
+        }
+        coronal_matrix_ = view_result->image;
+
+        if (coronal_matrix_.data.rows <= 0 || coronal_matrix_.data.cols <= 0) {
+            return;
+        }
+
+        // Resize to correct aspect ratio
+        float cor_aspect = coronal_matrix_.slice_thickness / coronal_matrix_.pixel_spacing.x;
+        cv::Mat mat;
+        cv::resize(
+                coronal_matrix_.data,
+                mat,
+                cv::Size(coronal_matrix_.data.rows, (int)((float)coronal_matrix_.data.cols*cor_aspect)),
+                0,
+                0,
+                cv::INTER_CUBIC);
+
+        coronal_matrix_.data = mat;
+        is_coronal_ready_ = true;
+    };
+    dataset::extract_view(series_node_->data.getData(), fct2, coronal_x_, true);
 }
 
 void Rendering::DicomViewer::header_window(GLFWwindow* window, Rect& parent_dimension) {
@@ -206,13 +233,28 @@ void Rendering::DicomViewer::header_window(GLFWwindow* window, Rect& parent_dime
         ImGui::SameLine();
         point_select_button_.ImGuiDraw(window, dimensions_);
     }
-    ImGui::Dummy(ImVec2(1, 1));
-    ImGui::Separator();
+    if (active_button_ != nullptr) {
+        ImGui::SameLine();
+        Widgets::HelpMarker("You can also right clic anywhere\n"
+                            "on the image to open the tool options.");
+    }
 
     if (series_node_ != nullptr && !series_node_->data.getCurrentDicom().error_message.empty()) {
         image_.reset();
         ImGui::Text("When trying to open the DICOM file, the following error appeared:\n\n%s", series_node_->data.getCurrentDicom().error_message.c_str());
     }
+
+    if (active_button_ == &windowing_button_) {
+        if (ImGui::CollapsingHeader("Windowing options")) {
+            windowing_options();
+        }
+    }
+    else if (active_button_ == &point_select_button_) {
+        if (ImGui::CollapsingHeader("Place markers for importation")) {
+            point_select_options();
+        }
+    }
+
     ImGui::End();
 }
 
@@ -228,7 +270,7 @@ void Rendering::DicomViewer::axial_view_window(GLFWwindow* window, Rect& parent_
     dimensions_.width = content.x + 2 * style.WindowPadding.x;
     dimensions_.height = content.y + 2 * style.WindowPadding.y;
 
-    if (!views_set_ && series_node_ != nullptr) {
+    if (!is_load_finished_ && series_node_ != nullptr) {
         const ImU32 col = ImGui::GetColorU32(ImGuiCol_ButtonHovered);
         const ImU32 bg = ImGui::GetColorU32(ImGuiCol_Button);
         ImGui::Text("Loading dicom...");
@@ -246,7 +288,7 @@ void Rendering::DicomViewer::axial_view_window(GLFWwindow* window, Rect& parent_
 
     // Accept drag and drop from dicom explorer
     accept_drag_and_drop();
-    context_menu();
+    context_menu(dimensions_);
     ImGui::End();
 }
 
@@ -254,17 +296,22 @@ void Rendering::DicomViewer::side_view_windows(GLFWwindow* window, Rect& parent_
     if (image_.isImageSet() && series_node_ != nullptr && series_node_->data.size() > 4) {
         // Sagittal window
         ImGui::Begin("Sagittal"); // TODO: unique ID for dockspace
+        ImVec2 content = ImGui::GetContentRegionAvail();
+        ImVec2 window_pos = ImGui::GetWindowPos();
 
         sagittal_widget_.setAutoScale(true);
         sagittal_widget_.ImGuiDraw(window, dimensions_);
-        context_menu();
+        context_menu(Rect(window_pos, content));
         ImGui::End();
 
         // Coronal window
         ImGui::Begin("Coronal"); // TODO: unique ID for dockspace
+        content = ImGui::GetContentRegionAvail();
+        window_pos = ImGui::GetWindowPos();
+
         coronal_widget_.setAutoScale(true);
         coronal_widget_.ImGuiDraw(window, dimensions_);
-        context_menu();
+        context_menu(Rect(window_pos, content));
         ImGui::End();
     }
 }
@@ -304,7 +351,7 @@ void Rendering::DicomViewer::windowing_widget_logic() {
             drag_delta_.x = 0;
             drag_delta_.y = 0;
         }
-        if (active_dragging_ && series_node_ != nullptr) {
+        if (active_dragging_ && series_node_ != nullptr && !tmp_deactivate_tool_) {
             image_widget_.setImageDrag(SimpleImage::IMAGE_NO_INTERACT);
             auto drag = ImGui::GetMouseDragDelta(0, 0);
             float attenuation = 1.f;
@@ -315,7 +362,6 @@ void Rendering::DicomViewer::windowing_widget_logic() {
                 if (series_node_->data.getWW() < 1)
                     series_node_->data.getWW() = 1;
                 series_node_->data.getWC() += (int)((drag.y - drag_delta_.y) * attenuation);
-                loadCase(case_select_ - 1);
                 views_set_ = false;
                 drag_delta_ = drag;
             }
@@ -327,6 +373,19 @@ void Rendering::DicomViewer::windowing_widget_logic() {
     if (!active_dragging_) {
         image_widget_.setImageDrag(SimpleImage::IMAGE_NORMAL_INTERACT);
     }
+
+    //Check if the Window Width or Window Height have changed
+    if (series_node_ != nullptr && (tmp_WW_ != series_node_->data.getWW() || tmp_WC_ != series_node_->data.getWC())) {
+        tmp_WW_ = series_node_->data.getWW();
+        tmp_WC_ = series_node_->data.getWC();
+        BM_DEBUG("Set windowing");
+        loadCase(case_select_ - 1);
+    }
+}
+
+void Rendering::DicomViewer::windowing_options() {
+    ImGui::InputInt("Set window center", &series_node_->data.getWC());
+    ImGui::InputInt("Set window width", &series_node_->data.getWW());
 }
 
 void Rendering::DicomViewer::point_select_widget_logic() {
@@ -334,7 +393,7 @@ void Rendering::DicomViewer::point_select_widget_logic() {
     Rect image_dimensions = image_widget_.getDimensions();
     Rect sagittal_dimensions = sagittal_widget_.getDimensions();
     Rect coronal_dimensions = coronal_widget_.getDimensions();
-    if (active_button_ == &point_select_button_) {
+    if (active_button_ == &point_select_button_ && !tmp_deactivate_tool_) {
         image_widget_.setImageDrag(SimpleImage::IMAGE_NO_INTERACT);
         sagittal_widget_.setImageDrag(SimpleImage::IMAGE_NO_INTERACT);
         coronal_widget_.setImageDrag(SimpleImage::IMAGE_NO_INTERACT);
@@ -364,7 +423,7 @@ void Rendering::DicomViewer::point_select_widget_logic() {
                 coronal_x_ = crop.x0 + coronal_x_ * (crop.x1 - crop.x0);
 
                 if (pos_y >= 0.f && pos_y <= 1.f) {
-                    case_select_ = (int)(pos_y * ((float)series_node_->data.size() - 1)) + 1;
+                    case_select_ = calculate_case_idx(pos_y);
                 }
                 build_views();
             }
@@ -380,7 +439,7 @@ void Rendering::DicomViewer::point_select_widget_logic() {
                 sagittal_x_ = crop.x0 + sagittal_x_ * (crop.x1 - crop.x0);
 
                 if (pos_y >= 0.f && pos_y <= 1.f) {
-                    case_select_ = (int)(pos_y * ((float)series_node_->data.size() - 1)) + 1;
+                    case_select_ = calculate_case_idx(pos_y);
                 }
                 build_views();
             }
@@ -390,6 +449,125 @@ void Rendering::DicomViewer::point_select_widget_logic() {
         image_widget_.setImageDrag(SimpleImage::IMAGE_NORMAL_INTERACT);
         sagittal_widget_.setImageDrag(SimpleImage::IMAGE_NORMAL_INTERACT);
         coronal_widget_.setImageDrag(SimpleImage::IMAGE_NORMAL_INTERACT);
+    }
+}
+
+void Rendering::DicomViewer::point_select_options() {
+    auto project = core::project::ProjectManager::getInstance().getCurrentProject();
+    auto markers = project->getMarkers();
+    if (markers.empty()) {
+        ImGui::Text("Please create a marker group.");
+    }
+    else {
+        markers_select_.ImGuiDraw("Select marker group", 0.3 * ImGui::GetContentRegionAvailWidth());
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Create marker group")) {
+        Modals::getInstance().setModal("Create marker group", [=](bool& show_, bool& enter_, bool& escape_) {
+            tmp_deactivate_tool_ = true;
+            ImGui::InputText("Group name", &marker_name_input_);
+            ImGui::ColorEdit3("Color", marker_color_input_);
+            markers_type.ImGuiDraw("Type");
+            if (ImGui::Button("Create") || enter_) {
+                core::DicomMarkerName marker;
+                marker.color = { marker_color_input_[0], marker_color_input_[1], marker_color_input_[2], 1.f };
+                marker.name = marker_name_input_;
+                if (markers_type.getCurrentOption() == "Axial") {
+                    marker.type = core::DicomMarkerName::AXIAL;
+                }
+                else if (markers_type.getCurrentOption() == "Coronal") {
+                    marker.type = core::DicomMarkerName::CORONAL;
+                }
+                else {
+                    marker.type = core::DicomMarkerName::SAGITTAL;
+                }
+
+                if (marker_name_input_.empty()) {
+                    BM_DEBUG("Create marker group error: name empty");
+                    show_error_modal("Create marker group error", "The name of the marker group can not be empty");
+                }
+                // Test if marker with same name
+                else if (project->addMarkerName(marker)) {
+                    BM_DEBUG("Create marker group error: another name already existing");
+                    show_error_modal("Create marker group error", "Another marker group has already the same name");
+                }
+                else {
+                    show_ = false;
+                    tmp_deactivate_tool_ = false;
+                    rebuild_markers_select_ = true;
+                    BM_DEBUG("Create marker group");
+                    marker_name_input_ = "";
+                    marker_color_input_[0] = 0.;
+                    marker_color_input_[1] = 0;
+                    marker_color_input_[2] = 0.2;
+                }
+            }
+            if (escape_) {
+                tmp_deactivate_tool_ = false;
+                show_ = false;
+            }
+        });
+    }
+    if (rebuild_markers_select_) {
+        rebuild_markers_select_ = false;
+        std::vector<std::string> marker_names = { "" };
+    
+        // Build the background colors
+        ImGuiStyle* style = &ImGui::GetStyle();
+        ImVec4* colors_list = style->Colors;
+        std::vector<ImVec4> colors = { colors_list[ImGuiCol_FrameBg] };
+        for (auto& marker : markers) {
+            marker_names.push_back(marker.name);
+
+            ImVec4 color(marker.color);
+            colors.push_back(color);
+        }
+        markers_select_.setOptions(marker_names, [](int) {}, colors);
+    }
+
+    if (markers_select_.getCurrentIdx() != 0) {
+        ImGui::SameLine();
+        if (ImGui::Button("Add marker here")) {
+            core::DicomCoordinate coordinate;
+            coordinate.axial = (case_select_ - 1.f) / (float)image_size_;
+            coordinate.sagittal = sagittal_x_;
+            coordinate.coronal = coronal_x_;
+
+            // There should be an easier version, but right now it stays that way
+            core::DicomMarkerName dummy_marker;
+            dummy_marker.name = markers_select_.getCurrentOption();
+            auto& marker = markers.find(dummy_marker);
+            coordinate.name = *marker;
+            series_node_->data.addCoordinate(coordinate);
+        }
+    }
+    int i = 0;
+    int removal_coordinate = -1;
+    auto& coordinates = series_node_->data.getAllCoordinates();
+    for (auto& coordinate : coordinates) {
+        ImGui::Text(("Marker #" + std::to_string(i + 1) + " (").c_str());
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(coordinate.name.color));
+        ImGui::SameLine();
+        ImGui::Text(coordinate.name.name.c_str());
+        ImGui::PopStyleColor();
+        ImGui::SameLine();
+        ImGui::Text(")");
+        ImGui::SameLine();
+        if (ImGui::Button(("Go to###" + std::to_string(i) + "go_to").c_str())) {
+            sagittal_x_ = coordinate.sagittal;
+            coronal_x_ = coordinate.coronal;
+            case_select_ = calculate_case_idx(coordinate.axial);
+            //loadCase(case_select_);
+            build_views();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button(("Remove###" + std::to_string(i) + "remove").c_str())) {
+            removal_coordinate = i;
+        }
+        i++;
+    }
+    if (removal_coordinate != -1) {
+        coordinates.erase(coordinates.begin() + removal_coordinate);
     }
 }
 
@@ -509,7 +687,6 @@ void Rendering::DicomViewer::loadSeries(const dataset::SeriesPayload &data) {
     case_ = data.case_;
 
     series_node_->data.loadAll([=](const ::core::Dicom& dicom) {
-        std::cout << "Hello " << series_node_->data.size() << std::endl;
         num_images_loaded_++;
     });
     reset_axial_image_ = true;
@@ -550,13 +727,48 @@ void Rendering::DicomViewer::accept_drag_and_drop() {
     }
 }
 
-void Rendering::DicomViewer::context_menu() {
+bool Rendering::DicomViewer::begin_popup(const Rect& window_dimensions) {
+    auto mouse_pos = ImGui::GetMousePos();
+    auto& io = ImGui::GetIO();
+
+    bool collision = Widgets::check_hitbox(mouse_pos, window_dimensions);
+
+    if (ImGui::IsMouseReleased(1) && collision) {
+        is_context_menu_open = true;
+        ImGui::OpenPopup("Context menu");
+    }
+
+    is_context_menu_open = ImGui::BeginPopup("Context menu", ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoSavedSettings);   
+
+    if (!tmp_context_menu_open) {
+        tmp_context_menu_open = is_context_menu_open;
+    }
+    return is_context_menu_open;
+}
+
+void Rendering::DicomViewer::context_menu(const Rect& window_dimensions) {
     if (series_node_ != nullptr) {
+        auto mouse_pos = ImGui::GetMousePos();
         if (active_button_ == &windowing_button_) {
-            if (ImGui::BeginPopupContextWindow()) {
-                ImGui::InputInt("Set window center", &series_node_->data.getWC());
-                ImGui::InputInt("Set window width", &series_node_->data.getWW());
+            if (begin_popup(window_dimensions)) {
+                active_dragging_ = false; 
+                tmp_deactivate_tool_ = true;
+                windowing_options();
                 ImGui::EndPopup();
+            }
+            else if (!tmp_context_menu_open) {
+                tmp_deactivate_tool_ = false;
+            }
+            push_animation();
+        }
+        else if (active_button_ == &point_select_button_) {
+            if (begin_popup(window_dimensions)) {
+                tmp_deactivate_tool_ = true;
+                point_select_options();
+                ImGui::EndPopup();
+            }
+            else if (!tmp_context_menu_open) {
+                tmp_deactivate_tool_ = false;
             }
         }
     }
