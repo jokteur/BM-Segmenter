@@ -63,21 +63,21 @@ set(OpenCV_LIBS opencv_core opencv_imgproc opencv_imgcodecs)
 # -------
 # PyTorch
 # -------
-find_package(Torch REQUIRED)
+#find_package(Torch REQUIRED)
 #message("${TORCH_CXX_FLAGS}")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
-include_directories(${})
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
+#include_directories(${})
 
 # The following code block is suggested to be used on Windows.
 # According to https://github.com/pytorch/pytorch/issues/25457,
 # the DLLs need to be copied to avoid memory errors.
-if (WIN32)
-    file(GLOB TORCH_DLLS "${TORCH_INSTALL_PREFIX}/lib/*.dll")
-    install(
-        FILES ${TORCH_DLLS}
-        DESTINATION ${INSTALL_DIR}
-    )
-endif (WIN32)
+#if (WIN32)
+#    file(GLOB TORCH_DLLS "${TORCH_INSTALL_PREFIX}/lib/*.dll")
+#    install(
+#        FILES ${TORCH_DLLS}
+#        DESTINATION ${INSTALL_DIR}
+#    )
+#endif (WIN32)
 
 # --------------------------------
 # Python installation and pybind11
@@ -199,7 +199,7 @@ target_link_libraries(${PROJECT_NAME}_lib ${OPENGL_gl_LIBRARY})
 target_link_libraries(${PROJECT_NAME}_lib nfd)
 target_link_libraries(${PROJECT_NAME}_lib ${OpenCV_LIBS})
 target_link_libraries(${PROJECT_NAME}_lib ${Python_LIBRARIES})
-target_link_libraries(${PROJECT_NAME}_lib "${TORCH_LIBRARIES}")
+#target_link_libraries(${PROJECT_NAME}_lib "${TORCH_LIBRARIES}")
 
 
 add_executable(${PROJECT_NAME} src/main.cpp)
