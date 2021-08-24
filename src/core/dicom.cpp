@@ -53,10 +53,10 @@ namespace core {
     }
 
     void DicomSeries::loadAll(const std::function<void(const Dicom&)>& when_finished_fct) {
+        load_all_ = true;
         for (int i = 0; i < data_.size(); i++) {
             load_case(i, false, true, when_finished_fct);
         }
-        load_all_ = true;
     }
 
     jobId DicomSeries::loadCase(float percentage, bool force_replace, const std::function<void(const Dicom&)>& when_finished_fct) {
@@ -173,6 +173,10 @@ namespace core {
 
     Dicom& DicomSeries::getCurrentDicom() {
         return data_[selected_index_];
+    }
+
+    void DicomSeries::addCoordinate(const DicomCoordinate& coordinate) {
+        coordinates_.push_back(coordinate);
     }
 
     void DicomSeries::setCrops(ImVec2 crop_x, ImVec2 crop_y, bool no_reload) {

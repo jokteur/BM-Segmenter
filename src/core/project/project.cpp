@@ -25,6 +25,15 @@ namespace core {
 
             return true;
         }
+        bool Project::addMarkerName(const DicomMarkerName& marker_name) {
+            if (markers.find(marker_name) == markers.end()) {
+                markers.insert(marker_name);
+                return false;
+            }
+            else {
+                return true;
+            }
+        }
         bool Project::setUpWorkspace(const std::string& path, const std::string& name, const std::string& extension, std::string& out_path) {
             auto state = PyGILState_Ensure();
             try {

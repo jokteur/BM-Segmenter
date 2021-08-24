@@ -373,12 +373,12 @@ namespace core {
 			return collection;
 		}
 
-		void MaskCollection::clearHistory() {
+		void MaskCollection::clearHistory(bool force) {
 			std::lock_guard<std::recursive_mutex> lock(ref_mutex_);
 			if (is_valid_) {
 				history_.clear();
 				it_ = history_.end();
-				is_valid_ = false;
+				//is_valid_ = false;
 			}
 		}
 
@@ -431,6 +431,7 @@ namespace core {
 		}
 
 		int MaskCollection::size() {
+			std::lock_guard<std::recursive_mutex> lock(ref_mutex_);
 			return history_.size();
 		}
 
@@ -447,7 +448,12 @@ namespace core {
 		}
 
 		Mask& core::segmentation::MaskCollection::getCurrent(bool no_push) {
+			std::lock_guard<std::recursive_mutex> lock(ref_mutex_);
 			if (history_.empty()) {
+				if (no_push) {
+					tmp_ = Mask();
+					return tmp_;
+				}
 				push_new();
 			}
 			iterator my_it = it_;

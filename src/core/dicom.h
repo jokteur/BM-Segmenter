@@ -16,14 +16,16 @@ namespace core {
      *
      * Can be insert into sets
      */
-    struct DicomMarker {
+    struct DicomMarkerName {
+        enum Type {AXIAL, CORONAL, SAGITTAL};
         std::string name;
         ImColor color;
+        Type type;
 
-        bool operator<(const DicomMarker& rhs) const {
+        bool operator<(const DicomMarkerName& rhs) const {
             return std::hash<std::string>{}(name) < std::hash<std::string>{}(rhs.name);
         }
-        bool operator==(const DicomMarker& rhs) const {
+        bool operator==(const DicomMarkerName& rhs) const {
             return name == rhs.name;
         }
     };
@@ -36,7 +38,7 @@ namespace core {
         float sagittal = 0.5f;
         float coronal = 0.5f;
         float axial = 0.f;
-        std::string name;
+        DicomMarkerName name;
     };
 
     /**
@@ -126,6 +128,8 @@ namespace core {
 
         std::vector<std::string>& getPaths() { return images_path_; }
 
+        void removeCoordinate();
+        void addCoordinate(const DicomCoordinate& coordinate);
         DicomCoordinate& getCurrentCoordinate() { return current_coordinate_; }
         std::vector<DicomCoordinate>& getAllCoordinates() { return coordinates_; }
 

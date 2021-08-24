@@ -22,7 +22,7 @@ namespace core {
             std::string root_path_;
 
             bool is_saved_ = false;
-            std::set<DicomMarker> markers;
+            std::set<DicomMarkerName> markers;
 
             std::set<std::shared_ptr<segmentation::Segmentation>> segmentations_;
 
@@ -62,10 +62,17 @@ namespace core {
             std::string getCurrentUser() { return current_user_; }
 
             /**
+             * Adds a marker group to the project
+             * @return true if the name is already in the set, false if not
+            */
+            bool addMarkerName(const DicomMarkerName& marker_name);
+
+
+            /**
              * Returns the set of markers (for 3D dicom file) in the project
-             * @return
+             * @return set of DicomMarkerNames
              */
-            std::set<DicomMarker>& getMarkers() { return markers; }
+            std::set<DicomMarkerName>& getMarkers() { return markers; }
 
             /**
              * Returns the root path of the project
