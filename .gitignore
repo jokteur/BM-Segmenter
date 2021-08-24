@@ -4,3 +4,4 @@ src/scripts/test.py
 out/
 CMakeSettings.json
 .vs
+versions
