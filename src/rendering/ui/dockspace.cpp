@@ -20,9 +20,10 @@ Rendering::Dockspace::Dockspace() {
 void Rendering::Dockspace::ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) {
     // We are using the ImGuiWindowFlags_NoDocking flag to make the parent window not dockable into
     ImGuiViewport* viewport = ImGui::GetMainViewport();
-    ImGui::SetNextWindowPos(viewport->GetWorkPos());
-    ImGui::SetNextWindowSize(viewport->GetWorkSize());
-    ImGui::SetNextWindowViewport(viewport->ID);
+    viewport->GetCenter();
+    ImGui::SetNextWindowPos(viewport->WorkPos);
+    ImGui::SetNextWindowSize(viewport->WorkSize);
+    //ImGui::SetNextWindowViewport(viewport->ID);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
     // window_flags |= ImGuiWindowFlags_NoBackground;
