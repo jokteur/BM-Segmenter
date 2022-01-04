@@ -40,6 +40,7 @@ namespace Rendering {
         bool open_ = true;
         bool is_cases_set_ = false;
         bool just_opened_ =  true;
+        bool numbering_checkbox_ = true;
         ImVec2 init_size_;
 
     public:

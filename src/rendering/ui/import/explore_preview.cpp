@@ -64,6 +64,8 @@ void Rendering::ExplorerPreview::ImGuiDraw(GLFWwindow *window, Rect &parent_dime
         if (dicom_previews_.size() < num_cols_ && dicom_previews_.size() > 0) {
             num_cols_ = dicom_previews_.size();
         }
+        ImGui::Checkbox("Number same IDs by date", &numbering_checkbox_);
+
         ImGui::Text("Num. columns: %d", num_cols_);
         ImGui::SameLine();
         if (ImGui::Button(" -###explorer_preview_button_minus")) {
@@ -154,11 +156,18 @@ void Rendering::ExplorerPreview::ImGuiDraw(GLFWwindow *window, Rect &parent_dime
                         dicom_previews_[series].setIsDisabled(false);
                     }
 
+                    std::string id_str = patient.ID;
+                    if (!series->ID_modified.empty()) {
+                        id_str = series->ID_modified;
+                    }
+                    else if (numbering_checkbox_) {
+                        id_str += std::string(" ") + std::to_string(series->order);
+                    }
                     if (dicom_previews_[series].isLocked()) {
-                        ImGui::Text("%s *", patient.ID.c_str());
+                        ImGui::Text("%s *", id_str.c_str());
                     }
                     else {
-                        ImGui::Text("%s", patient.ID.c_str());
+                        ImGui::Text("%s", id_str.c_str());
                     }
 
                     if (ImGui::IsItemHovered()) {

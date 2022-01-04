@@ -3,6 +3,9 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <numeric>
+#include <cstdint>
+#include <algorithm>
 
 #include "imgui.h"
 
@@ -44,8 +47,10 @@
              std::string modality;
              std::string number;
              std::vector<ImageNode> images;
+             std::string ID_modified;
              DicomSeries data;
              int tree_count;
+             int order;
              bool is_active = true;
          };
          struct StudyNode {

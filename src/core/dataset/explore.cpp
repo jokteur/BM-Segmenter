@@ -120,6 +120,23 @@ namespace core {
                 jobRef_ = JobScheduler::getInstance().addJob(STRING(JOB_EXPLORE_NAME), job)->id;
         }
 
+        template <typename T>
+        std::vector<size_t> sort_indexes(const std::vector<T>& v) {
+
+            // initialize original index locations
+            std::vector<size_t> idx(v.size());
+            std::iota(idx.begin(), idx.end(), 0);
+
+            // sort indexes based on comparing values in v
+            // using std::stable_sort instead of std::sort
+            // to avoid unnecessary index re-orderings
+            // when v contains elements of equal values 
+            std::stable_sort(idx.begin(), idx.end(),
+                [&v](size_t i1, size_t i2) {return v[i1] < v[i2]; });
+
+            return idx;
+        }
+
         void build_tree(std::shared_ptr<std::vector<PatientNode>> tree, const ImGuiTextFilter& case_filter, const ImGuiTextFilter& study_filter, const ImGuiTextFilter& series_filter) {
             for (auto &patient : *tree) {
                 patient.tree_count = 0;
@@ -138,7 +155,6 @@ namespace core {
                         continue;
                     }
                     for (auto &series : study.series) {
-                        series->tree_count = 0;
                         if (series_filter.PassFilter(series->modality.c_str())) {
                             patient.tree_count++;
                             study.tree_count++;
@@ -153,8 +169,35 @@ namespace core {
                             study.tree_count++;
                             series->tree_count++;
                             image.tree_count = 1;
-
                         }
+                    }
+                }
+                // Second pass without filters to order the series
+                std::vector<std::vector<uint64_t>> orders;
+                for (auto& study : patient.study) {
+                    std::vector<uint64_t> series_order;
+                    for (auto& study : patient.study) {
+                        std::string time_str = study.date + study.time;
+                        long long time = 0;
+                        if (!time_str.empty())
+                            time = std::stoull(time_str);
+                        for (auto& series : study.series) {
+                            series_order.push_back(time); // Insert the time (which can be ordered) of the series
+                        }
+                    }
+                    orders.push_back(series_order);
+                }
+                int i = 0;
+                int patient_count = 0;
+                for (auto& study : patient.study) {
+                    // Order by time, assign the numbers
+                    std::vector<int> idx_order;
+                    for (auto j : sort_indexes(orders[patient_count])) {
+                        idx_order.push_back(j + 1);
+                    }
+                    for (auto& series : study.series) {
+                        series->order = idx_order[i];
+                        i++;
                     }
                 }
             }

@@ -8,7 +8,7 @@ set(GCC_COVERAGE_COMPILE_FLAGS "-s -O3 -fvisibility=hidden")
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 
-set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/install)
+# set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/install)
 
 # Python and TOML11 do not like each other
 # This flag avoids interopabilities problems
@@ -44,6 +44,7 @@ include_directories(thirdparty/glfw/include)
 # ----
 # gl3w
 # ----
+
 include_directories(thirdparty/gl3w/include)
 set(gl3w_src thirdparty/gl3w/src/gl3w.c)
 
