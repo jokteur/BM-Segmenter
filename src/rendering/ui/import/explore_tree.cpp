@@ -206,7 +206,7 @@ void Rendering::ExploreFolder::ImGuiDraw(GLFWwindow *window, Rect &parent_dimens
                                     ImGui::PushStyleColor(ImGuiCol_Text, disabled_text_color);
                                 // Series node
                                 if (set_tree_closed_) {
-                                    ImGui::SetNextTreeNodeOpen(false);
+                                    ImGui::SetNextItemOpen(false);
                                 }
                                 bool node3 = ImGui::TreeNodeEx((void*)&series, nodeFlags | ImGuiTreeNodeFlags_Framed, "Series %s, Modality %s",
                                     series->number.c_str(), series->modality.c_str());

@@ -133,7 +133,7 @@ void Rendering::ExplorerPreview::ImGuiDraw(GLFWwindow *window, Rect &parent_dime
         }
 
         ImGui::Columns(num_cols_);
-        float width = ImGui::GetContentRegionAvailWidth();
+        float width = ImGui::GetContentRegionAvail().x;
         auto disabled_color = Settings::getInstance().getColors().disabled_text;
         float y_cursor;
         for (auto &patient : *cases_) {

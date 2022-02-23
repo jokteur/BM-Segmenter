@@ -98,7 +98,7 @@ void Rendering::ProjectInfo::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
 					Widgets::NewLine(5.f);
 					for (auto& group : dataset.getGroups()) {
 						if (set_tree_closed_) {
-							ImGui::SetNextTreeNodeOpen(false);
+							ImGui::SetNextItemOpen(false);
 						}
 						bool node = ImGui::TreeNodeEx((void*)&group, ImGuiTreeNodeFlags_Framed, "%s: %d dicoms", group.getName().c_str(), group.getDicoms().size());
 						if (ImGui::BeginDragDropTarget()) {

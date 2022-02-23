@@ -459,7 +459,7 @@ void Rendering::DicomViewer::point_select_options() {
         ImGui::Text("Please create a marker group.");
     }
     else {
-        markers_select_.ImGuiDraw("Select marker group", 0.3 * ImGui::GetContentRegionAvailWidth());
+        markers_select_.ImGuiDraw("Select marker group", 0.3 * ImGui::GetContentRegionAvail().x);
     }
     ImGui::SameLine();
     if (ImGui::Button("Create marker group")) {

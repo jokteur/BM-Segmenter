@@ -161,7 +161,7 @@ void Rendering::DatasetView::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
         ImVec2 mouse_pos = ImGui::GetMousePos();
 
         ImGui::Columns(num_cols_);
-        float width = ImGui::GetContentRegionAvailWidth();
+        float width = ImGui::GetContentRegionAvail().x;
         // Show all cases
         col_count_ = 0;
         if (group_idx_ == 0) {
