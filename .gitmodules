@@ -1,0 +1,12 @@
+[submodule "external/TempoApp"]
+	path = external/TempoApp
+	url = git@github.com:jokteur/TempoApp.git
+[submodule "external/json"]
+	path = external/json
+	url = https://github.com/nlohmann/json.git
+[submodule "external/pybind11"]
+	path = external/pybind11
+	url = https://github.com/pybind/pybind11.git
+[submodule "external/implot"]
+	path = external/implot
+	url = https://github.com/epezent/implot.git
