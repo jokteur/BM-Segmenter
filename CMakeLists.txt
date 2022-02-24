@@ -47,12 +47,20 @@ include_directories(external/ImPlot)
 # Main source
 # -----------
 include_directories(src)
+
 file (GLOB source_list RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         external/ImPlot/*.cpp
         src/*.cpp
         src/python/*.cpp
         src/core/*.cpp
         src/ui/*.cpp
+        src/ui/navigation/*.cpp
+        src/ui/dataset/*.cpp
+        src/ui/import/*.cpp
+        src/ui/measurements/*.cpp
+        src/ui/ml/*.cpp
+        src/ui/segmentation/*.cpp
+        src/ui/widgets/*.cpp
     )
 
 add_executable(${PROJECT_NAME} ${source_list} src/main.cpp ${APP_ICON_RESOURCE_WINDOWS})

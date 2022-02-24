@@ -6,6 +6,7 @@
 struct UIState {
     bool read_only = false;
     long long int imID = 100000000;
+    float scaling = 1.f;
 
     // Fonts
     Tempo::FontID font_regular;
@@ -14,7 +15,7 @@ struct UIState {
     Tempo::FontID font_title;
 
     // Nav bar
-    enum Panel { LOAN, MANAGEMENT, STATE, PROPERTIES, STATS };
-    Panel active_panel = LOAN;
+    enum Panel { IMPORT, DATASET, SEGMENTATION, MEASUREMENTS, ML };
+    Panel active_panel = DATASET;
 };
 typedef std::shared_ptr<UIState> UIState_ptr;

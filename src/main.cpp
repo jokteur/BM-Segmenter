@@ -14,7 +14,7 @@ int main() {
         .app_title = "Bio-medical image segmenting",
     };
     config.maximized = true;
-    config.imgui_config_flags = 0;
+    // config.imgui_config_flags = 0;
 
     MainApp* app = new MainApp();
     Tempo::Run(app, config);
