@@ -15,6 +15,13 @@ struct UIState {
     Tempo::FontID font_italic;
     Tempo::FontID font_bold;
     Tempo::FontID font_title;
+    Tempo::FontID icons_regular;
+
+    // Languages
+    Language language = LANG_EN;
+    Translator babel_fr = build_FR();
+    Translator babel_default;
+    Translator* current = &this->babel_default;
 
     // Nav bar
     enum Panel { IMPORT, DATASET, SEGMENTATION, MEASUREMENTS, ML };

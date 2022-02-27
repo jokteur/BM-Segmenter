@@ -45,4 +45,5 @@ void defineStyle() {
     style.FrameRounding = 5;
     style.GrabRounding = 2;
     style.WindowMenuButtonPosition = ImGuiDir_None;
+
 }

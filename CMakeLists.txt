@@ -64,6 +64,7 @@ file (GLOB source_list RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         src/ui/import/*.cpp
         src/ui/measurements/*.cpp
         src/ui/ml/*.cpp
+        src/ui/translations/*.cpp
         src/ui/segmentation/*.cpp
         src/ui/widgets/*.cpp
     )
