@@ -2,6 +2,7 @@
 
 #include "main_window.h"
 #include "style.h"
+#include "fonts.h"
 
 #include "implot.h"
 #include "imgui_internal.h"
@@ -12,11 +13,7 @@ MainApp::MainApp() {
     m_menu_bar = std::make_shared<MenuBar>(ui_state);
 }
 void MainApp::InitializationBeforeLoop() {
-    ui_state->font_regular = Tempo::AddFontFromFileTTF("fonts/Roboto/Roboto-Regular.ttf", 18).value();
-    ui_state->font_italic = Tempo::AddFontFromFileTTF("fonts/Roboto/Roboto-Italic.ttf", 18).value();
-    ui_state->font_bold = Tempo::AddFontFromFileTTF("fonts/Roboto/Roboto-Bold.ttf", 18).value();
-    ui_state->font_title = Tempo::AddFontFromFileTTF("fonts/Roboto/Roboto-Regular.ttf", 30).value();
-
+    buildFonts(ui_state);
     defineStyle();
 }
 
@@ -26,10 +23,11 @@ void MainApp::AfterLoop() {
 
 void MainApp::FrameUpdate() {
     ui_state->scaling = Tempo::GetScaling();
+    float height = ImGui::GetTextLineHeight() + ImGui::GetStyle().FramePadding.y * 2;
 #ifdef IMGUI_HAS_VIEWPORT
     ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(viewport->WorkPos);
-    ImGui::SetNextWindowSize(viewport->WorkSize);
+    ImGui::SetNextWindowSize(ImVec2(viewport->WorkSize.x, height));
     ImGui::SetNextWindowViewport(viewport->ID);
 #else 
     ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));

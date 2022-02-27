@@ -32,6 +32,11 @@ add_subdirectory(external/TempoApp)
 include_directories(external/TempoApp/include)
 include_directories(external/TempoApp/external/imgui/imgui)
 
+# -----
+# Fonts
+# -----
+include_directories(external/IconFontCppHeaders)
+
 # ----
 # Json
 # ----

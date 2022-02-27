@@ -1,3 +1,6 @@
+
+#define IMGUI_USE_WCHAR32
+
 #include <iostream>
 #include <tempo.h>
 #include <chrono>
@@ -14,6 +17,7 @@ int main() {
         .app_title = "Bio-medical image segmenting",
     };
     config.maximized = true;
+    config.wait_timeout = 10.;
     // config.imgui_config_flags = 0;
 
     MainApp* app = new MainApp();

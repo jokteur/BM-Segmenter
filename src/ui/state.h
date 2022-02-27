@@ -3,6 +3,8 @@
 #include <memory>
 #include <tempo.h>
 
+#include "translations/translate.h"
+
 struct UIState {
     bool read_only = false;
     long long int imID = 100000000;
