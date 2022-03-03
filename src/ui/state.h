@@ -20,8 +20,9 @@ struct UIState {
     // Languages
     Language language = LANG_EN;
     Translator babel_fr = build_FR();
+    Translator babel_it = build_IT();
     Translator babel_default;
-    Translator* current = &this->babel_default;
+    Translator* babel_current = &this->babel_default;
 
     // Nav bar
     enum Panel { IMPORT, DATASET, SEGMENTATION, MEASUREMENTS, ML };

@@ -6,7 +6,14 @@
 #include <stdexcept>
 #include <functional>
 
-enum Language { LANG_FR, LANG_EN };
+enum Language { LANG_EN, LANG_FR, LANG_IT };
+
+static int LANG_NUM = 3;
+static const char* LANG_NAMES[] = {
+    "English",
+    "Français",
+    "Italiano"
+};
 
 struct Translator {
     std::map<std::string, std::string> texts;
@@ -14,6 +21,7 @@ struct Translator {
 };
 
 Translator build_FR();
+Translator build_IT();
 
 template<typename ... Args>
 std::string string_format(const std::string& format, Args ... args) {
@@ -36,5 +44,5 @@ std::string gettext(const std::string& txt, Translator& babel, Args ... args) {
 // const char* ngettext(const std::string& singular, const std::string& plural, long long int n) {
 
 // }
-#define TXT(X, ...)  gettext(X, *m_ui_state->current, __VA_ARGS__).c_str()
+#define TXT(X, ...)  gettext(X, *m_ui_state->babel_current, __VA_ARGS__).c_str()
 

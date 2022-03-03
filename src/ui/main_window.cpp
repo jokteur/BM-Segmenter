@@ -6,14 +6,15 @@
 
 #include "implot.h"
 #include "imgui_internal.h"
+#include "translations/translate.h"
 
 // namespace py = pybind11;
 
 MainApp::MainApp() {
-    m_menu_bar = std::make_shared<MenuBar>(ui_state);
+    m_menu_bar = std::make_shared<MenuBar>(m_ui_state);
 }
 void MainApp::InitializationBeforeLoop() {
-    buildFonts(ui_state);
+    buildFonts(m_ui_state);
     defineStyle();
 }
 
@@ -22,7 +23,7 @@ void MainApp::AfterLoop() {
 }
 
 void MainApp::FrameUpdate() {
-    ui_state->scaling = Tempo::GetScaling();
+    m_ui_state->scaling = Tempo::GetScaling();
     float height = ImGui::GetTextLineHeight() + ImGui::GetStyle().FramePadding.y * 2;
 #ifdef IMGUI_HAS_VIEWPORT
     ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -39,6 +40,8 @@ void MainApp::FrameUpdate() {
         | ImGuiWindowFlags_NoBringToFrontOnFocus);
 
     m_menu_bar->FrameUpdate();
+
+    ImGui::Text(TXT("hello, how are you?"));
 
     ImGui::End();
     // if (m_open)
