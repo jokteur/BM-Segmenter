@@ -1,5 +1,3 @@
-#pragma once
-
 #include "translate.h"
 #include "IconsMaterialDesign.h"
 

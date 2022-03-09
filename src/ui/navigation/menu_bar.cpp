@@ -4,11 +4,8 @@
 
 #include "IconsMaterialDesign.h"
 
-#include "../translations/translate.h"
+#include "ui/translations/translate.h"
 
-const char* txt() {
-    return "asd";
-}
 void MenuBar::FrameUpdate() {
     ImGui::BeginMenuBar();
     if (ImGui::BeginMenu(TXT("Files"))) {
@@ -17,7 +14,7 @@ void MenuBar::FrameUpdate() {
         ImGui::EndMenu();
     }
 
-    if (ImGui::BeginMenu(TXT("Setti(ngs"))) {
+    if (ImGui::BeginMenu(TXT("Settings"))) {
         if (ImGui::BeginMenu(TXT(ICON_MD_LANGUAGE " Language"))) {
             if (ImGui::MenuItem("English")) {
                 m_ui_state->babel_current = &m_ui_state->babel_default;
@@ -43,12 +40,12 @@ void MenuBar::FrameUpdate() {
 
     ImGui::BeginTabBar("Nav bar");
 
-    if (ImGui::BeginTabItem(TXT(ICON_MD_DOWNLOAD " Import"))) {
-        m_ui_state->active_panel = UIState::IMPORT;
-        ImGui::EndTabItem();
-    }
     if (ImGui::BeginTabItem(TXT(ICON_MD_APPS " Dataset"))) {
         m_ui_state->active_panel = UIState::DATASET;
+        ImGui::EndTabItem();
+    }
+    if (ImGui::BeginTabItem(TXT(ICON_MD_DOWNLOAD " Import"))) {
+        m_ui_state->active_panel = UIState::IMPORT;
         ImGui::EndTabItem();
     }
     if (ImGui::BeginTabItem(TXT(ICON_MD_APP_REGISTRATION " Segmentation"))) {

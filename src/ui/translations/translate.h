@@ -16,7 +16,7 @@ static const char* LANG_NAMES[] = {
 };
 
 struct Translator {
-    std::map<std::string, std::string> texts;
+    std::unordered_map<std::string, std::string> texts;
     // std::map <const std::string&, std::string(const std::string&)> plurals;
 };
 
