@@ -4,6 +4,8 @@
 #include <tempo.h>
 
 #include "translations/translate.h"
+#include "search/search.h"
+#include "search/widgets.h"
 
 struct UIState {
     bool read_only = false;
@@ -23,6 +25,9 @@ struct UIState {
     Translator babel_it = build_IT();
     Translator babel_default;
     Translator* babel_current = &this->babel_default;
+
+    // Widget search
+    Search::Universe search;
 
     // Nav bar
     enum Panel { IMPORT, DATASET, SEGMENTATION, MEASUREMENTS, ML };

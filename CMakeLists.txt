@@ -67,6 +67,7 @@ file (GLOB source_list RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         src/ui/translations/*.cpp
         src/ui/segmentation/*.cpp
         src/ui/widgets/*.cpp
+        src/ui/search/*.cpp
     )
 
 add_executable(${PROJECT_NAME} ${source_list} src/main.cpp ${APP_ICON_RESOURCE_WINDOWS})

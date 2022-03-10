@@ -13,6 +13,11 @@ public:
     Drawable(std::shared_ptr<UIState> ui_state) : m_ui_state(ui_state) {}
     virtual ~Drawable() {}
 
+    /**
+     * @brief Build the symbols for the search
+     *
+     */
+    virtual void BuildSymbols() {}
     virtual void FrameUpdate() {}
     virtual void BeforeFrameUpdate() {}
 };
