@@ -13,18 +13,9 @@ namespace Search {
     typedef std::chrono::time_point<std::chrono::steady_clock> tp;
 
     const int TIMEOUT = 200;
-    enum Type {
-        WINDOW,
-        MENU,
-        MENUITEM,
-        HEADER,
-        BUTTON,
-        TREE,
-        TREENODE
-    };
+
     struct Node {
         std::string parent;
-        Type type;
         bool show;
         tp last_time;
     };
@@ -52,7 +43,7 @@ namespace Search {
          * @param type type of the node (window, menu, menu item, ...)
          * @param parent parent of the node if there is one
          */
-        void Register(const std::string& id, Type type, const std::string& parent = "");
+        void Register(const std::string& id, const std::string& parent = "");
 
         void Clear();
 

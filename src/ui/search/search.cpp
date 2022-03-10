@@ -4,8 +4,8 @@
 namespace Search {
     Universe::Universe() {}
 
-    void Universe::Register(const std::string& id, Type type, const std::string& parent) {
-        m_search_tree[id] = Node{ parent, type, false };
+    void Universe::Register(const std::string& id, const std::string& parent) {
+        m_search_tree[id] = Node{ parent, false };
     }
 
     std::optional<bool> Universe::getShow(const std::string& id) {
