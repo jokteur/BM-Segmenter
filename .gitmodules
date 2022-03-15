@@ -13,3 +13,6 @@
 [submodule "external/IconFontCppHeaders"]
 	path = external/IconFontCppHeaders
 	url = https://github.com/juliettef/IconFontCppHeaders.git
+[submodule "external/rapidfuzz-cpp"]
+	path = external/rapidfuzz-cpp
+	url = https://github.com/maxbachmann/rapidfuzz-cpp.git

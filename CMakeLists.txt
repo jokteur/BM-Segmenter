@@ -48,6 +48,20 @@ include_directories(external/json/single_include)
 # ------
 include_directories(external/ImPlot)
 
+# ------------
+# Fuzzy Search
+# ------------
+add_subdirectory(external/rapidfuzz-cpp)
+
+# ------------
+# ICU (unicode)
+# ------------
+set(ICU_ROOT "C:\\libs\\icu")
+find_package(ICU COMPONENTS uc io in dt tu test REQUIRED)
+message(${ICU_LIBRARIES})
+
+include_directories(${ICU_INCLUDE_DIRS})
+
 # -----------
 # Main source
 # -----------
@@ -71,7 +85,7 @@ file (GLOB source_list RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     )
 
 add_executable(${PROJECT_NAME} ${source_list} src/main.cpp ${APP_ICON_RESOURCE_WINDOWS})
-target_link_libraries(${PROJECT_NAME} PRIVATE nlohmann_json Tempo ${Python_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} PRIVATE nlohmann_json Tempo rapidfuzz::rapidfuzz ${Python_LIBRARIES} ${ICU_LIBRARIES})
 
 # Copy the data (such as fonts) in build directory
 add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
