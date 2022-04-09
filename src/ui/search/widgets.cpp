@@ -1,12 +1,19 @@
 #include "widgets.h"
 
 #include <iostream>
+#include <tempo.h>
+#include <cmath>
 #include "imgui_internal.h"
 
 namespace Widgets {
 
     inline void DrawRect(ImVec2 min, ImVec2 max) {
-        ImGui::GetForegroundDrawList()->AddRect(min, max, IM_COL32(255, 255, 0, 255));
+        float progress = Tempo::GetProgress("highlight_widget");
+
+        const float SIZE = 5.f;
+        min = ImVec2(min.x - SIZE * (float)std::sin(progress * 3.14), min.y - SIZE * (float)std::sin(progress * 3.14));
+        max = ImVec2(max.x + SIZE * (float)std::sin(progress * 3.14), max.y + SIZE * (float)std::sin(progress * 3.14));
+        ImGui::GetForegroundDrawList()->AddRect(min, max, IM_COL32(31, 135, 229, 229), 3.f, 0, 3.f);
     }
 
     inline void GetAndDrawRect() {
@@ -17,7 +24,6 @@ namespace Widgets {
 
     bool Begin(Search::Universe& search, const std::string& id, const std::string& name, bool* p_open, ImGuiWindowFlags flags) {
         bool ret = ImGui::Begin(name.c_str(), p_open, flags);
-
         auto show = search.getShow(id);
         if (show.has_value()) {
             ImGui::SetWindowFocus();

@@ -2,16 +2,14 @@
 Run this file at the root of the git repo to see what is left
 to translate or what has been added in the source files.
 """
-from gettext import translation
 import os
 import re
-import dataclasses
 from typing import OrderedDict
 
 
 def find_definitions():
     definitions = OrderedDict()
-    for root, subFolders, files in os.walk("src"):
+    for root, _, files in os.walk("src"):
         for file in files:
             if file == "translate.h":
                 pass
@@ -103,4 +101,5 @@ def update_translation_file(path):
 
 
 file = update_translation_file('src/ui/translations/french.cpp')
-print(file)
+with open("a.txt", "w") as f:
+    f.write(file)

@@ -7,6 +7,7 @@
 #include "implot.h"
 #include "imgui_internal.h"
 #include "translations/translate.h"
+#include "imgui_stdlib.h"
 
 // namespace py = pybind11;
 

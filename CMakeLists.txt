@@ -62,6 +62,7 @@ message(${ICU_LIBRARIES})
 
 include_directories(${ICU_INCLUDE_DIRS})
 
+
 # -----------
 # Main source
 # -----------
