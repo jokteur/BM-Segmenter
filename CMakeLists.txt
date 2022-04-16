@@ -57,11 +57,15 @@ add_subdirectory(external/rapidfuzz-cpp)
 # ICU (unicode)
 # ------------
 set(ICU_ROOT "C:\\libs\\icu")
-find_package(ICU COMPONENTS uc io in dt tu test REQUIRED)
-message(${ICU_LIBRARIES})
+find_package(ICU COMPONENTS uc io in dt REQUIRED)
+
 
 include_directories(${ICU_INCLUDE_DIRS})
 
+# -------
+# DocTest
+# -------
+add_subdirectory(external/doctest)
 
 # -----------
 # Main source
@@ -70,7 +74,6 @@ include_directories(src)
 
 file (GLOB source_list RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         external/ImPlot/*.cpp
-        src/*.cpp
         src/python/*.cpp
         src/core/*.cpp
         src/ui/*.cpp
@@ -85,8 +88,11 @@ file (GLOB source_list RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         src/ui/search/*.cpp
     )
 
+add_library(${PROJECT_NAME}_lib ${source_list})
 add_executable(${PROJECT_NAME} ${source_list} src/main.cpp ${APP_ICON_RESOURCE_WINDOWS})
-target_link_libraries(${PROJECT_NAME} PRIVATE nlohmann_json Tempo rapidfuzz::rapidfuzz ${Python_LIBRARIES} ${ICU_LIBRARIES})
+set(LIB_LINK nlohmann_json Tempo rapidfuzz::rapidfuzz ${Python_LIBRARIES} ${ICU_LIBRARIES})
+target_link_libraries(${PROJECT_NAME}_lib ${LIB_LINK})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${LIB_LINK})
 
 # Copy the data (such as fonts) in build directory
 add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
@@ -106,3 +112,7 @@ endif()
 
 install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_PREFIX})
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/data/ DESTINATION ${CMAKE_INSTALL_PREFIX})
+
+
+# Testing
+add_subdirectory(tests)
