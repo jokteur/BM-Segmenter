@@ -1,4 +1,3 @@
-#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest/doctest.h>
 #include <string>
 #include <map>
@@ -44,8 +43,11 @@ TEST_SUITE("search") {
         WARN_MESSAGE(results2.contains("Create segmentation"), "Search with typo does not return result");
 
         /* User probably intends to search something with import and project */
-        std::vector<std::string> query_words3 = { "impprj" };
+        std::vector<std::string> query_words3 = { "imppr" };
         auto results3 = getResults(query_words3, search_terms);
+        for (auto a : results3) {
+            INFO("Content:", a);
+        }
         WARN_MESSAGE(results3.contains("Import data to project"), "Search with initials does not return result");
         WARN_MESSAGE(results3.contains("Import project"), "Search with initials does not return result");
     }

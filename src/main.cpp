@@ -1,12 +1,13 @@
-
 #define IMGUI_USE_WCHAR32
 
 #include <iostream>
 #include <tempo.h>
 #include <chrono>
+#include "rapidfuzz/fuzz.hpp"
 
 #include "ui/main_window.h"
-
+#include "core/str_manip.h"
+#include "core/data/dicom.h"
 
 // using namespace core;
 // #pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
@@ -16,7 +17,8 @@ int main() {
         .app_name = "BM-Segmenter",
         .app_title = "Bio-medical image segmenting",
     };
-    config.maximized = true;
+
+    // config.maximized = true;
     config.wait_timeout = 10.;
     // config.imgui_config_flags = 0;
 

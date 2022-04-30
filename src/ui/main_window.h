@@ -7,6 +7,11 @@
 
 // Drawable and widgets
 
+using std::chrono::duration_cast;
+using std::chrono::milliseconds;
+typedef std::chrono::high_resolution_clock pclock;
+typedef std::chrono::time_point<std::chrono::steady_clock> tp;
+
 class MainApp : public Tempo::App {
 private:
     bool m_open = false;
@@ -19,6 +24,7 @@ private:
     bool open_popup = false;
 
     std::shared_ptr<UIState> m_ui_state = std::make_shared<UIState>();
+    std::string my_string;
 
 public:
     MainApp();

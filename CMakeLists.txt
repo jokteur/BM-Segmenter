@@ -57,10 +57,19 @@ add_subdirectory(external/rapidfuzz-cpp)
 # ICU (unicode)
 # ------------
 set(ICU_ROOT "C:\\libs\\icu")
-find_package(ICU COMPONENTS uc io in dt REQUIRED)
+find_package(ICU COMPONENTS uc io in REQUIRED)
 
 
 include_directories(${ICU_INCLUDE_DIRS})
+
+# ------
+# OpenCV
+# ------
+set(BUILD_SHARED_LIBS OFF)
+find_package(OpenCV 4.5.5 REQUIRED)
+include_directories(${OpenCV_INCLUDE_DIRS})
+set(OpenCV_LIBS opencv_core opencv_imgproc opencv_imgcodecs)
+
 
 # -------
 # DocTest
@@ -76,6 +85,7 @@ file (GLOB source_list RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         external/ImPlot/*.cpp
         src/python/*.cpp
         src/core/*.cpp
+        src/core/data/*.cpp
         src/ui/*.cpp
         src/ui/navigation/*.cpp
         src/ui/dataset/*.cpp
@@ -89,23 +99,25 @@ file (GLOB source_list RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     )
 
 add_library(${PROJECT_NAME}_lib ${source_list})
-add_executable(${PROJECT_NAME} ${source_list} src/main.cpp ${APP_ICON_RESOURCE_WINDOWS})
-set(LIB_LINK nlohmann_json Tempo rapidfuzz::rapidfuzz ${Python_LIBRARIES} ${ICU_LIBRARIES})
+add_executable(${PROJECT_NAME} src/main.cpp ${APP_ICON_RESOURCE_WINDOWS})
+set(LIB_LINK ${OpenCV_LIBS} nlohmann_json Tempo rapidfuzz::rapidfuzz ${Python_LIBRARIES} ${ICU_LIBRARIES})
 target_link_libraries(${PROJECT_NAME}_lib ${LIB_LINK})
-target_link_libraries(${PROJECT_NAME} PRIVATE ${LIB_LINK})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}_lib ${LIB_LINK})
 
 # Copy the data (such as fonts) in build directory
 add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
 COMMAND ${CMAKE_COMMAND} -E copy_directory
 ${CMAKE_SOURCE_DIR}/data/ $<TARGET_FILE_DIR:${PROJECT_NAME}>) 
 
+# Copy the python scripts
 # add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
 # 	COMMAND ${CMAKE_COMMAND} -E copy_directory
 #     ${CMAKE_SOURCE_DIR}/src/scripts $<TARGET_FILE_DIR:${PROJECT_NAME}>/python/scripts) 
 
 # Set compiler options
 if(MSVC)
-	target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
+    # /Wv:18 is because of OpenCV which generates warnings
+	target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX /Wv:18)
 else()
 	target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -pedantic -Werror)
 endif()

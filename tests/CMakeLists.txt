@@ -6,6 +6,7 @@ file (GLOB sources RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         src/*.cpp
         src/python/*.cpp
         src/core/*.cpp
+        src/core/data/*.cpp
         src/ui/*.cpp
         src/ui/navigation/*.cpp
         src/ui/dataset/*.cpp
@@ -18,11 +19,7 @@ file (GLOB sources RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         src/ui/search/*.cpp
     )
 
-set(test_all
-    search.cpp)
-
-
-add_executable(${PROJECT_NAME}_tests ${sources} ${test_all})
+add_executable(${PROJECT_NAME}_tests ${sources} main.cpp)
 target_link_libraries(${PROJECT_NAME}_tests doctest::doctest ${PROJECT_NAME}_lib)
 
 add_custom_command(TARGET ${PROJECT_NAME}_tests PRE_BUILD

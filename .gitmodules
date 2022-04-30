@@ -19,3 +19,6 @@
 [submodule "external/doctest"]
 	path = external/doctest
 	url = https://github.com/doctest/doctest.git
+[submodule "external/opencv"]
+	path = external/opencv
+	url = https://github.com/opencv/opencv.git
