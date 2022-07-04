@@ -14,6 +14,7 @@
 #include "opencv2/opencv.hpp"
 
 #include "basic.h"
+#include "compress.h"
 
 namespace Data {
     struct Slice;
@@ -81,7 +82,7 @@ namespace Data {
             return instance;
         }
 
-        void unload(Matrix2D& matrix2D);
+        void unload(Matrix2D& matrix2D, NotifyFct callback = no_op_fct);
         Tempo::jobId load(const std::string& path, Matrix2D& matrix2D, NotifyFct callback = no_op_fct);
         Tempo::jobId save(const std::string& path, Matrix2D& matrix2D, NotifyFct callback = no_op_fct);
     };

@@ -9,7 +9,6 @@ set(GCC_COVERAGE_COMPILE_FLAGS "-s -O3 -fvisibility=hidden")
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/build/install/0.1)
 
-
 # Python and TOML11 do not like each other
 # This flag avoids interopabilities problems
 add_compile_definitions(HAVE_SNPRINTF)
@@ -17,17 +16,30 @@ add_compile_definitions(HAVE_SNPRINTF)
 set(APP_LOG_DEBUG OFF CACHE BOOL "Collect log for debugging")
 set(APP_PRINT_DEBUG OFF CACHE BOOL "If LOG_DEBUG is on, print the log to the std")
 
-if (${APP_LOG_DEBUG})    
+if(${APP_LOG_DEBUG})
     add_compile_definitions(LOG_DEBUG)
 endif()
-if (${APP_PRINT_DEBUG})    
+
+if(${APP_PRINT_DEBUG})
     add_compile_definitions(PRINT_DEBUG)
 endif()
+
+# ~~~~~~~~~~~~~~~~~~
+# External libraries
+# ~~~~~~~~~~~~~~~~~~
+
+# ----
+# Zlib
+# ----
+add_subdirectory(external/zlib)
+include_directories(external/zlib)
+
+# Hack because zconf.h keeps disappearing when building
+target_include_directories(zlib PUBLIC "${PROJECT_SOURCE_DIR}/external/zconf")
 
 # --------
 # TempoApp
 # --------
-
 add_subdirectory(external/TempoApp)
 include_directories(external/TempoApp/include)
 include_directories(external/TempoApp/external/imgui/imgui)
@@ -59,7 +71,6 @@ add_subdirectory(external/rapidfuzz-cpp)
 set(ICU_ROOT "C:\\libs\\icu")
 find_package(ICU COMPONENTS uc io in REQUIRED)
 
-
 include_directories(${ICU_INCLUDE_DIRS})
 
 # ------
@@ -70,61 +81,77 @@ find_package(OpenCV 4.5.5 REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 set(OpenCV_LIBS opencv_core opencv_imgproc opencv_imgcodecs)
 
-
 # -------
 # DocTest
 # -------
 add_subdirectory(external/doctest)
+
+# ~~~~~~~~~~~~~~~
+# Program sources
+# ~~~~~~~~~~~~~~~
 
 # -----------
 # Main source
 # -----------
 include_directories(src)
 
-file (GLOB source_list RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-        external/ImPlot/*.cpp
-        src/python/*.cpp
-        src/core/*.cpp
-        src/core/data/*.cpp
-        src/ui/*.cpp
-        src/ui/navigation/*.cpp
-        src/ui/dataset/*.cpp
-        src/ui/import/*.cpp
-        src/ui/measurements/*.cpp
-        src/ui/ml/*.cpp
-        src/ui/translations/*.cpp
-        src/ui/segmentation/*.cpp
-        src/ui/widgets/*.cpp
-        src/ui/search/*.cpp
-    )
+file(GLOB source_list RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
+    external/ImPlot/*.cpp
+    src/python/*.cpp
+    src/core/*.cpp
+    src/core/data/*.cpp
+    src/ui/*.cpp
+    src/ui/navigation/*.cpp
+    src/ui/dataset/*.cpp
+    src/ui/import/*.cpp
+    src/ui/measurements/*.cpp
+    src/ui/ml/*.cpp
+    src/ui/translations/*.cpp
+    src/ui/segmentation/*.cpp
+    src/ui/widgets/*.cpp
+    src/ui/search/*.cpp
+)
 
+# Making a library without the main, for the tests and the program
 add_library(${PROJECT_NAME}_lib ${source_list})
+
+# Main program executable
 add_executable(${PROJECT_NAME} src/main.cpp ${APP_ICON_RESOURCE_WINDOWS})
-set(LIB_LINK ${OpenCV_LIBS} nlohmann_json Tempo rapidfuzz::rapidfuzz ${Python_LIBRARIES} ${ICU_LIBRARIES})
+
+# All the external libraries
+set(LIB_LINK zlib ${OpenCV_LIBS} nlohmann_json Tempo rapidfuzz::rapidfuzz ${Python_LIBRARIES} ${ICU_LIBRARIES})
 target_link_libraries(${PROJECT_NAME}_lib ${LIB_LINK})
-target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}_lib ${LIB_LINK})
+target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}_lib ${LIB_LINK})
 
 # Copy the data (such as fonts) in build directory
 add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
-COMMAND ${CMAKE_COMMAND} -E copy_directory
-${CMAKE_SOURCE_DIR}/data/ $<TARGET_FILE_DIR:${PROJECT_NAME}>) 
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_SOURCE_DIR}/data/ $<TARGET_FILE_DIR:${PROJECT_NAME}>)
 
 # Copy the python scripts
 # add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
-# 	COMMAND ${CMAKE_COMMAND} -E copy_directory
-#     ${CMAKE_SOURCE_DIR}/src/scripts $<TARGET_FILE_DIR:${PROJECT_NAME}>/python/scripts) 
+# COMMAND ${CMAKE_COMMAND} -E copy_directory
+# ${CMAKE_SOURCE_DIR}/src/scripts $<TARGET_FILE_DIR:${PROJECT_NAME}>/python/scripts)
+install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_PREFIX})
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/data/ DESTINATION ${CMAKE_INSTALL_PREFIX})
+
+# ~~~~~~~
+# Testing
+# ~~~~~~~
+add_executable(${PROJECT_NAME}_tests tests/main.cpp)
+target_link_libraries(${PROJECT_NAME}_tests doctest::doctest ${PROJECT_NAME}_lib)
+
+# Copy data to test folder
+add_custom_command(TARGET ${PROJECT_NAME}_tests PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_SOURCE_DIR}/data/ $<TARGET_FILE_DIR:${PROJECT_NAME}_tests>)
 
 # Set compiler options
 if(MSVC)
     # /Wv:18 is because of OpenCV which generates warnings
-	target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX /Wv:18)
+    target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX /Wv:18)
+    target_compile_options(${PROJECT_NAME}_tests PRIVATE /W4 /WX /Wv:18)
 else()
-	target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -pedantic -Werror)
+    target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -pedantic -Werror)
+    target_compile_options(${PROJECT_NAME}_tests PRIVATE -Wall -Wextra -pedantic -Werror)
 endif()
-
-install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_PREFIX})
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/data/ DESTINATION ${CMAKE_INSTALL_PREFIX})
-
-
-# Testing
-add_subdirectory(tests)

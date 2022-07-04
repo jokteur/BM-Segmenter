@@ -9,7 +9,7 @@ namespace Data {
         callback(false);
         return 0;
     }
-    void Matrix2DLoader::unload(Matrix2D& matrix2D) {
-
+    void Matrix2DLoader::unload(Matrix2D& matrix2D, NotifyFct callback) {
+        callback(false);
     }
 }

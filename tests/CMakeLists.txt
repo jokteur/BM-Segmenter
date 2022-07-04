@@ -1,4 +1,4 @@
-include_directories(../src)
+include_directories(src)
 
 
 file (GLOB sources RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
