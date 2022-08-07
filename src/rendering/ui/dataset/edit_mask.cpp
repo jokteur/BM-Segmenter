@@ -227,6 +227,13 @@ Rendering::EditMask::EditMask()
         }
     };
 
+
+    hide_mask_shortcut.keys = { GLFW_KEY_SPACE };
+    hide_mask_shortcut.name = "hide mask";
+    hide_mask_shortcut.callback = [this] {
+        toggle_hide_mask();
+    };
+
     EventQueue::getInstance().subscribe(&load_dicom_);
     EventQueue::getInstance().subscribe(&reload_seg_);
     EventQueue::getInstance().subscribe(&load_segmentation_);
@@ -254,6 +261,7 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
     button_logic();
     KeyboardShortCut::addTempShortcut(ctrl_z_);
     KeyboardShortCut::addTempShortcut(ctrl_y_);
+    KeyboardShortCut::addTempShortcut(hide_mask_shortcut);
 
     ImGui::Begin("Edit mask", &is_open_); // TODO: unique ID
 
@@ -347,9 +355,8 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
             validate_b_.ImGuiDraw(window, dimensions_);
 
             ImGui::SameLine();
-            if (ImGui::Button("Hide mask")) {
-                hide_mask = !hide_mask;
-                reset_image_ = true;
+            if (ImGui::Button(hide_mask ? "Show mask" : "Hide mask")) {
+                toggle_hide_mask();
             }
 
             if (!is_validated) {
@@ -704,6 +711,14 @@ void Rendering::EditMask::redo() {
         reset_image_ = true;
     }
 }
+
+void Rendering::EditMask::toggle_hide_mask() {
+    if (active_seg_ != nullptr && dicom_series_ != nullptr) {
+        hide_mask = !hide_mask;
+        reset_image_ = true;
+    }
+}
+
 
 void Rendering::EditMask::mask_changed() {
     EventQueue::getInstance().post(Event_ptr(new Event("mask/changed/" + dicom_series_->getId())));

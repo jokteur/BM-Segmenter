@@ -41,6 +41,7 @@ namespace Rendering {
         // Shortcuts
         Shortcut ctrl_z_;
         Shortcut ctrl_y_;
+        Shortcut hide_mask_shortcut;
 
         // Buttons
         ImageButton lasso_select_b_;
@@ -127,6 +128,7 @@ namespace Rendering {
         void set_mask();
         void undo();
         void redo();
+        void toggle_hide_mask();
         void mask_changed();
 
 
