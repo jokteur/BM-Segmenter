@@ -318,8 +318,9 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
                 (float)dicom_series_->getWW(),
                 (float)dicom_series_->getWC(), 
                 core::Image::FILTER_NEAREST, 
-                tmp_mask_.getData(), 
-                color
+                tmp_mask_.getData(),
+                color,
+                hide_mask
             );
     }
 
@@ -344,6 +345,12 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) 
                 ImGui::SameLine();
             }
             validate_b_.ImGuiDraw(window, dimensions_);
+
+            ImGui::SameLine();
+            if (ImGui::Button("Hide mask")) {
+                hide_mask = !hide_mask;
+                reset_image_ = true;
+            }
 
             if (!is_validated) {
                 if (!mask_collection_->isCursorBegin()) {

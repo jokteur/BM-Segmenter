@@ -73,6 +73,8 @@ namespace Rendering {
         ImVec2* raw_path_ = nullptr;
         int path_size = 0;
 
+        bool hide_mask = false;
+
         // Listeners
         Listener load_dicom_;
         Listener group_listener_;

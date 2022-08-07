@@ -69,14 +69,15 @@ bool core::Image::setImage(unsigned char *data, int width, int height, Filtering
     return success_;
 }
 
-bool core::Image::setImageFromHU(const cv::Mat& mat, float window_width, float window_center, Filtering filtering, const cv::Mat& mask, ImVec4 color) {
+bool core::Image::setImageFromHU(const cv::Mat& mat, float window_width, float window_center, Filtering filtering, const cv::Mat& mask, ImVec4 color, bool hide_mask) {
     auto* tmp_array = new unsigned char[(int)mat.rows * (int)mat.cols * 4];
     int i = 0;
 
     bool draw_mask = false;
     if (mask.rows == mat.rows && mask.cols == mat.cols
         && mask.rows > 0 && mask.cols > 0
-        && mat.rows > 0 && mat.cols > 0) {
+        && mat.rows > 0 && mat.cols > 0
+        && !hide_mask) {
         draw_mask = true;
     }
 
