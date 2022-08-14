@@ -52,10 +52,11 @@ namespace core {
          * @param window_center VOI LUT window center (see https://dicom.innolitics.com/ciods/ct-image/voi-lut/00281050)
          * @param filtering FILTERING
          * @param mask draw a mask on top of the image
-         * @param color color of the mask if it is defined
+         * @param mask_color mask_color of the mask if it is defined
          * @return
          */
-        bool setImageFromHU(const cv::Mat& mat, float window_width, float window_center, Filtering filtering = FILTER_NEAREST, const cv::Mat& mask = cv::Mat(), ImVec4 color = ImVec4(0, 0, 0, 0), bool hide_mask = false);
+        bool setImageFromHU(const cv::Mat& image, float window_width, float window_center, Filtering filtering = FILTER_NEAREST, const cv::Mat& mask = cv::Mat(), ImVec4 mask_color = ImVec4(0, 0, 0, 0), bool show_mask = false,
+                            bool highlight_range=false, int range_min=0, int range_max=0);
 
         /**
          * Erases any content in the image
