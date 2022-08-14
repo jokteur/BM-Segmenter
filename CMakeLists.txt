@@ -173,23 +173,22 @@ include_directories(thirdparty/toml11)
 # -----------
 include_directories(src)
 file (GLOB _project_src RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-        src/*.cpp src/*.h
-        src/python/*.h
+        src/*.cpp
         src/python/*.cpp
-        src/core/*.cpp src/core/*.h
-        src/core/project/*.cpp src/core/project/*.h
-        src/core/segmentation/*.cpp src/core/segmentation/*.h
-        src/core/dataset/*.cpp src/core/dataset/*.h
-        src/core/editor/*.cpp src/core/editor/*.h
-        src/rendering/*.cpp src/rendering/*.h
-        src/rendering/ui/*.cpp src/rendering/ui/*.h
-        src/rendering/ui/modales/*.h src/rendering/ui/modales/*.cpp
-        src/rendering/ui/dataset/*.h src/rendering/ui/dataset/*.cpp
-        src/rendering/ui/widgets/*.h src/rendering/ui/widgets/*.cpp
-        src/rendering/ui/project/*.cpp src/rendering/ui/project/*.h
-        src/rendering/ui/segmentation/*.cpp src/rendering/ui/segmentation/*.h
-        src/rendering/ui/import/*.cpp src/rendering/ui/import/*.h
-        src/rendering/views/*.cpp src/rendering/views/*.h)
+        src/core/*.cpp
+        src/core/project/*.cpp
+        src/core/segmentation/*.cpp
+        src/core/dataset/*.cpp
+        src/core/editor/*.cpp
+        src/rendering/*.cpp
+        src/rendering/ui/*.cpp
+        src/rendering/ui/modales/*.cpp
+        src/rendering/ui/dataset/*.cpp
+        src/rendering/ui/widgets/*.cpp
+        src/rendering/ui/project/*.cpp
+        src/rendering/ui/segmentation/*.cpp
+        src/rendering/ui/import/*.cpp
+        src/rendering/views/*.cpp)
 
 set(all_sources ${_project_src} ${GLAD_GL} ${imgui_src} ${imgui_binding} ${gl3w_src} ${cv2np})
 list(REMOVE_ITEM all_sources "src/main.cpp")
