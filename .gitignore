@@ -6,3 +6,4 @@ CMakeSettings.json
 .vs
 versions
 CMakePresets.json
+cmake-build*
