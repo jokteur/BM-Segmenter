@@ -1,6 +1,9 @@
 #ifndef BM_SEGMENTER_PY_API_H
 #define BM_SEGMENTER_PY_API_H
 
+// Workaround for pybind bug in debug. See https://github.com/microsoft/onnxruntime/issues/9735
+#define _STL_CRT_SECURE_INVALID_PARAMETER(expr) _CRT_SECURE_INVALID_PARAMETER(expr)
+
 #ifdef _DEBUG
 #undef _DEBUG
 #include <python.h>

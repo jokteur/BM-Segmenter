@@ -1,6 +1,9 @@
 // borrowed in spirit from https://github.com/yati-sagade/opencv-ndarray-conversion
 // MIT License
 
+// Workaround for pybind bug in debug. See https://github.com/microsoft/onnxruntime/issues/9735
+#define _STL_CRT_SECURE_INVALID_PARAMETER(expr) _CRT_SECURE_INVALID_PARAMETER(expr)
+
 #include "cv2np.h"
 
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
