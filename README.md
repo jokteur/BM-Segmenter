@@ -13,3 +13,7 @@ The BM-Segmenter projects aims to simplify image segmentation in the Bio-Medical
 ## State of the project
 
 This project is currently developped at the [Lausanne University Hospital](https://www.lausanneuniversityhospital.com/home) (known as CHUV). Currently, this tools is in a experimental phase. To see the state of the implemented features, please visit [this page](https://github.com/jokteur/BM-Segmenter/wiki/Outline-of-the-project).
+
+## Building instructions
+
+After cloning the repo, you will need to create a local copy of the file `CMakePresets_template.json` named `CMakePresets.json`, and edit its content to match your local python installation.
