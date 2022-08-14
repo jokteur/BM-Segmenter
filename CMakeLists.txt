@@ -89,6 +89,7 @@ add_definitions(-DPy_ENABLE_SHARED)
 set(Python_ROOT_DIR "" CACHE PATH "Python conda path")
 set(Python_NUMPY_INCLUDE "" CACHE PATH "Numpy include dir path")
 
+set(Python_FIND_STRATEGY LOCATION)
 find_package(Python COMPONENTS Interpreter Development)
 
 if((NOT ${Python_FOUND}))
