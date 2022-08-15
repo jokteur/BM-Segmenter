@@ -77,7 +77,7 @@ bool core::Image::setImageFromHU(const cv::Mat& image, float window_width, float
     bool draw_mask = mask.rows == image.rows && mask.cols == image.cols
                       && mask.rows > 0 && mask.cols > 0
                       && image.rows > 0 && image.cols > 0
-                      && !show_mask;
+                      && show_mask;
 
 
     for(int row_index = 0; row_index < image.rows; ++row_index) {
