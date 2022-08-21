@@ -57,7 +57,7 @@ include_directories(thirdparty/stb_image)
 # OpenCV
 # ------
 set(BUILD_SHARED_LIBS OFF)
-find_package(OpenCV 4.4 REQUIRED)
+find_package(OpenCV 4.6 REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 set(OpenCV_LIBS opencv_core opencv_imgproc opencv_imgcodecs)
 

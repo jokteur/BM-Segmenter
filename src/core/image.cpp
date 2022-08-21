@@ -70,7 +70,7 @@ bool core::Image::setImage(unsigned char *data, int width, int height, Filtering
 }
 
 bool core::Image::setImageFromHU(const cv::Mat& image, float window_width, float window_center, Filtering filtering, const cv::Mat& mask, ImVec4 mask_color,
-                                 bool show_mask, bool highlight_range, int range_min, int range_max) {
+                                 bool show_mask, bool highlight_range, const cv::Mat& hu_range_mask) {
     auto* new_image = new unsigned char[(int)image.rows * (int)image.cols * 4];
     int new_image_pixel_index = 0;
 
@@ -98,7 +98,7 @@ bool core::Image::setImageFromHU(const cv::Mat& image, float window_width, float
             if (draw_mask)
                 pixel_is_in_mask = mask.at<uchar>(row_index, col_index) != 0;
             if (highlight_range)
-                pixel_is_in_range = range_min <= image_pixel_value && image_pixel_value <= range_max;
+                pixel_is_in_range = hu_range_mask.at<uchar>(row_index, col_index) != 0;
 
             if (draw_mask && !highlight_range) {
                 if (pixel_is_in_mask) {

@@ -24,6 +24,7 @@ namespace Rendering {
         ImVec2 start;
         ImVec2 end;
     };
+
     /**
      * Little widget class for visualizing DICOM images
      */
@@ -51,8 +52,8 @@ namespace Rendering {
         ImageButton undo_b_;
         ImageButton redo_b_;
         ImageButton info_b_;
-        ImageButton* active_button_ = nullptr;
-        std::vector<ImageButton*> buttons_list_;
+        ImageButton *active_button_ = nullptr;
+        std::vector<ImageButton *> buttons_list_;
 
         std::shared_ptr<::core::segmentation::Segmentation> active_seg_ = nullptr;
 
@@ -70,11 +71,12 @@ namespace Rendering {
 
         ImVec2 last_mouse_pos_;
         bool begin_action_ = false;
-        
-        ImVec2* raw_path_ = nullptr;
+
+        ImVec2 *raw_path_ = nullptr;
         int path_size = 0;
 
-        bool hide_mask = false;
+        bool show_mask = true;
+        bool previous_show_mask = true;
 
         // Listeners
         Listener load_dicom_;
@@ -97,6 +99,7 @@ namespace Rendering {
 
         ::core::segmentation::Mask tmp_mask_;
         ::core::segmentation::Mask thresholded_hu_;
+        ::core::segmentation::Mask vert_mask;
         std::shared_ptr<::core::segmentation::MaskCollection> mask_collection_ = nullptr;
 
         int case_select_ = 1;
@@ -109,37 +112,48 @@ namespace Rendering {
         int group_idx_ = -1;
 
         void unload_mask();
+
         void unload_dicom(bool no_reset = false);
 
         void loadDicom(const std::shared_ptr<::core::DicomSeries> dicom, bool no_reset = false);
+
         void loadCase(int idx);
 
         void load_segmentation(std::shared_ptr<::core::segmentation::Segmentation> seg);
+
         bool load_mask();
 
         void disable_buttons();
+
         void button_logic();
 
         // For group select
         void set_NextPrev_buttons();
+
         void next();
+
         void previous();
 
         void set_mask();
+
         void undo();
+
         void redo();
-        void toggle_hide_mask();
+
         void mask_changed();
 
 
-        void lasso_widget(Rect& dimensions);
-        void box_widget(Rect& dimensions);
-        void brush_widget(Rect& dimensions);
+        void lasso_widget(Rect &dimensions);
+
+        void box_widget(Rect &dimensions);
+
+        void brush_widget(Rect &dimensions);
 
         void accept_drag_and_drop();
 
     public:
         EditMask();
+
         ~EditMask();
 
         /**
@@ -147,6 +161,30 @@ namespace Rendering {
          * @param window GLFW window pointer to which the drawable should be drawn
          * @param parent_dimension dimension of the parent layout
          */
-        void ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) override;
+        void ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) override;
+
+        bool highlight_hu_range = false;
+        bool previous_highlight_hu_range = false;
+        Shortcut highlight_hu_range_shortcut;
+        int lasso_or_brush = 0;
+        int limit_hu = 0;
+        bool both_add_and_remove = false;
+
+        void editTmpMaskAreaFromClick(const core::segmentation::Mask &area_to_edit, bool left_click,
+                                      bool right_click);
+
+        bool ignore_small_holes_and_objects = true;
+        bool prev_ignore_small_holes_and_objects = true;
+
+        void automaticBrushBorders();
+
+        void editTmpMaskArea(const core::segmentation::Mask &area_to_edit, bool add, bool remove,
+                             bool only_if_threshold_used);
+
+        float vert_min_distance = 0;
+        float prev_vert_min_distance = 0;
+
+
+
     };
 }

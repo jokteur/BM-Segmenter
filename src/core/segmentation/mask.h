@@ -76,6 +76,8 @@ namespace core {
 			void union_with(const Mask& mat);
 			void difference_with(const Mask& mat);
 
+            bool isEqualTo(const Mask &other);
+
 			/**
 			 * Returns the width of the mask
 			*/
@@ -207,7 +209,9 @@ namespace core {
 			void setPrediction(const Mask& mask) { prediction_ = prediction_; }
 		};
 
-		void buildHuMask(const cv::Mat& hu_mat, Mask& mask, int min, int max);
+		void buildHuMask(const cv::Mat &hu_mat, Mask &mask, bool do_threshold, int min, int max,
+                         bool ignore_small_holes_and_objects,
+                         int vert_min_distance);
 
 		void lassoSelectToMask(const std::vector<cv::Point>& pts, Mask& mask, int value = 1);
 
