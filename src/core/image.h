@@ -55,7 +55,7 @@ namespace core {
          * @param mask_color mask_color of the mask if it is defined
          * @return
          */
-        bool setImageFromHU(const cv::Mat& image, float window_width, float window_center, Filtering filtering = FILTER_NEAREST, const cv::Mat& mask = cv::Mat(), ImVec4 mask_color = ImVec4(0, 0, 0, 0), bool show_mask = false,
+        bool setImageFromHU(const cv::Mat& image, float window_width, float window_center, Filtering filtering = FILTER_NEAREST, const cv::Mat& mask = cv::Mat(), ImVec4 mask_color = ImVec4(0, 0, 0, 0), bool show_mask = true,
                             bool compare_with_other_mask=false, const cv::Mat& other_mask = cv::Mat());
 
         /**
