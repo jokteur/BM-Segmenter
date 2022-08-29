@@ -18,15 +18,19 @@ namespace core {
             memcpy(mat.data, array, sizeof(unsigned char) * rows * cols);
         }
 
-        Mask::Mask(int rows, int cols) : rows_(rows), cols_(cols) {
-            setDimensions(rows, cols);
+        Mask::Mask(int rows, int cols, bool ones) : rows_(rows), cols_(cols) {
+            setDimensions(rows, cols, false, ones);
         }
 
-        void Mask::setDimensions(int rows, int cols, bool no_build) {
+        void Mask::setDimensions(int rows, int cols, bool no_build, bool ones) {
             rows_ = rows;
             cols_ = cols;
-            if (!no_build)
-                data_ = cv::Mat::zeros(cv::Size(rows, cols), CV_8U);
+            if (!no_build) {
+                if (ones)
+                    data_ = cv::Mat::ones(cv::Size(rows, cols), CV_8U);
+                else
+                    data_ = cv::Mat::zeros(cv::Size(rows, cols), CV_8U);
+            }
         }
 
         void Mask::updateDimensions() {
@@ -105,6 +109,46 @@ namespace core {
                 }
             }
             return true;
+        }
+
+        void Mask::invert() {
+            uchar *data_array = data_.data;
+            for (int pixel_index = 0; pixel_index < rows_ * cols_; pixel_index++) {
+                data_array[pixel_index] = !data_array[pixel_index];
+            }
+        }
+
+        void Mask::remove_small_objects(int min_object_size) {
+            cv::Mat labels;
+            cv::Mat stats;
+            cv::Mat centroids;
+
+            int regions_count = cv::connectedComponentsWithStats(data_, labels, stats, centroids, 4);
+
+            auto *labels_array = (int *) labels.data;
+            unsigned char *mask_array = data_.data;
+
+            for (int region_index = 0; region_index < regions_count; region_index++) {
+                if (stats.at<int>(region_index, cv::CC_STAT_AREA) < min_object_size) {
+                    for (int pixel_index = 0; pixel_index < cols() * rows(); pixel_index++) {
+                        if (labels_array[pixel_index] == region_index) {
+                            mask_array[pixel_index] = 0;
+                        }
+                    }
+                }
+            }
+        }
+
+        void Mask::opening(int size) {
+            int diameter = size * 2 + 1;
+            auto kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(diameter, diameter));
+            cv::morphologyEx(data_, data_, cv::MORPH_OPEN, kernel);
+        }
+
+        void Mask::closing(int size) {
+            int diameter = size * 2 + 1;
+            auto kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(diameter, diameter));
+            cv::morphologyEx(data_, data_, cv::MORPH_CLOSE, kernel);
         }
 
         int MaskCollection::global_counter_ = 0;
@@ -484,96 +528,55 @@ namespace core {
             }
         }
 
-        void buildHuMask(const cv::Mat &hu_mat, Mask &mask, bool do_threshold, int min, int max,
-                         bool ignore_small_holes_and_objects,
-                         int vert_min_distance) {
-            if (hu_mat.rows <= 0 || hu_mat.cols <= 0) {
-                mask = Mask(0, 0);
-                return;
+
+        Mask huThresholdMask(const cv::Mat &image_matrix, int min_hu, int max_hu, bool ignore_small_objects,
+                             int closing_size, int opening_size) {
+
+            Mask threshold_mask(image_matrix.rows, image_matrix.cols);
+
+            auto *image_matrix_array = (short int *) image_matrix.data;
+            uchar *threshold_mask_matrix_array = threshold_mask.getData().data;
+
+            for (int pixel_index = 0; pixel_index < image_matrix.cols * image_matrix.rows; pixel_index++) {
+                threshold_mask_matrix_array[pixel_index] =
+                        min_hu <= image_matrix_array[pixel_index] && image_matrix_array[pixel_index] <= max_hu;
             }
 
-            auto &mat = mask.getData();
-            mat = cv::Mat::ones(cv::Size(hu_mat.rows, hu_mat.cols), CV_8U);
-            mask.setDimensions(hu_mat.rows, hu_mat.cols, true);
-
-
-            if (do_threshold) {
-                unsigned char *data = mat.data;
-
-                for (int row = 0; row < hu_mat.rows; ++row) {
-                    auto p = hu_mat.ptr<short int>(row);
-
-                    for (int col = 0; col < hu_mat.cols; ++col) {
-                        auto value = (float) *p;
-
-                        *data = (value >= min && value <= max) ? 1 : 0;
-                        p++;
-                        data++;
-                    }
-                }
-
-                if (ignore_small_holes_and_objects) {
-
-                    cv::Mat labels;
-                    cv::Mat stats;
-                    cv::Mat centroids;
-
-                    int regions_count = cv::connectedComponentsWithStats(mat, labels, stats, centroids, 4);
-
-                    unsigned int *labels_array = (unsigned int *) labels.data;
-                    unsigned char *hu_mask_array = mat.data;
-
-                    for (int region_index = 0; region_index < regions_count; region_index++) {
-                        if (stats.at<int>(region_index, cv::CC_STAT_AREA) < 100) {
-                            for (int i = 0; i < mat.cols * mat.rows; i++) {
-                                if (labels_array[i] == region_index) {
-                                    hu_mask_array[i] = 0;
-                                }
-                            }
-                        }
-                    }
-
-                    for (int i = 0; i < mat.cols * mat.rows; i++) {
-                        hu_mask_array[i] = hu_mask_array[i] == 1 ? 0 : 1;
-                    }
-
-                    regions_count = cv::connectedComponentsWithStats(mat, labels, stats, centroids, 4);
-
-                    for (int region_index = 0; region_index < regions_count; region_index++) {
-                        if (stats.at<int>(region_index, cv::CC_STAT_AREA) < 100) {
-                            for (int i = 0; i < mat.cols * mat.rows; i++) {
-                                if (labels_array[i] == region_index) {
-                                    hu_mask_array[i] = 0;
-                                }
-                            }
-                        }
-                    }
-
-                    for (int i = 0; i < mat.cols * mat.rows; i++) {
-                        hu_mask_array[i] = hu_mask_array[i] == 1 ? 0 : 1;
-                    }
-                }
+            if (closing_size > 0) {
+                threshold_mask.closing(closing_size);
             }
 
-
-            if (vert_min_distance > 0) {
-                Mask vert_mask(hu_mat.rows, hu_mat.cols);
-                auto &vert_matrix = vert_mask.getData();
-
-                short int *image_matrix_array = (short int *) hu_mat.data;
-                uchar *vert_matrix_array = vert_matrix.data;
-
-                for (int array_index = 0; array_index < hu_mat.rows * hu_mat.cols; array_index++) {
-                    vert_matrix_array[array_index] = image_matrix_array[array_index] > 150 ? 0 : 1;
-                }
-
-                auto element = cv::getStructuringElement(cv::MORPH_ELLIPSE,
-                                                         cv::Size(vert_min_distance, vert_min_distance));
-
-                cv::erode(vert_matrix, vert_matrix, element);
-
-                mask.intersect_with(vert_mask);
+            if (opening_size > 0) {
+                threshold_mask.opening(opening_size);
             }
+
+            if (ignore_small_objects) {
+                threshold_mask.remove_small_objects(100);
+                threshold_mask.invert();
+                threshold_mask.remove_small_objects(100);
+                threshold_mask.invert();
+            }
+
+            return threshold_mask;
+        }
+
+        Mask vertebraDistanceMask(const cv::Mat &image_matrix, int vertebra_min_hu, int vertebra_min_distance) {
+            Mask vertebra_distance_mask(image_matrix.rows, image_matrix.cols);
+
+            auto *image_matrix_array = (short int *) image_matrix.data;
+            uchar *vertebra_distance_mask_matrix_array = vertebra_distance_mask.getData().data;
+
+            for (int pixel_index = 0; pixel_index < image_matrix.cols * image_matrix.rows; pixel_index++) {
+                vertebra_distance_mask_matrix_array[pixel_index] = image_matrix_array[pixel_index] <= vertebra_min_hu;
+            }
+
+            int erosion_size = vertebra_min_distance * 2;
+            auto element = cv::getStructuringElement(cv::MORPH_ELLIPSE,
+                                                     cv::Size(erosion_size, erosion_size));
+
+            cv::erode(vertebra_distance_mask.getData(), vertebra_distance_mask.getData(), element);
+
+            return vertebra_distance_mask;
         }
 
 
@@ -588,6 +591,5 @@ namespace core {
                 cv::circle(mask.getData(), circle_center, radius, value, -1);
             }
         }
-
     }
 }

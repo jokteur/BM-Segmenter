@@ -61,6 +61,7 @@ namespace Rendering {
 
         // State variables
         float brush_size_ = 10;
+        float auto_brush_size_ = 3;
         int add_sub_option_ = 0;
 
         bool threshold_hu_ = false;
@@ -98,8 +99,11 @@ namespace Rendering {
         int num_names_ = 0;
 
         ::core::segmentation::Mask tmp_mask_;
-        ::core::segmentation::Mask thresholded_hu_;
-        ::core::segmentation::Mask vert_mask;
+        ::core::segmentation::Mask hu_threshold_mask;
+        ::core::segmentation::Mask vertebra_distance_mask;
+        ::core::segmentation::Mask edition_limit_mask;
+        bool use_edition_limit_mask;
+
         std::shared_ptr<::core::segmentation::MaskCollection> mask_collection_ = nullptr;
 
         int case_select_ = 1;
@@ -163,9 +167,12 @@ namespace Rendering {
          */
         void ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) override;
 
-        bool highlight_hu_range = false;
-        bool previous_highlight_hu_range = false;
+        bool use_hu_range = false;
+        bool prev_use_hu_range = use_hu_range;
         Shortcut highlight_hu_range_shortcut;
+        Shortcut vertebra_min_distance_shortcut;
+        Shortcut lasso_shortcut;
+        Shortcut brush_shortcut;
         int lasso_or_brush = 0;
         int limit_hu = 0;
         bool both_add_and_remove = false;
@@ -173,18 +180,29 @@ namespace Rendering {
         void editTmpMaskAreaFromClick(const core::segmentation::Mask &area_to_edit, bool left_click,
                                       bool right_click);
 
-        bool ignore_small_holes_and_objects = true;
-        bool prev_ignore_small_holes_and_objects = true;
+        bool ignore_small_holes_and_objects = false;
+        bool prev_ignore_small_holes_and_objects = ignore_small_holes_and_objects;
 
         void automaticBrushBorders();
 
         void editTmpMaskArea(const core::segmentation::Mask &area_to_edit, bool add, bool remove,
-                             bool only_if_threshold_used);
+                             bool only_if_limitation_used);
 
-        float vert_min_distance = 0;
-        float prev_vert_min_distance = 0;
+        float vertebra_min_distance = 1;
+        float prev_vertebra_min_distance = vertebra_min_distance;
 
 
+        bool use_vertebra_min_distance = false;
+        bool prev_use_vertebra_min_distance = use_vertebra_min_distance;
+        float vertebra_min_HU = 150;
+        float prev_vertebra_min_HU = vertebra_min_HU;
 
+        void updateHuThresholdMask();
+        void updateVertebraDistanceMask();
+        void updateEditionLimitMask();
+
+        bool disable_edit = false;
+        int opening_size = 0;
+        int prev_opening_size = opening_size;
     };
 }

@@ -70,7 +70,7 @@ bool core::Image::setImage(unsigned char *data, int width, int height, Filtering
 }
 
 bool core::Image::setImageFromHU(const cv::Mat& image, float window_width, float window_center, Filtering filtering, const cv::Mat& mask, ImVec4 mask_color,
-                                 bool show_mask, bool highlight_range, const cv::Mat& hu_range_mask) {
+                                 bool show_mask, bool compare_with_other_mask, const cv::Mat& other_mask) {
     auto* new_image = new unsigned char[(int)image.rows * (int)image.cols * 4];
     int new_image_pixel_index = 0;
 
@@ -97,10 +97,10 @@ bool core::Image::setImageFromHU(const cv::Mat& image, float window_width, float
 
             if (draw_mask)
                 pixel_is_in_mask = mask.at<uchar>(row_index, col_index) != 0;
-            if (highlight_range)
-                pixel_is_in_range = hu_range_mask.at<uchar>(row_index, col_index) != 0;
+            if (compare_with_other_mask)
+                pixel_is_in_range = other_mask.at<uchar>(row_index, col_index) != 0;
 
-            if (draw_mask && !highlight_range) {
+            if (draw_mask && !compare_with_other_mask) {
                 if (pixel_is_in_mask) {
                     overlay_color_r = mask_color.x;
                     overlay_color_g = mask_color.y;
@@ -108,7 +108,7 @@ bool core::Image::setImageFromHU(const cv::Mat& image, float window_width, float
                     overlay_transparency = mask_color.w;
                 }
             }
-            else if (!draw_mask && highlight_range) {
+            else if (!draw_mask && compare_with_other_mask) {
                 if (pixel_is_in_range) {
                     overlay_color_r = 1.f;
                     overlay_color_g = 0.f;
@@ -116,7 +116,7 @@ bool core::Image::setImageFromHU(const cv::Mat& image, float window_width, float
                     overlay_transparency = mask_color.w;
                 }
             }
-            else if (draw_mask && highlight_range){
+            else if (draw_mask && compare_with_other_mask){
                 if (pixel_is_in_range && !pixel_is_in_mask) {
                     overlay_color_r = 1.f;
                     overlay_color_g = 0.f;

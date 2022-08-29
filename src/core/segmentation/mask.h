@@ -37,7 +37,7 @@ namespace core {
 
 			//void load_from_file(const std::string& filename);
 		public:
-			Mask(int rows, int cols);
+			Mask(int rows, int cols, bool ones = false);
 
 			Mask() = default;
 
@@ -45,7 +45,7 @@ namespace core {
 			 * Sets the dimensions of the mask
 			 * Will reset any data that was previously present in the object
 			*/
-			void setDimensions(int rows, int cols, bool no_build = false);
+			void setDimensions(int rows, int cols, bool no_build = false, bool ones = false);
 			void updateDimensions();
 			//Mask(const std::string& filename);
 
@@ -75,8 +75,11 @@ namespace core {
 			void intersect_with(const Mask& mat);
 			void union_with(const Mask& mat);
 			void difference_with(const Mask& mat);
-
             bool isEqualTo(const Mask &other);
+
+            void invert();
+
+            void remove_small_objects(int min_object_size);
 
 			/**
 			 * Returns the width of the mask
@@ -87,7 +90,11 @@ namespace core {
 			 * Returns the width of the mask
 			*/
 			int cols() const { return cols_; }
-		};
+
+            void opening(int size);
+
+            void closing(int size);
+        };
 
 		/**
 		* A mask collection allows to store the history of a segmentation,
@@ -209,13 +216,16 @@ namespace core {
 			void setPrediction(const Mask& mask) { prediction_ = prediction_; }
 		};
 
-		void buildHuMask(const cv::Mat &hu_mat, Mask &mask, bool do_threshold, int min, int max,
-                         bool ignore_small_holes_and_objects,
-                         int vert_min_distance);
+        Mask huThresholdMask(const cv::Mat &image_matrix, int min_hu, int max_hu, bool ignore_small_objects,
+                             int closing_size,
+                             int opening_size);
+
+        Mask vertebraDistanceMask(const cv::Mat &image_matrix, int vertebra_min_hu, int vertebra_min_distance);
 
 		void lassoSelectToMask(const std::vector<cv::Point>& pts, Mask& mask, int value = 1);
 
 		//void boxSelectToMask(const ImVec2& top_left, const ImVec2& bottom_right, Mask& mask, int value = 1);
 		void brushToMask(float brush_size, ImVec2 position, Mask& mask, int value = 1);
-	}
+
+    }
 }

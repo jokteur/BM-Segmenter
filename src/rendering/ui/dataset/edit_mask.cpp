@@ -92,8 +92,10 @@ bool Rendering::EditMask::load_mask() {
                 tmp_mask_ = ::core::segmentation::Mask(dicom_dimensions_.x, dicom_dimensions_.y);
                 mask_collection_->setDimensions(dicom_dimensions_.x, dicom_dimensions_.y);
             }
+            updateHuThresholdMask();
+            updateVertebraDistanceMask();
+            updateEditionLimitMask();
             reset_image_ = true;
-            build_hu_mask_ = true;
         } else {
             image_.setImageFromHU(
                     dicom_series_->getCurrentDicom().data,
@@ -164,8 +166,10 @@ Rendering::EditMask::EditMask()
 
     // Deactivate buttons if user is dragging
     deactivate_buttons_.callback = [=](Event_ptr &event) {
-        disable_buttons();
+//        disable_buttons();
+        disable_edit = true;
     };
+
     deactivate_buttons_.filter = "global/no_action";
 
     // Reset the view if there is a request
@@ -233,8 +237,25 @@ Rendering::EditMask::EditMask()
     highlight_hu_range_shortcut.keys = {GLFW_KEY_H};
     highlight_hu_range_shortcut.name = "highlight hu range";
     highlight_hu_range_shortcut.callback = [this] {
-        highlight_hu_range = !highlight_hu_range;
-        reset_image_ = true;
+        use_hu_range = !use_hu_range;
+    };
+
+    vertebra_min_distance_shortcut.keys = {GLFW_KEY_V};
+    vertebra_min_distance_shortcut.name = "vertebra min distance";
+    vertebra_min_distance_shortcut.callback = [this] {
+        use_vertebra_min_distance = !use_vertebra_min_distance;
+    };
+
+    lasso_shortcut.keys = {GLFW_KEY_L};
+    lasso_shortcut.name = "lasso";
+    lasso_shortcut.callback = [this] {
+        lasso_or_brush = 0;
+    };
+
+    brush_shortcut.keys = {GLFW_KEY_B};
+    brush_shortcut.name = "lasso";
+    brush_shortcut.callback = [this] {
+        lasso_or_brush = 1;
     };
 
     EventQueue::getInstance().subscribe(&load_dicom_);
@@ -266,6 +287,9 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) 
     KeyboardShortCut::addTempShortcut(ctrl_y_);
     KeyboardShortCut::addTempShortcut(hide_mask_shortcut);
     KeyboardShortCut::addTempShortcut(highlight_hu_range_shortcut);
+    KeyboardShortCut::addTempShortcut(vertebra_min_distance_shortcut);
+    KeyboardShortCut::addTempShortcut(lasso_shortcut);
+    KeyboardShortCut::addTempShortcut(brush_shortcut);
 
     ImGui::Begin("Edit mask", &is_open_); // TODO: unique ID
 
@@ -331,20 +355,21 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) 
                     tmp_mask_.getData(),
                     color,
                     show_mask,
-                    highlight_hu_range || vert_min_distance != 0,
-                    thresholded_hu_.getData()
+                    use_edition_limit_mask && show_mask,
+                    edition_limit_mask.getData()
             );
     }
 
 
     // Buttons and validation
+    bool is_validated = false;
     {
         if (active_seg_ == nullptr) {
             ImGui::Text("Please select a segmentation before editing the image.");
         } else if (dicom_series_ != nullptr && mask_collection_ != nullptr) {
-            bool is_validated = mask_collection_->getIsValidated();
+            is_validated = mask_collection_->getIsValidated();
 
-            // Validation tool
+            // -------------- Validation tool --------------
             auto &username = project->getCurrentUser();
             auto &names = mask_collection_->getValidatedBy();
             auto &users = project->getUsers();
@@ -439,44 +464,59 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) 
                 reset_image_ = true;
             }
             // Highlight HU range checkbox
-            ImGui::SameLine();
-            ImGui::Checkbox("HU threshold (H)", &highlight_hu_range);
+            ImGui::Checkbox("HU threshold (H)", &use_hu_range);
+            if (prev_use_hu_range != use_hu_range) {
+                prev_use_hu_range = use_hu_range;
+                updateEditionLimitMask();
+            }
+            if (use_hu_range) {
+                ImGui::SameLine();
+                ImGui::DragFloatRange2(" ", &hu_min_, &hu_max_, 1.f, -1000.f, 3000.f, "Min: %.1f HU",
+                                       "Max: %.1f HU");
+                ImGui::SameLine();
+                ImGui::Checkbox("Ignore small holes", &ignore_small_holes_and_objects);
 
-            // HU threshold fields
-            ImGui::SameLine();
-            ImGui::DragFloatRange2(" ", &hu_min_, &hu_max_, 1.f, -1000.f, 3000.f, "Min: %.1f HU",
-                                   "Max: %.1f HU");
-            ImGui::SameLine();
-            ImGui::Checkbox("ignore small holes", &ignore_small_holes_and_objects);
+                ImGui::SameLine();
+                ImGui::DragInt("   ", &opening_size, .1, 0, 10, "smooth borders %d");
 
-            ImGui::SameLine();
-            ImGui::DragFloat("Vertebra min distance", &vert_min_distance, 1, 0, 10);
-            if (prev_hu_max_ != hu_max_ || prev_hu_min_ != hu_min_ ||
-                prev_ignore_small_holes_and_objects != ignore_small_holes_and_objects ||
-                prev_vert_min_distance != vert_min_distance ||
-                previous_highlight_hu_range != highlight_hu_range ||
-                build_hu_mask_) {
-                build_hu_mask_ = false;
-                previous_highlight_hu_range = highlight_hu_range;
-                prev_hu_max_ = hu_max_;
-                prev_hu_min_ = hu_min_;
-                prev_vert_min_distance = vert_min_distance;
-                prev_ignore_small_holes_and_objects = ignore_small_holes_and_objects;
-                if (dicom_series_ != nullptr)
-                    ::core::segmentation::buildHuMask(dicom_series_->getCurrentDicom().data, thresholded_hu_,
-                                                      highlight_hu_range, hu_min_,
-                                                      hu_max_, ignore_small_holes_and_objects, vert_min_distance);
-                reset_image_ = true;
+                if (prev_hu_max_ != hu_max_ || prev_hu_min_ != hu_min_ ||
+                    prev_ignore_small_holes_and_objects != ignore_small_holes_and_objects ||
+                    prev_opening_size != opening_size) {
+                    prev_hu_max_ = hu_max_;
+                    prev_hu_min_ = hu_min_;
+                    prev_ignore_small_holes_and_objects = ignore_small_holes_and_objects;
+                    prev_opening_size = opening_size;
+                    updateHuThresholdMask();
+                }
             }
 
+            ImGui::Checkbox("Vertebra min distance (V)", &use_vertebra_min_distance);
+            if (prev_use_vertebra_min_distance != use_vertebra_min_distance) {
+                prev_use_vertebra_min_distance = use_vertebra_min_distance;
+                updateEditionLimitMask();
+            }
+            if (use_vertebra_min_distance) {
+                ImGui::SameLine();
+                // there is a strange bug that connects DragFloats with identical labels, so we make sure that labels are different...
+                ImGui::DragFloat("  ", &vertebra_min_HU, 1, -1000, 3000, "Vertebra min HU : %.1f");
+                ImGui::SameLine();
+                ImGui::DragFloat("   ", &vertebra_min_distance, .1, 1, 10, "Distance : %.0f pixels");
+
+                if (prev_vertebra_min_HU != vertebra_min_HU || prev_vertebra_min_distance != vertebra_min_distance) {
+                    prev_vertebra_min_HU = vertebra_min_HU;
+                    prev_vertebra_min_distance = vertebra_min_distance;
+                    updateVertebraDistanceMask();
+                }
+            }
 
             if (!is_validated) {
-                ImGui::RadioButton("Lasso", &lasso_or_brush, 0);
+                ImGui::RadioButton("Lasso (L)", &lasso_or_brush, 0);
                 ImGui::SameLine();
-                ImGui::RadioButton("Brush", &lasso_or_brush, 1);
+                ImGui::RadioButton("Brush (B)", &lasso_or_brush, 1);
                 if (lasso_or_brush == 1) {
                     ImGui::SameLine();
-                    ImGui::SliderFloat("Brush size", &brush_size_, 1, 200, "%.1f px", ImGuiSliderFlags_Logarithmic);
+                    ImGui::SliderFloat("Brush size (mouse scroll)", &brush_size_, 1, 200, "%.1f px",
+                                       ImGuiSliderFlags_Logarithmic);
                 }
 
 
@@ -495,6 +535,9 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) 
                 if (ImGui::Button("Auto brush borders")) {
                     automaticBrushBorders();
                 }
+                ImGui::SameLine();
+                ImGui::SliderFloat("Auto brush size", &auto_brush_size_, 1, 200, "%.1f px",
+                                   ImGuiSliderFlags_Logarithmic);
                 ImGui::SameLine();
 
                 if (!mask_collection_->isCursorBegin()) {
@@ -534,11 +577,17 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) 
 
         Rect &dimensions = image_widget_.getDimensions();
 
-        if (lasso_or_brush == 0) {
-            lasso_widget(dimensions);
-        } else if (lasso_or_brush == 1) {
-            brush_widget(dimensions);
+
+        if (!disable_edit && !is_validated) {
+            if (lasso_or_brush == 0) {
+                lasso_widget(dimensions);
+            } else if (lasso_or_brush == 1) {
+                brush_widget(dimensions);
+            }
+        } else {
+            disable_edit = false;
         }
+
 
         if (info_b_.
 
@@ -594,6 +643,41 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) 
     ImGui::End();
 
 }
+
+void Rendering::EditMask::updateHuThresholdMask() {
+    hu_threshold_mask = core::segmentation::huThresholdMask(dicom_series_->getCurrentDicom().data,
+                                                            hu_min_, hu_max_,
+                                                            ignore_small_holes_and_objects,
+                                                            opening_size, opening_size);
+    updateEditionLimitMask();
+}
+
+void Rendering::EditMask::updateVertebraDistanceMask() {
+    vertebra_distance_mask = core::segmentation::vertebraDistanceMask(dicom_series_->getCurrentDicom().data,
+                                                                      vertebra_min_HU, vertebra_min_distance);
+
+    updateEditionLimitMask();
+}
+
+void Rendering::EditMask::updateEditionLimitMask() {
+    edition_limit_mask = core::segmentation::Mask(dicom_series_->getCurrentDicom().data.rows,
+                                                  dicom_series_->getCurrentDicom().data.cols,
+                                                  true);
+    use_edition_limit_mask = false;
+
+    if (use_hu_range) {
+        edition_limit_mask.intersect_with(hu_threshold_mask);
+        use_edition_limit_mask = true;
+    }
+
+    if (use_vertebra_min_distance) {
+        edition_limit_mask.intersect_with(vertebra_distance_mask);
+        use_edition_limit_mask = true;
+    }
+
+    reset_image_ = true;
+}
+
 
 void Rendering::EditMask::accept_drag_and_drop() {
     if (ImGui::BeginDragDropTarget()) { BM_DEBUG("Accept drag and drop");
@@ -755,7 +839,7 @@ void Rendering::EditMask::mask_changed() {
 
 void Rendering::EditMask::lasso_widget(Rect &dimensions) {
     auto mouse_pos = ImGui::GetMousePos();
-    if (ImGui::IsMouseDown(0)) {
+    if (ImGui::IsMouseDown(0) || ImGui::IsMouseDown(1)) {
         ImGuiIO &io = ImGui::GetIO();
         if (Widgets::check_hitbox(mouse_pos, dimensions) && !begin_action_ && !io.KeyCtrl) {
             begin_action_ = true;
@@ -779,7 +863,7 @@ void Rendering::EditMask::lasso_widget(Rect &dimensions) {
                                                             2);
         }
     }
-    if (ImGui::IsMouseReleased(0) && begin_action_) {
+    if ((ImGui::IsMouseReleased(0) || ImGui::IsMouseReleased(1)) && begin_action_) {
         if (raw_path_ != nullptr) {
             std::vector<cv::Point> positions;
             Crop crop = image_widget_.getCrop();
@@ -793,24 +877,10 @@ void Rendering::EditMask::lasso_widget(Rect &dimensions) {
             }
 
             // Draw the polygon
-            auto *mask = &tmp_mask_;
-            if (threshold_hu_) {
-                mask = new ::core::segmentation::Mask(tmp_mask_.rows(), tmp_mask_.cols());
-            }
-            if (threshold_hu_)
-                ::core::segmentation::lassoSelectToMask(positions, *mask, 1);
-            else
-                ::core::segmentation::lassoSelectToMask(positions, *mask, (!add_sub_option_) ? 1 : 0);
+            ::core::segmentation::Mask mask(tmp_mask_.rows(), tmp_mask_.cols());
+            ::core::segmentation::lassoSelectToMask(positions, mask, 1);
 
-            if (threshold_hu_) {
-                mask->intersect_with(thresholded_hu_);
-                if (add_sub_option_) {
-                    tmp_mask_.difference_with(*mask);
-                } else {
-                    tmp_mask_.union_with(*mask);
-                }
-                delete mask;
-            }
+            editTmpMaskAreaFromClick(mask, ImGui::IsMouseReleased(0), ImGui::IsMouseReleased(1));
 
             delete[] raw_path_;
             path_size = 0;
@@ -866,8 +936,7 @@ void Rendering::EditMask::brush_widget(Rect &dimensions) {
 
         // Apply brush to mask
         if ((ImGui::IsMouseDown(0) || ImGui::IsMouseDown(1)) && !io.KeyCtrl) {
-            bool left_click = ImGui::IsMouseDown(0);
-            bool right_click = ImGui::IsMouseDown(1);
+
             if (mouse_pos.x != last_mouse_pos_.x || mouse_pos.y != last_mouse_pos_.y) {
                 float distance =
                         pow((mouse_pos.x - last_mouse_pos_.x), 2) + pow((mouse_pos.y - last_mouse_pos_.y), 2);
@@ -899,7 +968,7 @@ void Rendering::EditMask::brush_widget(Rect &dimensions) {
                     };
                     ::core::segmentation::brushToMask(brush_size_ / 2.f, corrected_mouse_pos, mask, 1);
                 }
-                editTmpMaskAreaFromClick(mask, left_click, right_click);
+                editTmpMaskAreaFromClick(mask, ImGui::IsMouseDown(0), ImGui::IsMouseDown(1));
                 reset_image_ = true;
                 begin_action_ = true;
             }
@@ -945,7 +1014,7 @@ void Rendering::EditMask::automaticBrushBorders() {
         core::segmentation::Mask edition_mask(tmp_mask_.rows(), tmp_mask_.cols());
         auto position = ImVec2{static_cast<float>(border_coordinate.second),
                                static_cast<float>(border_coordinate.first)};
-        ::core::segmentation::brushToMask(3, position, edition_mask, 1);
+        ::core::segmentation::brushToMask(auto_brush_size_, position, edition_mask, 1);
         editTmpMaskArea(edition_mask, true, true, true);
     }
     reset_image_ = true;
@@ -954,36 +1023,36 @@ void Rendering::EditMask::automaticBrushBorders() {
 
 void Rendering::EditMask::editTmpMaskAreaFromClick(const core::segmentation::Mask &area_to_edit, bool left_click,
                                                    bool right_click) {
-    bool add = false;
-    bool remove = false;
-    if (limit_hu == 1 && both_add_and_remove) {
-        add = true;
-        remove = true;
-    } else {
-        add = left_click;
-        remove = right_click;
-    }
 
-    editTmpMaskArea(area_to_edit, add, remove, false);
-
+    editTmpMaskArea(area_to_edit, left_click, right_click, false);
 }
 
 void Rendering::EditMask::editTmpMaskArea(const core::segmentation::Mask &area_to_edit, bool add, bool remove,
-                                          bool only_if_threshold_used) {
+                                          bool only_if_limitation_used) {
     if (add) {
         core::segmentation::Mask area_to_add = area_to_edit.copy();
-        area_to_add.intersect_with(thresholded_hu_);
-        bool threshold_used = !area_to_add.isEqualTo(area_to_edit);
-        if (!only_if_threshold_used || threshold_used) {
+        bool limitation_used = false;
+        if (use_edition_limit_mask) {
+            area_to_add.intersect_with(edition_limit_mask);
+            limitation_used = !area_to_add.isEqualTo(area_to_edit);
+        }
+        if (!only_if_limitation_used || limitation_used) {
             tmp_mask_.union_with(area_to_add);
         }
     }
 
     if (remove) {
         core::segmentation::Mask area_to_remove = area_to_edit.copy();
-        area_to_remove.difference_with(thresholded_hu_);
-        bool threshold_used = !area_to_remove.isEqualTo(area_to_edit);
-        if (!only_if_threshold_used || threshold_used)
+        bool limitation_used = false;
+        if (use_edition_limit_mask) {
+            area_to_remove.difference_with(edition_limit_mask);
+            limitation_used = !area_to_remove.isEqualTo(area_to_edit);
+        }
+        if (!only_if_limitation_used || limitation_used)
             tmp_mask_.difference_with(area_to_remove);
     }
 }
+
+
+
+

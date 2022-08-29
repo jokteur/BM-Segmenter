@@ -97,6 +97,15 @@ void Rendering::DatasetView::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
                 BM_DEBUG("generate segmentation list");
             }
             seg_select_.ImGuiDraw("Select segmentation");
+
+//            if (ImGui::Button("Unvalidate all")) {
+//                for (auto& dicom : dicoms_) {
+//                    const std::shared_ptr<core::segmentation::MaskCollection> &mask_collection = active_seg_->getMask(dicom);
+//                    mask_collection->loadData(true);
+//                    mask_collection->removeAllValidatedBy();
+//                    mask_collection->saveCollection();
+//                }
+//            }
         }
 
         // Show group selection
