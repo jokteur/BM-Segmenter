@@ -70,7 +70,8 @@ bool core::Image::setImage(unsigned char *data, int width, int height, Filtering
 }
 
 bool core::Image::setImageFromHU(const cv::Mat& image, float window_width, float window_center, Filtering filtering, const cv::Mat& mask, ImVec4 mask_color,
-                                 bool show_mask, bool compare_with_other_mask, const cv::Mat& other_mask) {
+                                 bool show_mask, bool compare_with_other_mask, const cv::Mat& other_mask,
+                                 const std::set<int> &debug_lines_x, const std::set<int> &debug_lines_y) {
     auto* new_image = new unsigned char[(int)image.rows * (int)image.cols * 4];
     int new_image_pixel_index = 0;
 
@@ -79,6 +80,7 @@ bool core::Image::setImageFromHU(const cv::Mat& image, float window_width, float
                       && image.rows > 0 && image.cols > 0
                       && show_mask;
 
+    bool draw_debug_lines = debug_lines_x.size() > 0 || debug_lines_y.size() > 0;
 
     for(int row_index = 0; row_index < image.rows; ++row_index) {
         auto image_pixel_pointer = image.ptr<short int>(row_index);
@@ -86,70 +88,87 @@ bool core::Image::setImageFromHU(const cv::Mat& image, float window_width, float
         for(int col_index = 0; col_index < image.cols; ++col_index) {
             auto image_pixel_value = (float)*image_pixel_pointer;
 
-            // below values are between 0 and 1
-            float overlay_color_r = 0;
-            float overlay_color_g = 0;
-            float overlay_color_b = 0;
-            float overlay_transparency = 0;
+            bool pixel_is_on_debug_line =
+                    draw_debug_lines &&
+                    (debug_lines_x.find(col_index) != debug_lines_x.end()
+                     || debug_lines_y.find(row_index) != debug_lines_y.end());
 
-            bool pixel_is_in_mask = false;
-            bool pixel_is_in_range = false;
-
-            if (draw_mask)
-                pixel_is_in_mask = mask.at<uchar>(row_index, col_index) != 0;
-            if (compare_with_other_mask)
-                pixel_is_in_range = other_mask.at<uchar>(row_index, col_index) != 0;
-
-            if (draw_mask && !compare_with_other_mask) {
-                if (pixel_is_in_mask) {
-                    overlay_color_r = mask_color.x;
-                    overlay_color_g = mask_color.y;
-                    overlay_color_b = mask_color.z;
-                    overlay_transparency = mask_color.w;
-                }
+            if (pixel_is_on_debug_line) {
+                new_image[4 * new_image_pixel_index] = 255;
+                new_image[4 * new_image_pixel_index + 1] = 255;
+                new_image[4 * new_image_pixel_index + 2] = 255;
+                new_image[4 * new_image_pixel_index + 3] = 255;
             }
-            else if (!draw_mask && compare_with_other_mask) {
-                if (pixel_is_in_range) {
-                    overlay_color_r = 1.f;
-                    overlay_color_g = 0.f;
-                    overlay_color_b = 0.f;
-                    overlay_transparency = mask_color.w;
+            else {
+
+                // below values are between 0 and 1
+                float overlay_color_r = 0;
+                float overlay_color_g = 0;
+                float overlay_color_b = 0;
+                float overlay_transparency = 0;
+
+                bool pixel_is_in_mask = false;
+                bool pixel_is_in_range = false;
+
+                if (draw_mask)
+                    pixel_is_in_mask = mask.at<uchar>(row_index, col_index) != 0;
+                if (compare_with_other_mask)
+                    pixel_is_in_range = other_mask.at<uchar>(row_index, col_index) != 0;
+
+                if (draw_mask && !compare_with_other_mask) {
+                    if (pixel_is_in_mask) {
+                        overlay_color_r = mask_color.x;
+                        overlay_color_g = mask_color.y;
+                        overlay_color_b = mask_color.z;
+                        overlay_transparency = mask_color.w;
+                    }
+                } else if (!draw_mask && compare_with_other_mask) {
+                    if (pixel_is_in_range) {
+                        overlay_color_r = 1.f;
+                        overlay_color_g = 0.f;
+                        overlay_color_b = 0.f;
+                        overlay_transparency = mask_color.w;
+                    }
+                } else if (draw_mask && compare_with_other_mask) {
+                    if (pixel_is_in_range && !pixel_is_in_mask) {
+                        overlay_color_r = 1.f;
+                        overlay_color_g = 0.f;
+                        overlay_color_b = 0.f;
+                        overlay_transparency = mask_color.w;
+                    }
+                    if (pixel_is_in_range && pixel_is_in_mask) {
+                        overlay_color_r = 0.f;
+                        overlay_color_g = 1.f;
+                        overlay_color_b = 0.f;
+                        overlay_transparency = mask_color.w;
+                    }
+                    if (!pixel_is_in_range && pixel_is_in_mask) {
+                        overlay_color_r = 0.f;
+                        overlay_color_g = 0.f;
+                        overlay_color_b = 1.f;
+                        overlay_transparency = mask_color.w;
+                    }
                 }
+
+                float image_pixel_display_value;
+                if (image_pixel_value <= window_center - 0.5f - (window_width - 1.f) * 0.5f)
+                    image_pixel_display_value = 0;
+                else if (image_pixel_value > window_center - 0.5f + (window_width - 1.f) * 0.5f)
+                    image_pixel_display_value = 1;
+                else
+                    image_pixel_display_value = ((image_pixel_value - (window_center - 0.5f)) / (window_width - 1.f) +
+                                                 0.5f);
+
+                new_image[4 * new_image_pixel_index] = (char) ((image_pixel_display_value * (1 - overlay_transparency) +
+                                                                overlay_color_r * overlay_transparency) * 255);
+                new_image[4 * new_image_pixel_index + 1] = (char) (
+                        (image_pixel_display_value * (1 - overlay_transparency) +
+                         overlay_color_g * overlay_transparency) * 255);
+                new_image[4 * new_image_pixel_index + 2] = (char) (
+                        (image_pixel_display_value * (1 - overlay_transparency) +
+                         overlay_color_b * overlay_transparency) * 255);
+                new_image[4 * new_image_pixel_index + 3] = 255;
             }
-            else if (draw_mask && compare_with_other_mask){
-                if (pixel_is_in_range && !pixel_is_in_mask) {
-                    overlay_color_r = 1.f;
-                    overlay_color_g = 0.f;
-                    overlay_color_b = 0.f;
-                    overlay_transparency = mask_color.w;
-                }
-                if (pixel_is_in_range && pixel_is_in_mask) {
-                    overlay_color_r = 0.f;
-                    overlay_color_g = 1.f;
-                    overlay_color_b = 0.f;
-                    overlay_transparency = mask_color.w;
-                }
-                if (!pixel_is_in_range && pixel_is_in_mask) {
-                    overlay_color_r = 0.f;
-                    overlay_color_g = 0.f;
-                    overlay_color_b = 1.f;
-                    overlay_transparency = mask_color.w;
-                }
-            }
-
-            float image_pixel_display_value;
-            if (image_pixel_value <= window_center - 0.5f - (window_width - 1.f) * 0.5f)
-                image_pixel_display_value = 0;
-            else if (image_pixel_value > window_center - 0.5f + (window_width - 1.f) * 0.5f)
-                image_pixel_display_value = 1;
-            else
-                image_pixel_display_value = ((image_pixel_value - (window_center - 0.5f)) / (window_width - 1.f) + 0.5f);
-
-            new_image[4 * new_image_pixel_index] = (char)((image_pixel_display_value * (1 - overlay_transparency) + overlay_color_r * overlay_transparency) * 255);
-            new_image[4 * new_image_pixel_index + 1] = (char)((image_pixel_display_value * (1 - overlay_transparency) + overlay_color_g * overlay_transparency) * 255);
-            new_image[4 * new_image_pixel_index + 2] = (char)((image_pixel_display_value * (1 - overlay_transparency) + overlay_color_b * overlay_transparency) * 255);
-            new_image[4 * new_image_pixel_index + 3] = 255;
-
             new_image_pixel_index++;
             image_pixel_pointer++;
         }

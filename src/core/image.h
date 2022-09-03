@@ -56,7 +56,8 @@ namespace core {
          * @return
          */
         bool setImageFromHU(const cv::Mat& image, float window_width, float window_center, Filtering filtering = FILTER_NEAREST, const cv::Mat& mask = cv::Mat(), ImVec4 mask_color = ImVec4(0, 0, 0, 0), bool show_mask = true,
-                            bool compare_with_other_mask=false, const cv::Mat& other_mask = cv::Mat());
+                            bool compare_with_other_mask=false, const cv::Mat& other_mask = cv::Mat(),
+                            const std::set<int> &debug_lines_x = std::set<int>(), const std::set<int> &debug_lines_y = std::set<int>());
 
         /**
          * Erases any content in the image
