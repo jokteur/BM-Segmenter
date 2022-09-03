@@ -98,14 +98,31 @@ void Rendering::DatasetView::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
             }
             seg_select_.ImGuiDraw("Select segmentation");
 
-//            if (ImGui::Button("Unvalidate all")) {
-//                for (auto& dicom : dicoms_) {
-//                    const std::shared_ptr<core::segmentation::MaskCollection> &mask_collection = active_seg_->getMask(dicom);
-//                    mask_collection->loadData(true);
-//                    mask_collection->removeAllValidatedBy();
-//                    mask_collection->saveCollection();
-//                }
-//            }
+            if (active_seg_ != nullptr) {
+                if (ImGui::Button("Unvalidate all")) {
+                    unvalidate_confirm_prompt = true;
+                }
+                if (unvalidate_confirm_prompt) {
+                    ImGui::SameLine();
+                    ImGui::Text("Are you sure ?");
+                    ImGui::SameLine();
+                    if (ImGui::Button("yes")) {
+                        unvalidate_confirm_prompt = false;
+                        for (auto &dicom: dicoms_) {
+                            const std::shared_ptr<core::segmentation::MaskCollection> &mask_collection = active_seg_->getMask(
+                                    dicom);
+                            mask_collection->loadData(true);
+                            mask_collection->removeAllValidatedBy();
+                            mask_collection->saveCollection();
+                            EventQueue::getInstance().post(Event_ptr(new Event("mask/changed/" + dicom->getId())));
+                        }
+                    }
+                    ImGui::SameLine();
+                    if (ImGui::Button("no")) {
+                        unvalidate_confirm_prompt = false;
+                    }
+                }
+            }
         }
 
         // Show group selection
@@ -190,7 +207,7 @@ void Rendering::DatasetView::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
 	ImGui::End();
 }
 
-inline void Rendering::DatasetView::preview_widget(Preview& preview, float width, ImVec2 mouse_pos, Rect sub_window_dim, std::shared_ptr<::core::DicomSeries> dicom, GLFWwindow* window, Rect& parent_dimension) {    
+inline void Rendering::DatasetView::preview_widget(Preview& preview, float width, ImVec2 mouse_pos, Rect sub_window_dim, std::shared_ptr<::core::DicomSeries> dicom, GLFWwindow* window, Rect& parent_dimension) {
     if (Widgets::check_hitbox(mouse_pos, sub_window_dim)) {
         preview.setAllowScroll(true);
     }

@@ -65,5 +65,7 @@ namespace Rendering {
          * @param parent_dimension dimension of the parent layout
          */
         void ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) override;
+
+        bool unvalidate_confirm_prompt = false;
     };
 }
