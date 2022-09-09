@@ -75,11 +75,22 @@ namespace core {
 			void intersect_with(const Mask& mat);
 			void union_with(const Mask& mat);
 			void difference_with(const Mask& mat);
+            void combine_with(const Mask &other);
             bool isEqualTo(const Mask &other);
 
             void invert();
 
+            void convert_to_binary(int value_for_one);
+
             void remove_small_objects(int min_object_size);
+
+            int top_row();
+            int bottom_row();
+
+            void fill(unsigned char value);
+
+            unsigned char get_pixel(int row_index, int col_index);
+            void set_pixel(int row_index, int col_index, unsigned char value);
 
 			/**
 			 * Returns the width of the mask
@@ -94,6 +105,12 @@ namespace core {
             void opening(int size);
 
             void closing(int size);
+
+            cv::Point find_first_pixel(int first_row, int last_row, int first_col, int last_col);
+
+            cv::Point find_first_pixel(){
+                return find_first_pixel(0, rows_, 0, cols_);
+            }
         };
 
 		/**
@@ -199,6 +216,8 @@ namespace core {
 			Mask& getCurrent(bool no_push = false);
 			Mask& getValidated() { return validated_; }
 			Mask& getPrediction() { return prediction_; }
+
+            Mask getMostAdvancedMask();
 
 			void setBasenamePath(const std::string& basename);
 

@@ -95,6 +95,10 @@ bool Rendering::EditMask::load_mask() {
             updateHuThresholdMask();
             updateVertebraDistanceMask();
             updateEditionLimitMask();
+            updateVisceralFatMask();
+            updateVisceralFatSegmentationsBox();
+            updateOtherMaskBox();
+            updateOtherSegmentationMask();
             reset_image_ = true;
         } else {
             image_.setImageFromHU(
@@ -258,6 +262,36 @@ Rendering::EditMask::EditMask()
         lasso_or_brush = 1;
     };
 
+    next_shortcut.keys = {GLFW_KEY_RIGHT};
+    next_shortcut.name = "next";
+    next_shortcut.callback = [this] {
+        next();
+    };
+
+    previous_shortcut.keys = {GLFW_KEY_LEFT};
+    previous_shortcut.name = "left";
+    previous_shortcut.callback = [this] {
+        previous();
+    };
+
+    visceral_fat_help_shortcut.keys = {GLFW_KEY_F};
+    visceral_fat_help_shortcut.name = "visceral fat";
+    visceral_fat_help_shortcut.callback = [this] {
+        use_visceral_fat_help = !use_visceral_fat_help;
+    };
+
+    other_mask_shortcut.keys = {GLFW_KEY_M};
+    other_mask_shortcut.name = "other mask";
+    other_mask_shortcut.callback = [this] {
+        use_other_mask_filter = !use_other_mask_filter;
+    };
+
+    flood_fill_shortcut.keys = {GLFW_KEY_C};
+    flood_fill_shortcut.name = "flood fill";
+    flood_fill_shortcut.callback = [this] {
+        lasso_or_brush = 2;
+    };
+
     EventQueue::getInstance().subscribe(&load_dicom_);
     EventQueue::getInstance().subscribe(&reload_seg_);
     EventQueue::getInstance().subscribe(&load_segmentation_);
@@ -290,6 +324,11 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) 
     KeyboardShortCut::addTempShortcut(vertebra_min_distance_shortcut);
     KeyboardShortCut::addTempShortcut(lasso_shortcut);
     KeyboardShortCut::addTempShortcut(brush_shortcut);
+    KeyboardShortCut::addTempShortcut(next_shortcut);
+    KeyboardShortCut::addTempShortcut(previous_shortcut);
+    KeyboardShortCut::addTempShortcut(visceral_fat_help_shortcut);
+    KeyboardShortCut::addTempShortcut(other_mask_shortcut);
+    KeyboardShortCut::addTempShortcut(flood_fill_shortcut);
 
     ImGui::Begin("Edit mask", &is_open_); // TODO: unique ID
 
@@ -307,13 +346,13 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) 
         }
         if (prev_dicom_ != nullptr) {
             ImGui::SameLine();
-            if (ImGui::Button("Previous")) {
+            if (ImGui::Button("Previous (left arrow)")) {
                 previous();
             }
         }
         if (next_dicom_ != nullptr) {
             ImGui::SameLine();
-            if (ImGui::Button("Next")) {
+            if (ImGui::Button("Next (right arrow)")) {
                 next();
             }
         }
@@ -356,7 +395,9 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) 
                     color,
                     show_mask,
                     use_edition_limit_mask && show_mask,
-                    edition_limit_mask.getData()
+                    edition_limit_mask.getData(),
+                    draw_visceral_fat_debug_lines ? visceral_fat_help_debug_cols : std::set<int>(),
+                    draw_visceral_fat_debug_lines ? visceral_fat_help_debug_rows : std::set<int>()
             );
     }
 
@@ -509,7 +550,45 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) 
                 }
             }
 
+            ImGui::Checkbox("Visceral fat help (F)", &use_visceral_fat_help);
+            if (prev_use_visceral_fat_help != use_visceral_fat_help
+            || prev_draw_visceral_fat_debug_lines != draw_visceral_fat_debug_lines) {
+                prev_use_visceral_fat_help = use_visceral_fat_help;
+                prev_draw_visceral_fat_debug_lines = draw_visceral_fat_debug_lines;
+                updateEditionLimitMask();
+            }
+
+            if (use_visceral_fat_help) {
+                ImGui::SameLine();
+                muscle_segmentation_selection_box.ImGuiDraw("Select muscle segmentation");
+                ImGui::SameLine();
+                ImGui::Checkbox("Debug lines", &draw_visceral_fat_debug_lines);
+            }
+
+            if (prev_muscle_segmentation_for_visceral_fat_help != muscle_segmentation_for_visceral_fat_help) {
+                prev_muscle_segmentation_for_visceral_fat_help = muscle_segmentation_for_visceral_fat_help;
+                updateVisceralFatMask();
+            }
+
+            ImGui::Checkbox("Other mask (M)", &use_other_mask_filter);
+            if (prev_use_other_mask_filter != use_other_mask_filter) {
+                prev_use_other_mask_filter = use_other_mask_filter;
+                updateEditionLimitMask();
+            }
+
+            if (use_other_mask_filter) {
+                ImGui::SameLine();
+                other_mask_selection_box.ImGuiDraw("Select segmentation");
+            }
+
+            if (prev_segmentation_for_other_mask != segmentation_for_other_mask) {
+                prev_segmentation_for_other_mask = segmentation_for_other_mask;
+                updateOtherSegmentationMask();
+            }
+
             if (!is_validated) {
+                ImGui::RadioButton("Contiguous area (C)", &lasso_or_brush, 2);
+                ImGui::SameLine();
                 ImGui::RadioButton("Lasso (L)", &lasso_or_brush, 0);
                 ImGui::SameLine();
                 ImGui::RadioButton("Brush (B)", &lasso_or_brush, 1);
@@ -583,6 +662,8 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) 
                 lasso_widget(dimensions);
             } else if (lasso_or_brush == 1) {
                 brush_widget(dimensions);
+            } else if (lasso_or_brush == 2) {
+                flood_fill_widget(dimensions);
             }
         } else {
             disable_edit = false;
@@ -672,6 +753,16 @@ void Rendering::EditMask::updateEditionLimitMask() {
 
     if (use_vertebra_min_distance) {
         edition_limit_mask.intersect_with(vertebra_distance_mask);
+        use_edition_limit_mask = true;
+    }
+
+    if (use_visceral_fat_help) {
+        edition_limit_mask.intersect_with(visceral_fat_mask);
+        use_edition_limit_mask = true;
+    }
+
+    if (use_other_mask_filter) {
+        edition_limit_mask.intersect_with(other_segmentation_mask);
         use_edition_limit_mask = true;
     }
 
@@ -980,6 +1071,30 @@ void Rendering::EditMask::brush_widget(Rect &dimensions) {
     }
 }
 
+void Rendering::EditMask::flood_fill_widget(Rect &dimensions) {
+    auto mouse_pos = ImGui::GetMousePos();
+    if (Widgets::check_hitbox(mouse_pos, dimensions)) {
+        ImGuiIO &io = ImGui::GetIO();
+        if ((ImGui::IsMouseDown(0) || ImGui::IsMouseDown(1)) && !io.KeyCtrl) {
+            Crop crop = image_widget_.getCrop();
+            ImVec2 corrected_mouse_pos = {
+                    (crop.x0 + (crop.x1 - crop.x0) * (mouse_pos.x - dimensions.xpos) / dimensions.width) *
+                    image_.width(),
+                    (crop.y0 + (crop.y1 - crop.y0) * (mouse_pos.y - dimensions.ypos) / dimensions.height) *
+                    image_.height()
+            };
+            ::core::segmentation::Mask edition_area = tmp_mask_.copy();
+            edition_area.combine_with(edition_limit_mask);
+            cv::floodFill(edition_area.getData(), cv::Point(corrected_mouse_pos.x, corrected_mouse_pos.y), 4);
+            edition_area.convert_to_binary(4);
+            editTmpMaskAreaFromClick(edition_area, ImGui::IsMouseDown(0), ImGui::IsMouseDown(1));
+            reset_image_ = true;
+            set_mask();
+        }
+    }
+}
+
+
 void Rendering::EditMask::automaticBrushBorders() {
     std::vector<std::pair<int, int>> mask_border_coordinates;
     auto tmp_mask_matrix = tmp_mask_.getData();
@@ -1052,6 +1167,126 @@ void Rendering::EditMask::editTmpMaskArea(const core::segmentation::Mask &area_t
             tmp_mask_.difference_with(area_to_remove);
     }
 }
+
+void Rendering::EditMask::updateVisceralFatSegmentationsBox() {
+    static std::set<std::shared_ptr<core::segmentation::Segmentation>> previous_segmentations = {};
+    auto segmentations = ::core::project::ProjectManager::getInstance().getCurrentProject()->getSegmentations();
+    if (previous_segmentations != segmentations) {
+        previous_segmentations = segmentations;
+        std::vector<std::string> names;
+        std::map<int, std::shared_ptr<::core::segmentation::Segmentation>> segmentations_map;
+        int n = 0;
+        for (auto &segmentation: segmentations) {
+            names.push_back(segmentation->getName());
+            segmentations_map[n] = segmentation;
+            n++;
+        }
+        muscle_segmentation_selection_box.setOptions(names, [=](int idx) {
+            muscle_segmentation_for_visceral_fat_help = segmentations_map.at(idx);
+        });
+        muscle_segmentation_for_visceral_fat_help = segmentations_map.at(0);
+    }
+}
+
+void Rendering::EditMask::updateVisceralFatMask() {
+    if (muscle_segmentation_for_visceral_fat_help != nullptr) {
+        auto muscle_mask_collection = muscle_segmentation_for_visceral_fat_help->getMask(dicom_series_);
+        muscle_mask_collection->loadData(true);
+        auto muscle_mask = muscle_mask_collection->getMostAdvancedMask();
+        visceral_fat_help_debug_rows.clear();
+        visceral_fat_help_debug_cols.clear();
+        visceral_fat_mask = core::segmentation::Mask(muscle_mask.rows(), muscle_mask.cols());
+        visceral_fat_mask.fill(1);
+
+
+        if (!muscle_mask.empty()) {
+            int top_muscle_row = muscle_mask.top_row();
+            visceral_fat_help_debug_rows.insert(top_muscle_row);
+            int bottom_muscle_row = muscle_mask.bottom_row();
+            visceral_fat_help_debug_rows.insert(bottom_muscle_row);
+            int base_row = top_muscle_row + (bottom_muscle_row - top_muscle_row) / 4;
+            visceral_fat_help_debug_rows.insert(base_row);
+
+            int left_column = 0;
+            while (left_column < muscle_mask.cols() && muscle_mask.get_pixel(base_row, left_column) == 0) {
+                left_column++;
+            }
+            int right_column = muscle_mask.cols() - 1;
+            while (right_column >= 0 && muscle_mask.get_pixel(base_row, right_column) == 0) {
+                right_column--;
+            }
+
+            int columns_margin = (right_column - left_column) / 8;
+            left_column += columns_margin;
+            right_column -= columns_margin;
+            visceral_fat_help_debug_cols.insert(left_column);
+            visceral_fat_help_debug_cols.insert(right_column);
+
+            cv::Point first_muscle_point = muscle_mask.find_first_pixel(base_row, muscle_mask.rows(), left_column,
+                                                                        right_column);
+            visceral_fat_help_debug_rows.insert(first_muscle_point.y);
+            visceral_fat_help_debug_cols.insert(first_muscle_point.x);
+
+            cv::Point second_muscle_point_candidate1 = muscle_mask.find_first_pixel(base_row, muscle_mask.rows(),
+                                                                                    left_column,
+                                                                                    first_muscle_point.x -
+                                                                                    columns_margin);
+            cv::Point second_muscle_point_candidate2 = muscle_mask.find_first_pixel(base_row, muscle_mask.rows(),
+                                                                                    right_column,
+                                                                                    first_muscle_point.x +
+                                                                                    columns_margin);
+
+            cv::Point second_muscle_point = second_muscle_point_candidate1.y < second_muscle_point_candidate2.y ?
+                                            second_muscle_point_candidate1 : second_muscle_point_candidate2;
+            visceral_fat_help_debug_rows.insert(second_muscle_point.y);
+            visceral_fat_help_debug_cols.insert(second_muscle_point.x);
+
+
+            cv::line(visceral_fat_mask.getData(),
+                     first_muscle_point,
+                     second_muscle_point,
+                     0);
+        }
+        updateEditionLimitMask();
+    }
+}
+
+void Rendering::EditMask::updateOtherMaskBox() {
+    static std::set<std::shared_ptr<core::segmentation::Segmentation>> previous_segmentations = {};
+    auto segmentations = ::core::project::ProjectManager::getInstance().getCurrentProject()->getSegmentations();
+    if (previous_segmentations != segmentations) {
+        previous_segmentations = segmentations;
+        std::vector<std::string> names;
+        std::map<int, std::shared_ptr<::core::segmentation::Segmentation>> segmentations_map;
+        int n = 0;
+        for (auto &segmentation: segmentations) {
+            names.push_back(segmentation->getName());
+            segmentations_map[n] = segmentation;
+            n++;
+        }
+        other_mask_selection_box.setOptions(names, [=](int idx) {
+            segmentation_for_other_mask = segmentations_map.at(idx);
+        });
+        segmentation_for_other_mask = segmentations_map.at(0);
+    }
+}
+
+void Rendering::EditMask::updateOtherSegmentationMask() {
+    if(segmentation_for_other_mask != nullptr) {
+        auto other_segmentation_mask_collection = segmentation_for_other_mask->getMask(dicom_series_);
+        other_segmentation_mask_collection->loadData(true);
+        auto other_mask = other_segmentation_mask_collection->getMostAdvancedMask();
+        if (other_mask.empty()) {
+            other_segmentation_mask = ::core::segmentation::Mask();
+            other_segmentation_mask.fill(1);
+        } else {
+            other_segmentation_mask = other_mask.copy();
+            other_segmentation_mask.invert();
+        }
+    }
+    updateEditionLimitMask();
+}
+
 
 
 

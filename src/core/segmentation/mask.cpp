@@ -96,6 +96,29 @@ namespace core {
             }
         }
 
+
+        void Mask::combine_with(const Mask &other) {
+            if (other.rows_ != rows_ || other.cols_ != cols_) {
+                return;
+            }
+            uchar *data_array = data_.data;
+            uchar *other_data_array = other.data_.data;
+            for (int array_index = 0; array_index < rows_ * cols_; array_index++) {
+                if (data_array[array_index] == 0 && other_data_array[array_index] == 0) {
+                    data_array[array_index] = 0;
+                }
+                if (data_array[array_index] == 1 && other_data_array[array_index] == 0) {
+                    data_array[array_index] = 1;
+                }
+                if (data_array[array_index] == 0 && other_data_array[array_index] == 1) {
+                    data_array[array_index] = 2;
+                }
+                if (data_array[array_index] == 1 && other_data_array[array_index] == 1) {
+                    data_array[array_index] = 3;
+                }
+            }
+        }
+
         bool Mask::isEqualTo(const Mask &other) {
             if (other.rows_ != rows_ || other.cols_ != cols_) {
                 return false;
@@ -150,6 +173,66 @@ namespace core {
             auto kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(diameter, diameter));
             cv::morphologyEx(data_, data_, cv::MORPH_CLOSE, kernel);
         }
+
+        int Mask::top_row() {
+            for (int row_index = 0; row_index < rows_; row_index++)
+                for (int col_index = 0; col_index < cols_; col_index++) {
+                    if (get_pixel(row_index, col_index) == 1) {
+                        return row_index;
+                    }
+                }
+            return -1;
+        }
+
+        int Mask::bottom_row() {
+            for (int row_index = rows_ - 1; row_index >= 0; row_index--)
+                for (int col_index = 0; col_index < cols_; col_index++) {
+                    if (get_pixel(row_index, col_index) == 1) {
+                        return row_index;
+                    }
+                }
+            return -1;
+        }
+
+        unsigned char Mask::get_pixel(int row_index, int col_index) {
+            if (0 <= row_index && row_index < rows_ && 0 <= col_index && col_index < cols_)
+                return data_.at<unsigned char>(row_index, col_index);
+            else
+                return 0;
+        }
+
+        void Mask::set_pixel(int row_index, int col_index, unsigned char value) {
+            data_.at<unsigned char>(row_index, col_index) = value;
+        }
+
+        void Mask::fill(unsigned char value) {
+            for (int row_index = 0; row_index < rows_; row_index++)
+                for (int col_index = 0; col_index < cols_; col_index++) {
+                    set_pixel(row_index, col_index, value);
+                }
+        }
+
+        cv::Point Mask::find_first_pixel(int first_row, int last_row, int first_col, int last_col) {
+
+            bool top_to_bottom = first_row < last_row;
+            bool left_to_right = first_col < last_col;
+
+            for (int row = first_row; row != last_row; top_to_bottom ? row++ : row--) {
+                for (int col = first_col; col != last_col; left_to_right ? col++ : col--) {
+                    if (get_pixel(row, col)) {
+                        return cv::Point(col, row);
+                    }
+                }
+            }
+        }
+
+        void Mask::convert_to_binary(int value_for_one) {
+            uchar *data_array = data_.data;
+            for (int pixel_index = 0; pixel_index < rows_ * cols_; pixel_index++) {
+                data_array[pixel_index] = data_array[pixel_index] == value_for_one ? 1 : 0;
+            }
+        }
+
 
         int MaskCollection::global_counter_ = 0;
 
@@ -525,6 +608,21 @@ namespace core {
             if (validated_by_.empty()) {
                 is_validated_ = false;
                 validated_ = Mask();
+            }
+        }
+
+        Mask MaskCollection::getMostAdvancedMask() {
+            if (is_validated_) {
+                return validated_;
+            }
+            else if (!getCurrent().empty()) {
+                return getCurrent();
+            }
+            else if (!prediction_.empty()) {
+                return prediction_;
+            }
+            else {
+                return Mask();
             }
         }
 

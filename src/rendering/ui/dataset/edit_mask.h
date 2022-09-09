@@ -101,6 +101,8 @@ namespace Rendering {
         ::core::segmentation::Mask tmp_mask_;
         ::core::segmentation::Mask hu_threshold_mask;
         ::core::segmentation::Mask vertebra_distance_mask;
+        ::core::segmentation::Mask visceral_fat_mask;
+        ::core::segmentation::Mask other_segmentation_mask;
         ::core::segmentation::Mask edition_limit_mask;
         bool use_edition_limit_mask;
 
@@ -153,6 +155,8 @@ namespace Rendering {
 
         void brush_widget(Rect &dimensions);
 
+        void flood_fill_widget(Rect &dimensions);
+
         void accept_drag_and_drop();
 
     public:
@@ -173,9 +177,12 @@ namespace Rendering {
         Shortcut vertebra_min_distance_shortcut;
         Shortcut lasso_shortcut;
         Shortcut brush_shortcut;
+        Shortcut next_shortcut;
+        Shortcut previous_shortcut;
+        Shortcut visceral_fat_help_shortcut;
+        Shortcut other_mask_shortcut;
+        Shortcut flood_fill_shortcut;
         int lasso_or_brush = 0;
-        int limit_hu = 0;
-        bool both_add_and_remove = false;
 
         void editTmpMaskAreaFromClick(const core::segmentation::Mask &area_to_edit, bool left_click,
                                       bool right_click);
@@ -200,9 +207,30 @@ namespace Rendering {
         void updateHuThresholdMask();
         void updateVertebraDistanceMask();
         void updateEditionLimitMask();
+        void updateVisceralFatSegmentationsBox();
+        void updateVisceralFatMask();
+        void updateOtherMaskBox();
+        void updateOtherSegmentationMask();
 
         bool disable_edit = false;
         int opening_size = 0;
         int prev_opening_size = opening_size;
+        bool use_visceral_fat_help = false;
+        bool prev_use_visceral_fat_help = use_visceral_fat_help;
+
+        Widgets::Selectable muscle_segmentation_selection_box;
+        std::shared_ptr<core::segmentation::Segmentation> muscle_segmentation_for_visceral_fat_help;
+        std::shared_ptr<core::segmentation::Segmentation> prev_muscle_segmentation_for_visceral_fat_help;
+
+        std::set<int> visceral_fat_help_debug_rows;
+        std::set<int> visceral_fat_help_debug_cols;
+        bool draw_visceral_fat_debug_lines = false;
+        bool prev_draw_visceral_fat_debug_lines = draw_visceral_fat_debug_lines;
+        bool use_other_mask_filter = false;
+        bool prev_use_other_mask_filter = use_other_mask_filter;
+
+        Widgets::Selectable other_mask_selection_box;
+        std::shared_ptr<core::segmentation::Segmentation> segmentation_for_other_mask;
+        std::shared_ptr<core::segmentation::Segmentation> prev_segmentation_for_other_mask;
     };
 }

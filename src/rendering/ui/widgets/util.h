@@ -57,6 +57,7 @@ namespace Rendering {
             int idx_ = 0;
             int prev_idx_ = 0;
 
+
             void build(std::vector<std::string> options);
         public:
             Selectable() {}
