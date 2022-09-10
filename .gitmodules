@@ -18,4 +18,4 @@
 	url = https://github.com/btzy/nativefiledialog-extended.git
 [submodule "src/scripts/project_edition"]
 	path = src/scripts/project_edition
-	url = git@github.com:damienmaier/bm-segmenter-project-edition.git
+	url = https://github.com/damienmaier/bm-segmenter-project-edition.git
