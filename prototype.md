@@ -14,6 +14,8 @@ conda activate bmsegmenter
 pip install scikit-learn==1.1.1 matplotlib==3.5.2 pandas==1.4.3 seaborn==0.11.2 numpy==1.23.3 pydicom==2.3.0 pylibjpeg==1.4.0 toml==0.10.2 tensorflow==2.9.1 tensorflow-addons==0.17.1 keras-tuner==1.1.3 scikit-image==0.19.3
  ```
 
+Most of the libraries installed with pip are available in conda, but installing them with conda poses problems to make the software portable.
+
 ### Install MSCV (Microsoft's C++ compiler)
 You can get MSVC by installing Visual Studio. To get the compiler, check the "Desktop development with C++" option during the installation.
 
