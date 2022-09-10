@@ -40,7 +40,6 @@ endforeach()
 #    PATTERN "tkinter" EXCLUDE                   # ./tkinter
 #    PATTERN "lib-dynload/_tkinter.*" EXCLUDE    # ./lib-dynload/_tkinter.co
 #    PATTERN "idlelib" EXCLUDE                   # ./idlelib
-#    PATTERN "test" EXCLUDE                      # ./test
 #    PATTERN "turtledemo" EXCLUDE                # ./turtledemo
 #    PATTERN "turtle.py" EXCLUDE                 # ./turtle.py
 #    PATTERN "wininst*.exe" EXCLUDE              # from distutils, avoid malware false positive
