@@ -128,7 +128,7 @@ void Rendering::DatasetView::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
                     }
                 }
                 ImGui::SameLine();
-                if (ImGui::Button("Predict from ML")) {
+                if (ImGui::Button("Predict from ML (when finished the program will close, you will have to restart it)")) {
                     auto state = PyGILState_Ensure();
                     auto predict_module = py::module::import("python.scripts.predict");
                     predict_module.attr("predict")(project->getRoot(), active_seg_->getName());
