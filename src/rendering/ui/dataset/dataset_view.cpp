@@ -5,6 +5,11 @@
 
 #include "drag_and_drop.h"
 #include "rendering/ui/widgets/util.h"
+#include "views.h"
+#include "rendering/views/project_view.h"
+
+
+namespace py = pybind11;
 
 Rendering::DatasetView::DatasetView() {
 	auto& project = project_manager_.getCurrentProject();
@@ -122,6 +127,13 @@ void Rendering::DatasetView::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
                         unvalidate_confirm_prompt = false;
                     }
                 }
+                ImGui::SameLine();
+                if (ImGui::Button("Predict from ML")) {
+                    auto state = PyGILState_Ensure();
+                    auto predict_module = py::module::import("python.scripts.predict");
+                    predict_module.attr("predict")(project->getRoot(), active_seg_->getName());
+                    std::exit(0);
+                }
             }
         }
 
@@ -192,7 +204,7 @@ void Rendering::DatasetView::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
         col_count_ = 0;
         if (group_idx_ == 0) {
             for (auto& dicom : dicoms_) {
-                preview_widget(dicom_previews_[dicom], width, mouse_pos, sub_window_dim, dicom, window, parent_dimension);
+                 preview_widget(dicom_previews_[dicom], width, mouse_pos, sub_window_dim, dicom, window, parent_dimension);
             }
         }
         else {
