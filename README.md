@@ -3,7 +3,7 @@
 The BM-Segmenter projects aims to simplify image segmentation in the Bio-Medical setting. This program should provide all the tools for a researcher that has no programming and machine-learning experience to easily create automatic segmentations models.
 
 ## Prototype
-Although this software is under development, there is a fully functional prototype. See [this page](prototype.md) for information about the prototype.
+Although this software is under development, there is a fully functional prototype that has been developed previously. See [this page](prototype.md) for information about the prototype.
 
 ## Features
 
@@ -16,7 +16,3 @@ Although this software is under development, there is a fully functional prototy
 ## State of the project
 
 This project is currently developped at the [Lausanne University Hospital](https://www.lausanneuniversityhospital.com/home) (known as CHUV). Currently, this tools is in a experimental phase. To see the state of the implemented features, please visit [this page](https://github.com/jokteur/BM-Segmenter/wiki/Outline-of-the-project).
-
-## Building instructions
-
-After cloning the repo, you will need to create a local copy of the file `CMakePresets_template.json` named `CMakePresets.json`, and edit its content to match your local python installation.
