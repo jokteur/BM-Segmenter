@@ -14,8 +14,8 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}",
-        "Python_ROOT_DIR": "C:/Users/damie/miniconda3/envs/bmdev",
-        "Python_NUMPY_INCLUDE": "C:/Users/damie/miniconda3/envs/bmdev/Lib/site-packages/numpy/core/include"
+        "Python_ROOT_DIR": "<<PATH TO YOUR CONDA ENVIRONMENT>>",
+        "Python_NUMPY_INCLUDE": "<<PATH TO YOUR CONDA ENVIRONMENT>>/Lib/site-packages/numpy/core/include"
       },
       "vendor": { "microsoft.com/VisualStudioSettings/CMake/1.0": { "hostOS": [ "Windows" ] } }
     },
