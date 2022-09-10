@@ -2,6 +2,9 @@
 
 The BM-Segmenter projects aims to simplify image segmentation in the Bio-Medical setting. This program should provide all the tools for a researcher that has no programming and machine-learning experience to easily create automatic segmentations models.
 
+## Prototype
+Although this software is under development, there is a fully functional prototype. See [this page](prototype.md) for information about the prototype.
+
 ## Features
 
 * [ ] Create and import projects
