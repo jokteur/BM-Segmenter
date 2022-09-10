@@ -16,3 +16,6 @@
 [submodule "thirdparty/nativefiledialog-extended"]
 	path = thirdparty/nativefiledialog-extended
 	url = https://github.com/btzy/nativefiledialog-extended.git
+[submodule "src/scripts/project_edition"]
+	path = src/scripts/project_edition
+	url = git@github.com:damienmaier/bm-segmenter-project-edition.git

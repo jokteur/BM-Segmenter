@@ -181,7 +181,7 @@ namespace core {
                         return row_index;
                     }
                 }
-            return -1;
+            return rows_;
         }
 
         int Mask::bottom_row() {
@@ -191,7 +191,7 @@ namespace core {
                         return row_index;
                     }
                 }
-            return -1;
+            return 0;
         }
 
         unsigned char Mask::get_pixel(int row_index, int col_index) {
@@ -224,6 +224,7 @@ namespace core {
                     }
                 }
             }
+            return cv::Point(0, 0);
         }
 
         void Mask::convert_to_binary(int value_for_one) {
