@@ -47,7 +47,7 @@ Create a copy of the file `CMakePresets_template.json` named `CMakePresets.json`
 This step will enable the machine learning prediction feature in the software. You will need a Tensorflow model able to do such predictions. We do not provide our model here because it may give access to sensitive data, therefore if you don't have access to the model used at the CHUV you will need to train one yourself. See [this project](https://github.com/damienmaier/l3-segmentation) for more information.
 
 - Copy your Tensorflow model directory to `src/scripts/project_edition/mlsegmentation/model`
-- In `src/scripts/project_edition/`, make a copy of the file `config_template.py` named `config.py`
+- In `src/scripts/project_edition/mlsegmentation`, make a copy of the file `config_template.py` named `config.py`
 ### Build and install
 - Click on Build > Install
 - The software is compiled and installed in `out/install/debug` or `out/install/release`
