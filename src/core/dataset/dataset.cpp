@@ -1,6 +1,7 @@
 #include <unordered_map>
 #include <toml.hpp>
 #include <fstream>
+#include <regex>
 
 #include "python/py_api.h"
 #include "pybind11/numpy.h"
@@ -119,7 +120,15 @@ jobId& core::dataset::Dataset::importData(const Group& group, std::shared_ptr<st
                             }
                         }
                         if (!paths.empty()) {
-                            auto &dicom = DicomSeries(paths, patient.ID + std::string("___") + std::to_string(
+                            std::string dicom_name = patient.ID;
+
+                            std::regex re(R"(\\([^\\]+)\\[^\\]+\\[^\\]+\\[^\\]+$)");
+                            std::smatch match;
+                            if (std::regex_search(paths[0], match, re))
+                                if (match.size() > 1)
+                                    dicom_name = match[1].str();
+
+                            auto &dicom = DicomSeries(paths, dicom_name + std::string("___") + std::to_string(
                                 std::hash<std::string>{}(study.date + study.description + study.time + series->modality + series->number)));
                             dicom.setCrops(series->data.getCropX(), series->data.getCropY(), true);
                             all_cases.emplace_back(dicom);
