@@ -33,13 +33,17 @@ Git clone this repo with its submodules :
 
 Create a copy of the file `CMakePresets_template.json` named `CMakePresets.json` at the root of the project. Edit it to replace `<<PATH TO YOUR CONDA ENVIRONMENT>>` with the appropriate path. It should be something like `C:/users/<your username>/miniconda3/envs/bmsegmenter`
 ### Set up Clion
+
+The `CMakePresets.json` file will trigger the creation of two preset CMake Profiles in Clion.
+The two preset profiles can not be edited in Clion, and the default toolchain is used with tem.
+
 - Open the project in Clion
 - Open the `Toolchains` settings (CTRL + SHIFT + A > toolchains) and select Visual Studio
   - Change the architecture to amd64
   - Set Visual Studio as default by moving it to the beginning of the list using the triangle arrow 
 - Open the `CMake` settings (CTRL + SHIFT + A > cmake)
   - Disable the first profile by unchecking its `Enable profile` checkbox
-  - Enable the debug and release profiles
+  - Enable the debug and release preset profiles
 - Open src > python > CMakeLists.txt and uncomment the bloc of code that begins with `install(` at the middle of the file.
   - This code lets the python libraries and scripts be copied in the software directory when it is installed. To make future installations faster, you can comment back those lines after the first install if you don't modify the python files of the software.
 - Click on `CMake` at the bottom and reload the CMake project
@@ -61,4 +65,5 @@ BM-Segmenter.exe
 ### Debugging
 Several assert statements from the ImGui library will fail when using the program. This is not a problem when the program is compiled in release mode because in this case the asserts are ignored.
 
-If you run the program in debug mode, you will need to comment out the asserts that fail.
+If you run the program in debug mode, you will need to disable the asserts.
+To do this, in file `thirdparty/imgui/imconfig.h`, uncomment the line `#define IM_ASSERT(_EXPR)  ((void)(_EXPR))`.
