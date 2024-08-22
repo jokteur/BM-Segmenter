@@ -120,6 +120,16 @@ jobId& core::dataset::Dataset::importData(const Group& group, std::shared_ptr<st
                             }
                         }
                         if (!paths.empty()) {
+
+                            // we want dicom_name to be the name of the directory in which the dicom was exported. This
+                            // directory name usually is the patient IPP (patient ID), but when more than one DICOM
+                            // exist for the same patient, the users export the DICOMs of the same patient in
+                            // directories having names allowing to differentiate the DICOMs.
+                            // Usually, the path of a dicom has the form:
+                            // <directory name chosen by user>/<directory name>/<directory name>/<DICOM file name>
+                            // Our goal below is to use <directory name chosen by user> for dicom_name. If we are unable
+                            // to find it, we use the IPP written in the DICOM instead.
+
                             std::string dicom_name = patient.ID;
 
                             std::regex re(R"(\\([^\\]+)\\[^\\]+\\[^\\]+\\[^\\]+$)");
