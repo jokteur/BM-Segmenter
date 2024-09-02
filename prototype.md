@@ -35,7 +35,7 @@ Create a copy of the file `CMakePresets_template.json` named `CMakePresets.json`
 ### Set up Clion
 
 The `CMakePresets.json` file will trigger the creation of two preset CMake Profiles in Clion.
-The two preset profiles can not be edited in Clion, and the default toolchain is used with tem.
+The two preset profiles can not be edited in Clion, and the default toolchain is used with them.
 
 - Open the project in Clion
 - Open the `Toolchains` settings (CTRL + SHIFT + A > toolchains) and select Visual Studio
