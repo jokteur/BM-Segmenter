@@ -67,5 +67,7 @@ namespace Rendering {
         void ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) override;
 
         bool unvalidate_confirm_prompt = false;
+        float area_measurement_hu_min = -29;
+        float area_measurement_hu_max = 150;
     };
 }

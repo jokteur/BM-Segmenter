@@ -70,6 +70,8 @@ void Rendering::DatasetView::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
             }
         }
 
+        ImGui::Separator();
+
         // Show segmentation selection
         {
             auto& segs = project->getSegmentations();
@@ -104,6 +106,8 @@ void Rendering::DatasetView::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
             seg_select_.ImGuiDraw("Select segmentation");
 
             if (active_seg_ != nullptr) {
+                ImGui::Separator();
+
                 if (ImGui::Button("Unvalidate all")) {
                     unvalidate_confirm_prompt = true;
                 }
@@ -128,12 +132,26 @@ void Rendering::DatasetView::ImGuiDraw(GLFWwindow* window, Rect& parent_dimensio
                     }
                 }
                 ImGui::SameLine();
-                if (ImGui::Button("Predict from ML (when finished the program will close, you will have to restart it)")) {
+                if (ImGui::Button("Predict from ML (when finished the program will close)")) {
                     auto state = PyGILState_Ensure();
-                    auto predict_module = py::module::import("python.scripts.predict");
-                    predict_module.attr("predict")(project->getRoot(), active_seg_->getName());
+                    auto ml_module = py::module::import("bms_project_edition.ml");
+                    ml_module.attr("compute_mask_predictions_from_ml_model")(project->getRoot(), active_seg_->getName());
                     std::exit(0);
                 }
+
+                ImGui::Separator();
+
+                ImGui::DragFloatRange2("Restricted range HU", &area_measurement_hu_min, &area_measurement_hu_max, 1.f, -1000.f,
+                                       3000.f, "Min: %.1f HU", "Max: %.1f HU");
+
+                if (ImGui::Button("Write surfaces file")) {
+                    auto state = PyGILState_Ensure();
+                    auto surfaces_module = py::module::import("bms_project_edition.surfaces");
+                    surfaces_module.attr("write_measurement_csv_for_bmsegmenter_project")(project->getRoot(), active_seg_->getName(), area_measurement_hu_min, area_measurement_hu_max);
+                    PyGILState_Release(state);
+                }
+
+                ImGui::Separator();
             }
         }
 
