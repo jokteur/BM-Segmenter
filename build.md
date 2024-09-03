@@ -45,7 +45,7 @@ The two preset profiles can not be edited in Clion, and the default toolchain is
   - Disable the first profile by unchecking its `Enable profile` checkbox
   - Enable the debug and release preset profiles
 - Open src > python > CMakeLists.txt and uncomment the bloc of code that begins with `install(` at the middle of the file.
-  - This code lets the python libraries and scripts be copied in the software directory when it is installed. To make future installations faster, you can comment back those lines after the first install if you don't modify the python files of the software.
+  - This code lets some files of your python installation be copied in the software directory when it is installed. To make future installations faster, you can comment back those lines after the first install if you don't modify your python installation.
 - Click on `CMake` at the bottom and reload the CMake project
 ### Optional : set up the machine learning model
 This step will enable the machine learning prediction feature in the software. You will need a Tensorflow model able to do such predictions. We do not provide our model here because it may give access to sensitive data, therefore if you don't have access to the model used at the CHUV you will need to train one yourself. See [this project](https://github.com/damienmaier/l3-segmentation) for more information.
