@@ -1,18 +1,24 @@
 # Welcome to the BM-Segmenter project
 
-The BM-Segmenter projects aims to simplify image segmentation in the Bio-Medical setting. This program should provide all the tools for a researcher that has no programming and machine-learning experience to easily create automatic segmentations models.
+The BM-Segmenter projects aims to simplify image segmentation in the Bio-Medical setting. 
 
-## Prototype
-Although this software is under development, there is a fully functional prototype that has been developed previously. See [this page](prototype.md) for information about the prototype.
+This program allows to :
+- Import and visualize DICOM images
+- Create and edit segmentation masks on the images
+- Compute the surface of the segmented regions
 
-## Features
-
-* [ ] Create and import projects
-* [ ] Create and import datasets (from CT dicoms and normal png / jpeg images)
-* [ ] Tools for image segmentation
-* [ ] Tools for training machine learning models on datasets
-* [ ] Tools for measurements on datasets and export to csv
+Optionally, a machine learning model can be used to automatically generate image segmentations.
+Such machine learning model can be trained with the code provided in [this project](https://github.com/damienmaier/l3-segmentation).
 
 ## State of the project
 
-This project is currently developped at the [Lausanne University Hospital](https://www.lausanneuniversityhospital.com/home) (known as CHUV). Currently, this tools is in a experimental phase. To see the state of the implemented features, please visit [this page](https://github.com/jokteur/BM-Segmenter/wiki/Outline-of-the-project).
+This project is currently developed at the [Lausanne University Hospital](https://www.lausanneuniversityhospital.com/home) (known as CHUV), under the supervision of Dr. Fabio Becce.
+Its main contributors are [Joachim Koerfer](https://github.com/jokteur/) and [Damien Maier](https://github.com/damienmaier/).
+
+## How to build
+
+[This page](build.md) provides detailed instructions on setting up the project, building it and distributing it.
+
+## Code documentation
+
+[This page](doc.md) documents some aspects of the design of the software.
