@@ -3,7 +3,7 @@
 Some features of the program, including importing dicom images, automatic computing of segmentations using the machine learning model, and computing of the surfaces of the segmentations, are implemented in Python. The C++ code calls the appropriate python scripts to perform these actions.
 
 The Python scripts used by the program are located at `src/python/scripts`. This directory contains various py files.
-Additionally, `src/python/scripts/project_edition` contains the package `bms_project_edition` which provides the machine learning and surfaces calculations features.
+Additionally, `src/python/scripts/project_edition` contains the package `bms_project_edition` from [this repo](https://github.com/damienmaier/bm-segmenter-project-edition) which provides the machine learning and surfaces calculations features.
 
 Our goal here is to document the management of the Python module search path (sys.path), which allows the python `import` instructions to correctly import these scripts when the program is executed.
 
