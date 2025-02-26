@@ -15,6 +15,8 @@
 #include <pybind11/embed.h>
 #include "cv2np.h"
 #include <string>
+#include <locale>
+#include <codecvt>
 #include <iostream>
 
 namespace PyAPI {
@@ -32,11 +34,18 @@ namespace PyAPI {
     private:
 
         Handler() {
-            wchar_t *home_dir = Py_DecodeLocale("python", nullptr);
-            Py_SetPythonHome(home_dir);
-
+            // wchar_t *home_dir = Py_DecodeLocale("python", nullptr);
+            // Py_SetPythonHome(home_dir);
+            // std::cout << "HEllo" << *home_dir << std::endl;
+            std::string pythonHome = "/Users/jokteur/miniconda3/envs/bmseg/";
+            std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+            std::wstring wide_pythonHome = converter.from_bytes(pythonHome);
+            // std::cout << "Gello world" << std::endl;
+            
+            Py_SetPythonHome(wide_pythonHome.data());
+            
             py::initialize_interpreter();
-            PyEval_SaveThread();
+            // PyEval_SaveThread();
         }
     public:
         /**

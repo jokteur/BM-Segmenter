@@ -194,12 +194,12 @@ namespace core {
 			/**
 			 * Goes back into the history of the mask collection
 			*/
-			Mask& undo();
+			Mask undo();
 
 			/**
 			 * Goes in the future of the history of the mask collection
 			*/
-			Mask& redo();
+			Mask redo();
 
 			/**
 			 * Returns the size of the history

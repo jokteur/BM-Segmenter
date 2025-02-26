@@ -160,7 +160,7 @@ namespace Rendering {
 
     void Preview::unload_mask() {
         if (active_seg_ != nullptr) {
-            auto& collection = active_seg_->getMask(dicom_);
+            auto collection = active_seg_->getMask(dicom_);
             if (collection->isSet()) {
                 reset_image_ = false;
                 collection->unloadData();
@@ -174,7 +174,7 @@ namespace Rendering {
     void Preview::setAndLoadMask(int idx, bool check_loaded) {
         if (dicom_ != nullptr && is_loaded_) {
             if (active_seg_ != nullptr) {
-                auto& collection = active_seg_->getMask(dicom_);
+                auto collection = active_seg_->getMask(dicom_);
                 collection->loadData(
                     false, false, "",
                     [this]() {
@@ -194,7 +194,7 @@ namespace Rendering {
     }
 
     void Preview::set_image() {
-        auto& collection = active_seg_->getMask(dicom_);
+        auto collection = active_seg_->getMask(dicom_);
         seg::Mask* mask;
         // Sometimes, the mask has not loaded in time, and the collection
         // is not valid yet

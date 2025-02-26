@@ -8,7 +8,7 @@ namespace PyAPI {
             auto job_result = std::make_shared<JobResult>();
             auto state = PyGILState_Ensure();
             try {
-                py::module scripts = py::module::import("python.scripts.__init__");
+                py::module scripts = py::module::import("scripts.__init__");
                 job_result->success = true;
             }
             catch (const std::exception& e) {

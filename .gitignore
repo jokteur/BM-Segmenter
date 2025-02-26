@@ -7,3 +7,4 @@ CMakeSettings.json
 versions
 CMakePresets.json
 cmake-build*
+.vscode

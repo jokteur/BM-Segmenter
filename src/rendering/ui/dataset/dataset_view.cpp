@@ -12,7 +12,7 @@
 namespace py = pybind11;
 
 Rendering::DatasetView::DatasetView() {
-	auto& project = project_manager_.getCurrentProject();
+	const auto& project = project_manager_.getCurrentProject();
 
     validated_.setImage("assets/validated_dark.png");
     edited_.setImage("assets/edited_dark.png");
@@ -33,7 +33,7 @@ Rendering::DatasetView::~DatasetView() {
 }
 
 void Rendering::DatasetView::ImGuiDraw(GLFWwindow* window, Rect& parent_dimension) {
-	auto& project = project_manager_.getCurrentProject();
+	const auto& project = project_manager_.getCurrentProject();
 	ImGui::Begin("Dataset overview");
 
 	if (project != nullptr) {

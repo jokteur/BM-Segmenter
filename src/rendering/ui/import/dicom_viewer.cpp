@@ -536,7 +536,7 @@ void Rendering::DicomViewer::point_select_options() {
             // There should be an easier version, but right now it stays that way
             core::DicomMarkerName dummy_marker;
             dummy_marker.name = markers_select_.getCurrentOption();
-            auto& marker = markers.find(dummy_marker);
+            auto marker = markers.find(dummy_marker);
             coordinate.name = *marker;
             series_node_->data.addCoordinate(coordinate);
         }

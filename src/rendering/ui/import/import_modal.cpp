@@ -159,7 +159,7 @@ namespace Rendering {
                     Modals::getInstance().stackModal(
                         "Importing...", 
                         [=, &dataset, &show](bool& show_, bool& enter_, bool& escape_) {
-                            auto& job_info = JobScheduler::getInstance().getJobInfo(job_id_);
+                            auto job_info = JobScheduler::getInstance().getJobInfo(job_id_);
                             push_animation();
 
                             const ImU32 col = ImGui::GetColorU32(ImGuiCol_ButtonHovered);

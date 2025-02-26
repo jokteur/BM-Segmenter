@@ -53,7 +53,7 @@ std::string core::dataset::Dataset::load(const std::string& path) {
         py::module import_data = py::module::import("python.scripts.dataset");
         py::tuple tuple = import_data.attr("load_dataset")(path);
         py::dict data = tuple[0].cast<py::dict>();
-        auto& groups = tuple[1].cast<std::vector<std::string>>();
+        const auto& groups = tuple[1].cast<std::vector<std::string>>();
 
         // Create the groups
         for (auto& group_name : groups) {
@@ -138,7 +138,7 @@ jobId& core::dataset::Dataset::importData(const Group& group, std::shared_ptr<st
                                 if (match.size() > 1)
                                     dicom_name = match[1].str();
 
-                            auto &dicom = DicomSeries(paths, dicom_name + std::string("___") + std::to_string(
+                            auto dicom = DicomSeries(paths, dicom_name + std::string("___") + std::to_string(
                                 std::hash<std::string>{}(study.date + study.description + study.time + series->modality + series->number)));
                             dicom.setCrops(series->data.getCropX(), series->data.getCropY(), true);
                             all_cases.emplace_back(dicom);

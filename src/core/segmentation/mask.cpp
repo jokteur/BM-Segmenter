@@ -339,7 +339,7 @@ namespace core {
                     std::lock_guard<std::recursive_mutex> lock(ref_mutex_);
                     py::module script = py::module::import("python.scripts.segmentation");
 
-                    auto &dict = script.attr("load_mask_collection")(basename_path_).cast<py::dict>();
+                    const auto &dict = script.attr("load_mask_collection")(basename_path_).cast<py::dict>();
 
                     clearHistory();
 
@@ -364,7 +364,7 @@ namespace core {
                         validated_.updateDimensions();
                     }
 
-                    auto &users = dict["users"].cast<std::vector<std::string>>();
+                    const auto &users = dict["users"].cast<std::vector<std::string>>();
                     for (auto &user: users) {
                         setValidatedBy(user);
                     }
@@ -392,7 +392,7 @@ namespace core {
             if (immediate) {
                 float a = 0.f;
                 bool b = true;
-                auto &res = job(a, b);
+                const auto &res = job(a, b);
                 if (!res->err.empty())
                     std::cout << "Error:" << res->err << std::endl;
                 when_finished(res);
@@ -537,7 +537,7 @@ namespace core {
             ref_mutex_.unlock();
         }
 
-        Mask &MaskCollection::undo() {
+        Mask MaskCollection::undo() {
             if (history_.empty()) {
                 return Mask(rows_, cols_);
             }
@@ -547,7 +547,7 @@ namespace core {
             return getCurrent();
         }
 
-        Mask &MaskCollection::redo() {
+        Mask MaskCollection::redo() {
             if (history_.empty()) {
                 return Mask(rows_, cols_);
             }

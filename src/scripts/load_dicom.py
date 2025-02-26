@@ -6,7 +6,7 @@ import os
 from os.path import dirname, join
 from collections import OrderedDict
 
-from pydicom.filereader import read_dicomdir
+# from pydicom.filereader import read_dicomdir
 from pydicom import fileset
 
 from .util import special_sort

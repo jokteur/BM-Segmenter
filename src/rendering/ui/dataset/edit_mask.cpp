@@ -411,9 +411,9 @@ void Rendering::EditMask::ImGuiDraw(GLFWwindow *window, Rect &parent_dimension) 
             is_validated = mask_collection_->getIsValidated();
 
             // -------------- Validation tool --------------
-            auto &username = project->getCurrentUser();
-            auto &names = mask_collection_->getValidatedBy();
-            auto &users = project->getUsers();
+            const auto &username = project->getCurrentUser();
+            const auto &names = mask_collection_->getValidatedBy();
+            const auto &users = project->getUsers();
 
 
             bool username_is_validated = names.find(username) != names.end();
@@ -830,10 +830,10 @@ void Rendering::EditMask::button_logic() {
 }
 
 void Rendering::EditMask::set_NextPrev_buttons() {
-    auto &project = ::core::project::ProjectManager::getInstance().getCurrentProject();
+    const auto &project = ::core::project::ProjectManager::getInstance().getCurrentProject();
     std::vector<std::shared_ptr<::core::DicomSeries>> dicoms;
     if (group_idx_ >= 0) {
-        auto &groups = project->getDataset().getGroups();
+        auto groups = project->getDataset().getGroups();
         dicoms = groups[group_idx_].getOrderedDicoms();
     } else {
         dicoms = project->getDataset().getOrderedDicoms();

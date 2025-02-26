@@ -3,7 +3,7 @@ project(BM-Segmenter)
 
 set(CMAKE_CXX_STANDARD 17)
 
-set(CMAKE_EXE_LINKER_FLAGS -static)
+# set(CMAKE_EXE_LINKER_FLAGS -static)
 set(GCC_COVERAGE_COMPILE_FLAGS "-s -O3 -fvisibility=hidden")
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
@@ -199,7 +199,7 @@ target_link_libraries(${PROJECT_NAME}_lib glfw ${GLFW_LIBRARIES})
 target_link_libraries(${PROJECT_NAME}_lib ${OPENGL_gl_LIBRARY})
 target_link_libraries(${PROJECT_NAME}_lib nfd)
 target_link_libraries(${PROJECT_NAME}_lib ${OpenCV_LIBS})
-target_link_libraries(${PROJECT_NAME}_lib ${Python_LIBRARIES})
+target_link_libraries(${PROJECT_NAME}_lib pybind11::embed)
 #target_link_libraries(${PROJECT_NAME}_lib "${TORCH_LIBRARIES}")
 
 
